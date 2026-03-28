@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@source "../shared/*.ts";
+@source "./*.ts";
+@source "./*.html";
+
+@layer base {
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    @apply text-sm text-zinc-900 bg-white;
+  }
+}

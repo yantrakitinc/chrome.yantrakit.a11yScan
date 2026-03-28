@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>A11y Scan</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="flex items-center gap-2 px-3.5 py-2.5 border-b border-zinc-200">
+    <img src="icons/icon48.png" alt="A11y Scan" width="24" height="24">
+    <span class="font-bold text-indigo-950 text-base">A11y Scan</span>
+  </header>
+
+  <div class="flex gap-1.5 px-3.5 pt-2.5">
+    <select id="wcag-version" aria-label="WCAG version" class="px-1.5 py-1 text-xs border border-zinc-300 rounded bg-white">
+      <option value="2.0">WCAG 2.0</option>
+      <option value="2.1">WCAG 2.1</option>
+      <option value="2.2" selected>WCAG 2.2</option>
+    </select>
+    <select id="wcag-level" aria-label="Conformance level" class="px-1.5 py-1 text-xs border border-zinc-300 rounded bg-white">
+      <option value="A">Level A</option>
+      <option value="AA" selected>Level AA</option>
+      <option value="AAA">Level AAA</option>
+    </select>
+  </div>
+
+  <div class="flex gap-1.5 px-3.5 py-2">
+    <button id="scan-btn" class="flex-1 py-2 px-3.5 text-sm font-semibold text-white bg-indigo-950 rounded-md hover:bg-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed">Scan Page</button>
+    <button id="clear-btn" hidden class="py-2 px-3.5 text-sm bg-zinc-100 text-zinc-600 border border-zinc-300 rounded-md hover:bg-red-50 hover:text-red-700 hover:border-red-300">Clear</button>
+  </div>
+
+  <div class="flex border-b border-zinc-200 px-3.5" id="tabs" hidden>
+    <button class="tab px-3.5 py-2 text-xs font-semibold border-b-2 border-indigo-950 text-indigo-950 hover:text-zinc-900 cursor-pointer" data-tab="results">Results</button>
+    <button class="tab px-3.5 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-500 hover:text-zinc-900 cursor-pointer" data-tab="manual">Manual Review <span id="manual-badge" class="text-[10px] bg-zinc-200 px-1.5 py-0.5 rounded-full text-zinc-600"></span></button>
+  </div>
+
+  <div id="tab-results" class="px-3.5 py-2.5">
+    <div id="output"></div>
+  </div>
+
+  <div id="tab-manual" class="px-3.5 py-2.5" hidden>
+    <div id="manual-list"></div>
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>
