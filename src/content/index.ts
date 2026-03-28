@@ -22,7 +22,19 @@ if (!(window as any).__a11yscan) {
             })),
           })),
           passes: results.passes.length,
-          incomplete: results.incomplete.length,
+          incomplete: results.incomplete.map((v) => ({
+            id: v.id,
+            impact: v.impact,
+            help: v.help,
+            helpUrl: v.helpUrl,
+            description: v.description,
+            tags: v.tags,
+            nodes: v.nodes.map((n) => ({
+              target: n.target.map(String),
+              html: n.html,
+              failureSummary: n.failureSummary ?? '',
+            })),
+          })),
           pageElements: detectPageElements(),
         });
       }).catch((err) => {
