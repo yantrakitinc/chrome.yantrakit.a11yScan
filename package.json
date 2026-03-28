@@ -19,6 +19,7 @@
     "@vitest/coverage-v8": "^4.1.2",
     "copy-webpack-plugin": "^12",
     "css-loader": "^7",
+    "jsdom": "^29.0.1",
     "mini-css-extract-plugin": "^2",
     "postcss": "^8.5.8",
     "postcss-loader": "^8.2.1",
