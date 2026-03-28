@@ -21,7 +21,14 @@ if (!(window as any).__a11yscan) {
               failureSummary: n.failureSummary ?? '',
             })),
           })),
-          passes: results.passes.length,
+          passes: results.passes.map((v) => ({
+            id: v.id,
+            impact: v.impact,
+            help: v.help,
+            description: v.description,
+            tags: v.tags,
+            nodes: v.nodes.length,
+          })),
           incomplete: results.incomplete.map((v) => ({
             id: v.id,
             impact: v.impact,
