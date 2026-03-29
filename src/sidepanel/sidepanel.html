@@ -25,15 +25,15 @@
   </div>
 
   <div class="flex gap-1.5 px-3.5 py-2">
-    <button id="scan-btn" class="flex-1 py-2 px-3.5 text-sm font-semibold text-white bg-indigo-950 rounded-md hover:bg-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed">Scan Page</button>
-    <button id="clear-btn" hidden class="py-2 px-3.5 text-sm bg-zinc-100 text-zinc-600 border border-zinc-300 rounded-md hover:bg-red-50 hover:text-red-700 hover:border-red-300">Clear</button>
+    <button id="scan-btn" class="flex-1 py-2 px-3.5 text-sm font-semibold text-white bg-indigo-950 rounded-md hover:bg-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">Scan Page</button>
+    <button id="clear-btn" hidden class="py-2 px-3.5 text-sm bg-zinc-100 text-zinc-600 border border-zinc-300 rounded-md hover:bg-red-50 hover:text-red-700 hover:border-red-300 cursor-pointer">Clear</button>
   </div>
 
   <div id="export-bar" hidden class="flex gap-1.5 px-3.5 pb-2">
     <span class="text-xs text-zinc-500 self-center mr-auto">Export:</span>
-    <button id="export-json" class="px-2.5 py-1 text-[11px] font-semibold bg-indigo-50 text-indigo-950 border border-indigo-200 rounded hover:bg-indigo-100">JSON</button>
-    <button id="export-html" class="px-2.5 py-1 text-[11px] font-semibold bg-indigo-50 text-indigo-950 border border-indigo-200 rounded hover:bg-indigo-100">HTML</button>
-    <button id="export-pdf" class="px-2.5 py-1 text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200 rounded hover:bg-amber-100">PDF</button>
+    <button id="export-json" class="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-indigo-50 text-indigo-950 border border-indigo-200 rounded hover:bg-indigo-100 cursor-pointer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>JSON</button>
+    <button id="export-html" class="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-indigo-50 text-indigo-950 border border-indigo-200 rounded hover:bg-indigo-100 cursor-pointer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>HTML</button>
+    <button id="export-pdf" class="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200 rounded hover:bg-amber-100 cursor-pointer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</button>
   </div>
 
   <div class="flex border-b border-zinc-200 px-3.5" id="tabs" hidden>

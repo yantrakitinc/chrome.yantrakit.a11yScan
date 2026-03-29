@@ -88,28 +88,37 @@ clearBtn.addEventListener('click', async () => {
   }
 });
 
-/** Returns the current page URL from the last scan response. */
-function getPageUrl(): string {
+/** Returns the current page URL from the last scan response or active tab. */
+async function getPageUrl(): Promise<string> {
   const response = getLastScanResponse();
-  return response?.url || '';
+  if (response?.url) return response.url;
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tab?.url || 'unknown';
+  } catch {
+    return 'unknown';
+  }
 }
 
-exportJsonBtn.addEventListener('click', () => {
+exportJsonBtn.addEventListener('click', async () => {
   const response = getLastScanResponse();
   if (!response) return;
-  exportJSON(response, wcagVersion.value, wcagLevel.value, getPageUrl());
+  const url = await getPageUrl();
+  exportJSON(response, wcagVersion.value, wcagLevel.value, url);
 });
 
-exportHtmlBtn.addEventListener('click', () => {
+exportHtmlBtn.addEventListener('click', async () => {
   const response = getLastScanResponse();
   if (!response) return;
-  exportHTML(response, wcagVersion.value, wcagLevel.value, getPageUrl());
+  const url = await getPageUrl();
+  exportHTML(response, wcagVersion.value, wcagLevel.value, url);
 });
 
-exportPdfBtn.addEventListener('click', () => {
+exportPdfBtn.addEventListener('click', async () => {
   const response = getLastScanResponse();
   if (!response) return;
-  exportPDF(response, wcagVersion.value, wcagLevel.value, getPageUrl());
+  const url = await getPageUrl();
+  exportPDF(response, wcagVersion.value, wcagLevel.value, url);
 });
 
 function showResults(response: any): void {

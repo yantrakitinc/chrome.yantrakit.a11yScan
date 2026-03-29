@@ -104,9 +104,9 @@ function buildManualItem(c: iWcagCriterion, state: string | null): string {
   const passClass = state === 'pass' ? 'bg-green-100 border-green-300 text-green-800' : 'bg-white border-zinc-300 text-zinc-600';
   const failClass = state === 'fail' ? 'bg-red-100 border-red-300 text-red-800' : 'bg-white border-zinc-300 text-zinc-600';
 
-  html += `<button class="manual-toggle-btn px-2 py-0.5 text-[10px] font-semibold border rounded ${passClass}" data-criterion="${c.id}" data-value="pass">Pass</button>`;
-  html += `<button class="manual-toggle-btn px-2 py-0.5 text-[10px] font-semibold border rounded ${failClass}" data-criterion="${c.id}" data-value="fail">Fail</button>`;
-  html += `<button class="manual-toggle-btn px-2 py-0.5 text-[10px] font-semibold border rounded bg-white border-zinc-300 text-zinc-600" data-criterion="${c.id}" data-value="na">N/A</button>`;
+  html += `<button class="manual-toggle-btn px-2 py-0.5 text-[10px] font-semibold border rounded cursor-pointer hover:opacity-80 transition-opacity ${passClass}" data-criterion="${c.id}" data-value="pass">Pass</button>`;
+  html += `<button class="manual-toggle-btn px-2 py-0.5 text-[10px] font-semibold border rounded cursor-pointer hover:opacity-80 transition-opacity ${failClass}" data-criterion="${c.id}" data-value="fail">Fail</button>`;
+  html += `<button class="manual-toggle-btn px-2 py-0.5 text-[10px] font-semibold border rounded cursor-pointer hover:bg-zinc-100 transition-colors bg-white border-zinc-300 text-zinc-600" data-criterion="${c.id}" data-value="na">N/A</button>`;
   html += `</div></div>`;
   return html;
 }
@@ -117,7 +117,7 @@ function buildNaItem(c: iWcagCriterion): string {
   html += `<strong class="text-xs block text-zinc-500">${c.id} ${esc(c.name)} <span class="text-zinc-400">(${c.level})</span></strong>`;
   html += `<p class="text-[11px] text-zinc-400 mt-0.5">${esc(c.manualCheck)}</p>`;
   html += `</div>`;
-  html += `<button class="restore-btn shrink-0 text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold px-2 py-0.5 border border-indigo-200 rounded hover:bg-indigo-50" data-criterion="${c.id}">Restore</button>`;
+  html += `<button class="restore-btn shrink-0 text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold px-2 py-0.5 border border-indigo-200 rounded hover:bg-indigo-50 cursor-pointer" data-criterion="${c.id}">Restore</button>`;
   html += `</div>`;
   return html;
 }

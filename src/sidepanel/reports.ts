@@ -11,11 +11,16 @@ import { criterionSlug } from '@shared/utils';
  * Builds a kebab-case filename from the scanned URL.
  */
 function buildFilename(url: string, ext: string): string {
-  const parsed = new URL(url);
-  const site = (parsed.hostname + parsed.pathname)
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-    .toLowerCase();
+  let site = 'unknown';
+  try {
+    const parsed = new URL(url);
+    site = (parsed.hostname + parsed.pathname)
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .toLowerCase();
+  } catch {
+    site = url.replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase() || 'unknown';
+  }
   const now = new Date();
   const date = now.toISOString().slice(0, 10);
   const time = now.toTimeString().slice(0, 5).replace(':', '-');
@@ -314,21 +319,122 @@ export function exportHTML(response: any, version: string, level: string, url: s
  * Uses the browser's built-in Print → Save as PDF since jsPDF is not bundled.
  */
 export function exportPDF(response: any, version: string, level: string, url: string): void {
-  const html = buildHTMLReport(response, version, level, url);
-  const printHTML = html.replace(
-    '</footer>',
-    `</footer>
-<script>
-  window.onload = function() {
-    var note = document.createElement('div');
-    note.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1e1b4b;color:#fff;text-align:center;padding:8px;font-size:13px;z-index:9999;';
-    note.innerHTML = 'Use your browser\\'s <strong>Print → Save as PDF</strong> to export this report. <button onclick="this.parentElement.remove();window.print();" style="margin-left:12px;background:#f59e0b;color:#1e1b4b;border:none;padding:4px 12px;border-radius:4px;font-weight:600;cursor:pointer;">Print Now</button>';
-    document.body.prepend(note);
-  };
-</script>`
-  );
+  import('jspdf').then(({ jsPDF }) => {
+    const violations = response.violations as any[];
+    const incomplete = (Array.isArray(response.incomplete) ? response.incomplete : []) as any[];
+    const passes = (Array.isArray(response.passes) ? response.passes : []) as any[];
+    const filename = buildFilename(url, 'pdf');
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const contentWidth = pageWidth - margin * 2;
+    let y = margin;
 
-  const blob = new Blob([printHTML], { type: 'text/html' });
-  const blobUrl = URL.createObjectURL(blob);
-  window.open(blobUrl, '_blank');
+    const checkPage = (needed: number) => {
+      if (y + needed > doc.internal.pageSize.getHeight() - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    // Header
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 27, 75);
+    doc.text('A11y Scan Report', margin, y);
+    y += 8;
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    doc.text(`URL: ${url}`, margin, y); y += 4;
+    doc.text(`Scanned: ${new Date().toLocaleString()}`, margin, y); y += 4;
+    doc.text(`WCAG ${version} Level ${level}`, margin, y); y += 8;
+
+    // Summary
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 27, 75);
+    doc.text(`Violations: ${violations.length}    Needs Review: ${incomplete.length}    Passed: ${passes.length}`, margin, y);
+    y += 10;
+
+    // Violations
+    if (violations.length > 0) {
+      checkPage(10);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(180, 0, 0);
+      doc.text('Violations', margin, y); y += 6;
+
+      for (const v of violations) {
+        checkPage(15);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 27, 75);
+        const criteriaText = axeRuleToWcag(v.id).map((c: any) => c.id).join(', ') || '';
+        doc.text(`${v.id} (${v.impact}) — ${v.help}${criteriaText ? ` [${criteriaText}]` : ''}`, margin, y);
+        y += 4;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80);
+        for (const node of v.nodes) {
+          checkPage(8);
+          const lines = doc.splitTextToSize(`${node.target.join(', ')}: ${node.html.slice(0, 100)}`, contentWidth);
+          doc.setFontSize(7);
+          doc.text(lines, margin + 3, y);
+          y += lines.length * 3 + 2;
+        }
+        y += 3;
+      }
+    }
+
+    // Needs Review
+    if (incomplete.length > 0) {
+      checkPage(10);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(180, 120, 0);
+      doc.text('Needs Review', margin, y); y += 6;
+
+      for (const v of incomplete) {
+        checkPage(10);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 27, 75);
+        doc.text(`${v.id} (${v.impact}) — ${v.help} [${v.nodes.length} elements]`, margin, y);
+        y += 5;
+      }
+      y += 3;
+    }
+
+    // Passed
+    if (passes.length > 0) {
+      checkPage(10);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 120, 0);
+      doc.text(`Passed (${passes.length} rules)`, margin, y); y += 6;
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80);
+      for (const p of passes) {
+        checkPage(5);
+        doc.text(`${p.id} — ${p.help}`, margin + 3, y);
+        y += 3.5;
+      }
+    }
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(150);
+      doc.text('Generated by A11y Scan', margin, doc.internal.pageSize.getHeight() - 8);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin - 20, doc.internal.pageSize.getHeight() - 8);
+    }
+
+    doc.save(filename);
+  });
 }

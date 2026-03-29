@@ -48,7 +48,7 @@ function mapToWcag(items: any[], criteria: iWcagCriterion[]) {
 /**
  * Simplifies verbose axe-core failure messages into concise descriptions.
  */
-function simplifyMessage(failureSummary: string): string {
+export function simplifyMessage(failureSummary: string): string {
   // Strip "Fix any of the following:\n" and "Fix all of the following:\n" prefixes
   let msg = failureSummary
     .replace(/^Fix any of the following:\s*/i, '')
