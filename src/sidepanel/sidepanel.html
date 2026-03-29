@@ -29,6 +29,13 @@
     <button id="clear-btn" hidden class="py-2 px-3.5 text-sm bg-zinc-100 text-zinc-600 border border-zinc-300 rounded-md hover:bg-red-50 hover:text-red-700 hover:border-red-300">Clear</button>
   </div>
 
+  <div id="export-bar" hidden class="flex gap-1.5 px-3.5 pb-2">
+    <span class="text-xs text-zinc-500 self-center mr-auto">Export:</span>
+    <button id="export-json" class="px-2.5 py-1 text-[11px] font-semibold bg-indigo-50 text-indigo-950 border border-indigo-200 rounded hover:bg-indigo-100">JSON</button>
+    <button id="export-html" class="px-2.5 py-1 text-[11px] font-semibold bg-indigo-50 text-indigo-950 border border-indigo-200 rounded hover:bg-indigo-100">HTML</button>
+    <button id="export-pdf" class="px-2.5 py-1 text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200 rounded hover:bg-amber-100">PDF</button>
+  </div>
+
   <div class="flex border-b border-zinc-200 px-3.5" id="tabs" hidden>
     <button class="tab px-3.5 py-2 text-xs font-semibold border-b-2 border-indigo-950 text-indigo-950 hover:text-zinc-900 cursor-pointer" data-tab="results">Results</button>
     <button class="tab px-3.5 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-500 hover:text-zinc-900 cursor-pointer" data-tab="manual">Manual Review <span id="manual-badge" class="text-[10px] bg-zinc-200 px-1.5 py-0.5 rounded-full text-zinc-600"></span></button>

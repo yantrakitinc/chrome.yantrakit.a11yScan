@@ -6,6 +6,7 @@ import './sidepanel.css';
 import { initTabs } from './tabs';
 import { renderResultsTab } from './render-results';
 import { initManualReview, renderManualTab } from './manual-review';
+import { exportJSON, exportHTML, exportPDF } from './reports';
 import {
   requestTabResults,
   triggerScan,
@@ -14,6 +15,7 @@ import {
   setManualState,
   setPageElements,
   setLastScanResponse,
+  getLastScanResponse,
 } from './state';
 
 const scanBtn = document.getElementById('scan-btn') as HTMLButtonElement;
@@ -26,6 +28,10 @@ const tabsEl = document.getElementById('tabs') as HTMLDivElement;
 const tabResultsEl = document.getElementById('tab-results') as HTMLDivElement;
 const tabManualEl = document.getElementById('tab-manual') as HTMLDivElement;
 const manualBadge = document.getElementById('manual-badge') as HTMLSpanElement;
+const exportBar = document.getElementById('export-bar') as HTMLDivElement;
+const exportJsonBtn = document.getElementById('export-json') as HTMLButtonElement;
+const exportHtmlBtn = document.getElementById('export-html') as HTMLButtonElement;
+const exportPdfBtn = document.getElementById('export-pdf') as HTMLButtonElement;
 
 initTabs(tabsEl, tabResultsEl, tabManualEl);
 initManualReview(manualListEl, manualBadge, wcagVersion, wcagLevel);
@@ -82,12 +88,37 @@ clearBtn.addEventListener('click', async () => {
   }
 });
 
+/** Returns the current page URL from the last scan response. */
+function getPageUrl(): string {
+  const response = getLastScanResponse();
+  return response?.url || '';
+}
+
+exportJsonBtn.addEventListener('click', () => {
+  const response = getLastScanResponse();
+  if (!response) return;
+  exportJSON(response, wcagVersion.value, wcagLevel.value, getPageUrl());
+});
+
+exportHtmlBtn.addEventListener('click', () => {
+  const response = getLastScanResponse();
+  if (!response) return;
+  exportHTML(response, wcagVersion.value, wcagLevel.value, getPageUrl());
+});
+
+exportPdfBtn.addEventListener('click', () => {
+  const response = getLastScanResponse();
+  if (!response) return;
+  exportPDF(response, wcagVersion.value, wcagLevel.value, getPageUrl());
+});
+
 function showResults(response: any): void {
   const version = wcagVersion.value as '2.0' | '2.1' | '2.2';
   const level = wcagLevel.value as 'A' | 'AA' | 'AAA';
   renderResultsTab(output, response, version, level);
   clearBtn.hidden = false;
   tabsEl.hidden = false;
+  exportBar.hidden = false;
 }
 
 function hideResults(): void {
@@ -97,5 +128,6 @@ function hideResults(): void {
   tabsEl.hidden = true;
   tabManualEl.hidden = true;
   tabResultsEl.hidden = false;
+  exportBar.hidden = true;
   resetState();
 }

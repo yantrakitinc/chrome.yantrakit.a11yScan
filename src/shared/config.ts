@@ -1,5 +1,11 @@
 import type { iRemoteConfig } from './types';
 
+/**
+ * Site URL for the A11y Scan website.
+ * Update this when migrating to a new domain.
+ */
+export const SITE_URL = 'https://a11yscan.yantrakit.com';
+
 const GIST_URL =
   'https://gist.githubusercontent.com/yantrakitinc/1cde179b72bdedc56daf217bdb32017b/raw/a11yscan-config.json';
 

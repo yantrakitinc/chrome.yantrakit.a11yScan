@@ -3,11 +3,18 @@
  */
 
 import { filterCriteria, axeRuleToWcag, type iWcagCriterion } from '@shared/wcag-mapping';
+import { SITE_URL } from '@shared/config';
+import { criterionSlug } from '@shared/utils';
 
 function esc(str: string): string {
   const d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
+}
+
+function learnMoreLink(criterion: iWcagCriterion): string {
+  const slug = criterionSlug(criterion.id, criterion.name);
+  return ` <a href="${SITE_URL}/wcag/${slug}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline text-[10px] ml-1">Learn more</a>`;
 }
 
 function truncate(str: string, max: number): string {
@@ -36,6 +43,49 @@ function mapToWcag(items: any[], criteria: iWcagCriterion[]) {
   }
 
   return { mapped, unmapped };
+}
+
+/**
+ * Simplifies verbose axe-core failure messages into concise descriptions.
+ */
+function simplifyMessage(failureSummary: string): string {
+  // Strip "Fix any of the following:\n" and "Fix all of the following:\n" prefixes
+  let msg = failureSummary
+    .replace(/^Fix any of the following:\s*/i, '')
+    .replace(/^Fix all of the following:\s*/i, '')
+    .trim();
+
+  // Color contrast simplification
+  const contrastMatch = msg.match(
+    /Element has insufficient color contrast of ([\d.]+) \(foreground color: (#[0-9a-fA-F]+), background color: (#[0-9a-fA-F]+).*?Expected contrast ratio of ([\d.]+):1/
+  );
+  if (contrastMatch) {
+    const [, ratio, fg, bg, expected] = contrastMatch;
+    return `Contrast ${ratio}:1 (needs ${expected}:1). Text ${fg} on ${bg}`;
+  }
+
+  // Image alt attribute
+  if (/element does not have an alt attribute/i.test(msg)) {
+    return 'Missing alt attribute';
+  }
+  if (/element's alt attribute is not present/i.test(msg)) {
+    return 'Missing alt attribute';
+  }
+
+  // Form label
+  if (/form element does not have an implicit (or|nor) explicit label/i.test(msg)) {
+    return 'Missing form label';
+  }
+  if (/form element does not have.*label/i.test(msg)) {
+    return 'Missing form label';
+  }
+
+  // Heading order
+  if (/heading order/i.test(msg) || /heading levels should only increase by one/i.test(msg)) {
+    return 'Heading level skipped';
+  }
+
+  return msg;
 }
 
 export function renderResultsTab(
@@ -82,25 +132,33 @@ export function renderResultsTab(
     const impact = axeItems[0]?.impact || 'unknown';
     html += `<details class="my-1 border-l-3 border-red-600 bg-red-50 rounded-r">`;
     html += `<summary class="py-1.5 px-2 text-xs cursor-pointer hover:bg-red-100">`;
-    html += `<strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong>`;
+    html += `<strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong>${learnMoreLink(criterion)}`;
     html += `<span class="block text-zinc-500 text-[11px] ml-4">Impact: ${impact} · ${totalNodes} element(s)</span>`;
     html += `</summary>`;
     html += `<div class="px-2 pb-2 space-y-1.5">`;
 
-    // Show each affected element
+    // Group elements by axe rule ID (collapsible)
     for (const v of axeItems) {
-      html += `<div class="text-[11px] text-zinc-700 mb-1">`;
-      html += `<span class="font-semibold text-red-800">${esc(v.id)}</span> — ${esc(v.help)}`;
-      html += `</div>`;
+      const nodeCount = v.nodes.length;
+      html += `<details class="my-1 border border-red-200 rounded bg-white">`;
+      html += `<summary class="py-1.5 px-2 text-[11px] cursor-pointer hover:bg-red-50">`;
+      html += `<span class="font-semibold text-red-800">${esc(v.id)}</span>`;
+      html += ` — ${esc(v.help)}`;
+      html += ` <span class="text-zinc-500">(${nodeCount} element${nodeCount !== 1 ? 's' : ''})</span>`;
+      html += `</summary>`;
+      html += `<div class="px-2 pb-2 space-y-1">`;
+
       for (const node of v.nodes) {
-        html += `<div class="bg-white border border-red-200 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
+        html += `<div class="bg-red-50/50 border border-red-100 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
         html += `<div class="text-indigo-800 font-semibold mb-0.5">${esc(node.target.join(', '))}</div>`;
         html += `<div class="text-zinc-600 whitespace-pre-wrap break-all mb-1">${esc(truncate(node.html, 200))}</div>`;
         if (node.failureSummary) {
-          html += `<div class="text-red-700 text-[10px] mt-1">${esc(node.failureSummary)}</div>`;
+          html += `<div class="text-red-700 text-[10px] mt-1">${esc(simplifyMessage(node.failureSummary))}</div>`;
         }
         html += `</div>`;
       }
+
+      html += `</div></details>`;
     }
 
     html += `</div></details>`;
@@ -116,21 +174,30 @@ export function renderResultsTab(
       const totalNodes = axeItems.reduce((sum: number, v: any) => sum + v.nodes.length, 0);
       html += `<details class="my-1 border-l-3 border-amber-500 bg-amber-50 rounded-r">`;
       html += `<summary class="py-1.5 px-2 text-xs cursor-pointer hover:bg-amber-100">`;
-      html += `<strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong>`;
+      html += `<strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong>${learnMoreLink(criterion)}`;
       html += `<span class="block text-zinc-500 text-[11px] ml-4">${totalNodes} element(s) need verification</span>`;
       html += `</summary>`;
       html += `<div class="px-2 pb-2 space-y-1.5">`;
 
+      // Group elements by axe rule ID (collapsible)
       for (const v of axeItems) {
-        html += `<div class="text-[11px] text-zinc-700 mb-1">`;
-        html += `<span class="font-semibold text-amber-800">${esc(v.id)}</span> — ${esc(v.help)}`;
-        html += `</div>`;
+        const nodeCount = v.nodes.length;
+        html += `<details class="my-1 border border-amber-200 rounded bg-white">`;
+        html += `<summary class="py-1.5 px-2 text-[11px] cursor-pointer hover:bg-amber-50">`;
+        html += `<span class="font-semibold text-amber-800">${esc(v.id)}</span>`;
+        html += ` — ${esc(v.help)}`;
+        html += ` <span class="text-zinc-500">(${nodeCount} element${nodeCount !== 1 ? 's' : ''})</span>`;
+        html += `</summary>`;
+        html += `<div class="px-2 pb-2 space-y-1">`;
+
         for (const node of v.nodes) {
-          html += `<div class="bg-white border border-amber-200 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
+          html += `<div class="bg-amber-50/50 border border-amber-100 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
           html += `<div class="text-indigo-800 font-semibold mb-0.5">${esc(node.target.join(', '))}</div>`;
           html += `<div class="text-zinc-600 whitespace-pre-wrap break-all">${esc(truncate(node.html, 200))}</div>`;
           html += `</div>`;
         }
+
+        html += `</div></details>`;
       }
 
       html += `</div></details>`;
@@ -165,7 +232,7 @@ export function renderResultsTab(
   }
   for (const [, { criterion, axeRules }] of passedWithData) {
     html += `<details class="my-0.5 border-l-3 border-green-600 bg-green-50 rounded-r">`;
-    html += `<summary class="py-1 px-2 text-[11px] cursor-pointer hover:bg-green-100"><strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong></summary>`;
+    html += `<summary class="py-1 px-2 text-[11px] cursor-pointer hover:bg-green-100"><strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong>${learnMoreLink(criterion)}</summary>`;
     html += `<div class="px-2 pb-1.5 text-[10px] text-zinc-600">`;
     html += `<span>Verified by: ${axeRules.map(r => `<span class="font-semibold text-green-800">${esc(r)}</span>`).join(', ')}</span>`;
     html += `</div></details>`;

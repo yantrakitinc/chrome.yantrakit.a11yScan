@@ -3,12 +3,19 @@
  */
 
 import { WCAG_CRITERIA, filterCriteria, isCriterionRelevant, type iWcagCriterion } from '@shared/wcag-mapping';
+import { SITE_URL } from '@shared/config';
+import { criterionSlug } from '@shared/utils';
 import { getManualState, setManualItem, getPageElements } from './state';
 
 function esc(str: string): string {
   const d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
+}
+
+function learnMoreLink(c: iWcagCriterion): string {
+  const slug = criterionSlug(c.id, c.name);
+  return `<a href="${SITE_URL}/wcag/${slug}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline text-[10px]">Learn more</a>`;
 }
 
 let manualListEl: HTMLDivElement;
@@ -90,7 +97,7 @@ function buildManualItem(c: iWcagCriterion, state: string | null): string {
   let html = `<div class="manual-item flex items-start gap-2 py-2 border-b border-zinc-100 transition-all duration-300" data-criterion-id="${c.id}">`;
   html += `<div class="flex-1 min-w-0">`;
   html += `<strong class="text-xs block">${c.id} ${esc(c.name)} <span class="text-zinc-500">(${c.level})</span></strong>`;
-  html += `<p class="text-[11px] text-zinc-600 mt-0.5">${esc(c.manualCheck)}</p>`;
+  html += `<p class="text-[11px] text-zinc-600 mt-0.5">${esc(c.manualCheck)} ${learnMoreLink(c)}</p>`;
   html += `</div>`;
   html += `<div class="flex gap-0.5 shrink-0">`;
 
