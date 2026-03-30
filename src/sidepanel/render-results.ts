@@ -149,8 +149,12 @@ export function renderResultsTab(
       html += `<div class="px-2 pb-2 space-y-1">`;
 
       for (const node of v.nodes) {
+        const sel = esc(node.target.join(', '));
         html += `<div class="bg-red-50/50 border border-red-100 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
-        html += `<div class="text-indigo-800 font-semibold mb-0.5">${esc(node.target.join(', '))}</div>`;
+        html += `<div class="flex items-start justify-between gap-1 mb-0.5">`;
+        html += `<div class="text-indigo-800 font-semibold">${sel}</div>`;
+        html += `<button class="highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline underline-offset-1" data-selector="${sel}">Highlight</button>`;
+        html += `</div>`;
         html += `<div class="text-zinc-600 whitespace-pre-wrap break-all mb-1">${esc(truncate(node.html, 200))}</div>`;
         if (node.failureSummary) {
           html += `<div class="text-red-700 text-[10px] mt-1">${esc(simplifyMessage(node.failureSummary))}</div>`;
@@ -191,8 +195,12 @@ export function renderResultsTab(
         html += `<div class="px-2 pb-2 space-y-1">`;
 
         for (const node of v.nodes) {
+          const sel = esc(node.target.join(', '));
           html += `<div class="bg-amber-50/50 border border-amber-100 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
-          html += `<div class="text-indigo-800 font-semibold mb-0.5">${esc(node.target.join(', '))}</div>`;
+          html += `<div class="flex items-start justify-between gap-1 mb-0.5">`;
+          html += `<div class="text-indigo-800 font-semibold">${sel}</div>`;
+          html += `<button class="highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline underline-offset-1" data-selector="${sel}">Highlight</button>`;
+          html += `</div>`;
           html += `<div class="text-zinc-600 whitespace-pre-wrap break-all">${esc(truncate(node.html, 200))}</div>`;
           html += `</div>`;
         }
@@ -250,4 +258,19 @@ export function renderResultsTab(
   }
 
   output.innerHTML = html;
+
+  // Wire highlight buttons
+  output.querySelectorAll('.highlight-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const selector = (btn as HTMLElement).dataset.selector;
+      if (!selector) return;
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) {
+          await chrome.tabs.sendMessage(tab.id, { type: 'HIGHLIGHT_ELEMENT', selector });
+        }
+      } catch { /* tab may not have content script */ }
+    });
+  });
 }
