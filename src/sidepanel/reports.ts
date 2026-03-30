@@ -6,6 +6,7 @@
 import { axeRuleToWcag } from '@shared/wcag-mapping';
 import { SITE_URL } from '@shared/config';
 import { criterionSlug } from '@shared/utils';
+import type { iAriaWidgetResult } from '@shared/aria-patterns';
 
 /**
  * Builds a kebab-case filename from the scanned URL.
@@ -116,6 +117,31 @@ function enrichItem(item: any): any {
 }
 
 /**
+ * Builds the ariaPatterns section from raw ARIA widget results.
+ */
+function buildAriaPatterns(ariaWidgets: iAriaWidgetResult[]): any {
+  const compliant = ariaWidgets.filter((w) => w.failCount === 0).length;
+  const withIssues = ariaWidgets.filter((w) => w.failCount > 0).length;
+  return {
+    widgetsDetected: ariaWidgets.length,
+    compliant,
+    withIssues,
+    widgets: ariaWidgets.map((w) => ({
+      role: w.role,
+      selector: w.selector,
+      checks: w.checks.map((c) => ({
+        id: c.id,
+        description: c.description,
+        pass: c.pass,
+        message: c.message,
+      })),
+      passCount: w.passCount,
+      failCount: w.failCount,
+    })),
+  };
+}
+
+/**
  * Builds an enriched pass item with WCAG criterion mapping.
  */
 function enrichPassItem(item: any): any {
@@ -138,7 +164,9 @@ export function exportJSON(response: any, version: string, level: string, url: s
   const incomplete = Array.isArray(response.incomplete) ? response.incomplete : [];
   const passes = Array.isArray(response.passes) ? response.passes : [];
 
-  const report = {
+  const ariaWidgets: iAriaWidgetResult[] = Array.isArray(response._ariaWidgets) ? response._ariaWidgets : [];
+
+  const report: Record<string, any> = {
     tool: 'A11y Scan',
     toolVersion: '1.0.0',
     url,
@@ -154,6 +182,10 @@ export function exportJSON(response: any, version: string, level: string, url: s
     needsReview: incomplete.map(enrichItem),
     passes: passes.map(enrichPassItem),
   };
+
+  if (ariaWidgets.length > 0) {
+    report.ariaPatterns = buildAriaPatterns(ariaWidgets);
+  }
 
   const json = JSON.stringify(report, null, 2);
   const filename = buildFilename(url, 'json');
@@ -195,6 +227,14 @@ function reportCSS(): string {
     .node-target { font-weight: 600; color: #1e1b4b; font-family: monospace; font-size: 11px; }
     .node-html { color: #64748b; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; margin: 4px 0; }
     .node-failure { color: #dc2626; font-size: 11px; }
+    h2.aria { color: #7c3aed; }
+    .card-aria { background: #f5f3ff; border: 1px solid #c4b5fd; color: #5b21b6; }
+    .rule.aria { border-left-color: #7c3aed; background: #f5f3ff; }
+    .rule.aria-issue { border-left-color: #dc2626; background: #fef2f2; }
+    .check-list { list-style: none; margin: 6px 0 0; padding: 0; }
+    .check-list li { font-size: 12px; padding: 2px 0; }
+    .check-pass { color: #16a34a; }
+    .check-fail { color: #dc2626; }
     footer { margin-top: 32px; padding-top: 16px; border-top: 2px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center; }
     @media print { body { padding: 12px; } .summary-card { min-width: 100px; } }
   `;
@@ -208,6 +248,7 @@ function buildHTMLReport(response: any, version: string, level: string, url: str
   const violations = Array.isArray(response.violations) ? response.violations : [];
   const incomplete = Array.isArray(response.incomplete) ? response.incomplete : [];
   const passes = Array.isArray(response.passes) ? response.passes : [];
+  const ariaWidgets: iAriaWidgetResult[] = Array.isArray(response._ariaWidgets) ? response._ariaWidgets : [];
   const scanDate = new Date().toLocaleString();
 
   let html = `<!DOCTYPE html>
@@ -240,7 +281,11 @@ function buildHTMLReport(response: any, version: string, level: string, url: str
   <div class="summary-card card-passes">
     <div class="count">${counts.passes}</div>
     <div class="label">Passed</div>
-  </div>
+  </div>${ariaWidgets.length > 0 ? `
+  <div class="summary-card card-aria">
+    <div class="count">${ariaWidgets.length}</div>
+    <div class="label">ARIA Widgets</div>
+  </div>` : ''}
 </div>`;
 
   // Violations section
@@ -295,6 +340,27 @@ function buildHTMLReport(response: any, version: string, level: string, url: str
     html += `<div class="rule-header">${esc(p.id)} — ${esc(p.help || '')}</div>`;
     html += `<div class="rule-help">${esc(p.description || '')}</div>`;
     html += `</div>`;
+  }
+
+  // ARIA Patterns section
+  if (ariaWidgets.length > 0) {
+    const compliant = ariaWidgets.filter((w) => w.failCount === 0).length;
+    const withIssues = ariaWidgets.filter((w) => w.failCount > 0).length;
+    html += `<h2 class="aria">ARIA Patterns (${ariaWidgets.length} widgets — ${compliant} compliant, ${withIssues} with issues)</h2>`;
+    for (const w of ariaWidgets) {
+      const ruleClass = w.failCount > 0 ? 'aria-issue' : 'aria';
+      html += `<div class="rule ${ruleClass}">`;
+      html += `<div class="rule-header">${esc(w.role)} — ${esc(w.selector)}</div>`;
+      html += `<div class="rule-help">${esc(w.passCount.toString())} passed, ${esc(w.failCount.toString())} failed</div>`;
+      html += `<ul class="check-list">`;
+      for (const c of w.checks) {
+        const cls = c.pass ? 'check-pass' : 'check-fail';
+        const icon = c.pass ? '\u2713' : '\u2717';
+        html += `<li class="${cls}">${icon} ${esc(c.description)} — ${esc(c.message)}</li>`;
+      }
+      html += `</ul>`;
+      html += `</div>`;
+    }
   }
 
   html += `

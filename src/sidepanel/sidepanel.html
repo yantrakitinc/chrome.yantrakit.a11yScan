@@ -6,9 +6,22 @@
   <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body>
-  <header class="flex items-center gap-2 px-3.5 py-2.5 border-b border-zinc-200">
-    <img src="icons/icon48.png" alt="A11y Scan" width="24" height="24">
-    <span class="font-bold text-indigo-950 text-base">A11y Scan</span>
+  <header class="flex items-center justify-between px-3.5 py-2.5 border-b border-zinc-200">
+    <div class="flex items-center gap-2">
+      <img src="icons/icon48.png" alt="A11y Scan" width="24" height="24">
+      <span class="font-bold text-indigo-950 text-base">A11y Scan</span>
+    </div>
+    <select id="cvd-select" aria-label="Color blindness simulation" class="text-[11px] py-1 px-1.5 border border-zinc-300 rounded bg-white text-indigo-950 cursor-pointer focus:border-indigo-500 outline-none">
+      <option value="">Vision: Normal</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="protanomaly">Protanomaly</option>
+      <option value="deuteranomaly">Deuteranomaly</option>
+      <option value="tritanopia">Tritanopia</option>
+      <option value="tritanomaly">Tritanomaly</option>
+      <option value="achromatopsia">Achromatopsia</option>
+      <option value="achromatomaly">Achromatomaly</option>
+    </select>
   </header>
 
   <div class="flex gap-1.5 px-3.5 pt-2.5">
@@ -39,6 +52,7 @@
   <div class="flex border-b border-zinc-200 px-3.5" id="tabs" hidden>
     <button class="tab px-3.5 py-2 text-xs font-semibold border-b-2 border-indigo-950 text-indigo-950 hover:text-zinc-900 cursor-pointer" data-tab="results">Results</button>
     <button class="tab px-3.5 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-500 hover:text-zinc-900 cursor-pointer" data-tab="manual">Manual Review <span id="manual-badge" class="text-[10px] bg-zinc-200 px-1.5 py-0.5 rounded-full text-zinc-600"></span></button>
+    <button class="tab px-3.5 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-500 hover:text-zinc-900 cursor-pointer" data-tab="aria">ARIA Patterns <span id="aria-badge" class="text-[10px] bg-zinc-200 px-1.5 py-0.5 rounded-full text-zinc-600"></span></button>
   </div>
 
   <div id="tab-results" class="px-3.5 py-2.5">
@@ -47,6 +61,10 @@
 
   <div id="tab-manual" class="px-3.5 py-2.5" hidden>
     <div id="manual-list"></div>
+  </div>
+
+  <div id="tab-aria" class="p-3.5 overflow-y-auto" hidden>
+    <div id="aria-output"></div>
   </div>
 
   <script src="sidepanel.js"></script>

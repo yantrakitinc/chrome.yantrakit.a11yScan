@@ -1,9 +1,40 @@
 import axe from 'axe-core';
+import { scanAriaPatterns } from './aria-scanner';
 
 if (!(window as any).__a11yscan) {
   (window as any).__a11yscan = true;
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message.type === 'APPLY_CVD_FILTER') {
+      const matrix = message.matrix as number[] | null;
+      const existingSvg = document.getElementById('__a11yscan-cvd-svg');
+      if (existingSvg) existingSvg.remove();
+      if (!matrix) {
+        document.documentElement.style.filter = '';
+        sendResponse({ ok: true });
+        return;
+      }
+      const svgNs = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNs, 'svg');
+      svg.setAttribute('id', '__a11yscan-cvd-svg');
+      svg.setAttribute('style', 'position:absolute;width:0;height:0;');
+      svg.setAttribute('aria-hidden', 'true');
+      const defs = document.createElementNS(svgNs, 'defs');
+      const filter = document.createElementNS(svgNs, 'filter');
+      filter.setAttribute('id', '__a11yscan-cvd-filter');
+      const feColorMatrix = document.createElementNS(svgNs, 'feColorMatrix');
+      feColorMatrix.setAttribute('type', 'matrix');
+      const [m0,m1,m2,m3,m4,m5,m6,m7,m8] = matrix;
+      feColorMatrix.setAttribute('values', `${m0} ${m1} ${m2} 0 0 ${m3} ${m4} ${m5} 0 0 ${m6} ${m7} ${m8} 0 0 0 0 0 1 0`);
+      filter.appendChild(feColorMatrix);
+      defs.appendChild(filter);
+      svg.appendChild(defs);
+      document.body.appendChild(svg);
+      document.documentElement.style.filter = 'url(#__a11yscan-cvd-filter)';
+      sendResponse({ ok: true });
+      return;
+    }
+
     if (message.type === 'HIGHLIGHT_ELEMENT') {
       const selector = message.selector as string;
       try {
@@ -18,6 +49,12 @@ if (!(window as any).__a11yscan) {
         }
       } catch { /* invalid selector */ }
       sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'RUN_ARIA_SCAN') {
+      const results = scanAriaPatterns();
+      sendResponse({ type: 'ARIA_SCAN_RESULT', widgets: results });
       return;
     }
 

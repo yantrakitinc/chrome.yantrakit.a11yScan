@@ -266,11 +266,8 @@ export function renderResultsTab(
       const selector = (btn as HTMLElement).dataset.selector;
       if (!selector) return;
       try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id) {
-          await chrome.tabs.sendMessage(tab.id, { type: 'HIGHLIGHT_ELEMENT', selector });
-        }
-      } catch { /* tab may not have content script */ }
+        await chrome.runtime.sendMessage({ type: 'HIGHLIGHT_ELEMENT', selector });
+      } catch { /* no content script */ }
     });
   });
 }

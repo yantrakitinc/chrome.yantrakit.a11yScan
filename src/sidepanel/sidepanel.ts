@@ -5,6 +5,7 @@
 import './sidepanel.css';
 import { initTabs } from './tabs';
 import { renderResultsTab } from './render-results';
+import { renderAriaTab } from './render-aria';
 import { initManualReview, renderManualTab } from './manual-review';
 import { exportJSON, exportHTML, exportPDF } from './reports';
 import {
@@ -17,23 +18,51 @@ import {
   setLastScanResponse,
   getLastScanResponse,
 } from './state';
+import type { iAriaWidgetResult } from '@shared/aria-patterns';
 
 const scanBtn = document.getElementById('scan-btn') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
 const output = document.getElementById('output') as HTMLDivElement;
 const manualListEl = document.getElementById('manual-list') as HTMLDivElement;
+const ariaOutput = document.getElementById('aria-output') as HTMLDivElement;
 const wcagVersion = document.getElementById('wcag-version') as HTMLSelectElement;
 const wcagLevel = document.getElementById('wcag-level') as HTMLSelectElement;
 const tabsEl = document.getElementById('tabs') as HTMLDivElement;
 const tabResultsEl = document.getElementById('tab-results') as HTMLDivElement;
 const tabManualEl = document.getElementById('tab-manual') as HTMLDivElement;
+const tabAriaEl = document.getElementById('tab-aria') as HTMLDivElement;
 const manualBadge = document.getElementById('manual-badge') as HTMLSpanElement;
+const ariaBadge = document.getElementById('aria-badge') as HTMLSpanElement;
 const exportBar = document.getElementById('export-bar') as HTMLDivElement;
 const exportJsonBtn = document.getElementById('export-json') as HTMLButtonElement;
 const exportHtmlBtn = document.getElementById('export-html') as HTMLButtonElement;
 const exportPdfBtn = document.getElementById('export-pdf') as HTMLButtonElement;
 
-initTabs(tabsEl, tabResultsEl, tabManualEl);
+const cvdSelect = document.getElementById('cvd-select') as HTMLSelectElement;
+
+const CVD_MATRICES: Record<string, number[]> = {
+  protanopia: [0.567,0.433,0, 0.558,0.442,0, 0,0.242,0.758],
+  deuteranopia: [0.625,0.375,0, 0.7,0.3,0, 0,0.3,0.7],
+  protanomaly: [0.817,0.183,0, 0.333,0.667,0, 0,0.125,0.875],
+  deuteranomaly: [0.8,0.2,0, 0.258,0.742,0, 0,0.142,0.858],
+  tritanopia: [0.95,0.05,0, 0,0.433,0.567, 0,0.475,0.525],
+  tritanomaly: [0.967,0.033,0, 0,0.733,0.267, 0,0.183,0.817],
+  achromatopsia: [0.299,0.587,0.114, 0.299,0.587,0.114, 0.299,0.587,0.114],
+  achromatomaly: [0.618,0.32,0.062, 0.163,0.775,0.062, 0.163,0.32,0.516],
+};
+
+cvdSelect.addEventListener('change', async () => {
+  const type = cvdSelect.value;
+  const matrix = type ? CVD_MATRICES[type] || null : null;
+  try {
+    await chrome.runtime.sendMessage({ type: 'APPLY_CVD_FILTER', matrix });
+  } catch { /* no content script */ }
+});
+
+/** Cached ARIA widget results for the current scan. */
+let ariaWidgets: iAriaWidgetResult[] = [];
+
+initTabs(tabsEl, tabResultsEl, tabManualEl, tabAriaEl);
 initManualReview(manualListEl, manualBadge, wcagVersion, wcagLevel);
 
 /** Listen for tab changes from background. */
@@ -45,6 +74,16 @@ chrome.runtime.onMessage.addListener((message) => {
       setPageElements(message.results.pageElements || {});
       showResults(message.results);
       renderManualTab();
+      // Restore cached ARIA results if available
+      if (message.results._ariaWidgets) {
+        ariaWidgets = message.results._ariaWidgets;
+        renderAriaTab(ariaOutput, ariaWidgets);
+        updateAriaBadge();
+      } else {
+        ariaWidgets = [];
+        ariaOutput.innerHTML = '';
+        updateAriaBadge();
+      }
     } else if (message.reason === 'navigated') {
       hideResults();
       output.innerHTML = '<p class="text-xs text-amber-600">Page changed — rescan needed.</p>';
@@ -59,6 +98,12 @@ requestTabResults((results) => {
   if (results) {
     showResults(results);
     renderManualTab();
+    // Restore cached ARIA results if available
+    if (results._ariaWidgets) {
+      ariaWidgets = results._ariaWidgets;
+      renderAriaTab(ariaOutput, ariaWidgets);
+      updateAriaBadge();
+    }
   }
 });
 
@@ -68,12 +113,15 @@ scanBtn.addEventListener('click', async () => {
   clearBtn.hidden = true;
   tabsEl.hidden = true;
   tabManualEl.hidden = true;
+  tabAriaEl.hidden = true;
 
   const response = await triggerScan();
 
   if (response.type === 'SCAN_RESULT') {
     showResults(response);
     renderManualTab();
+    // Run ARIA scan after main scan completes
+    runAriaScan();
   } else {
     output.textContent = 'Error: ' + (response.message || 'Unknown error');
   }
@@ -121,6 +169,47 @@ exportPdfBtn.addEventListener('click', async () => {
   exportPDF(response, wcagVersion.value, wcagLevel.value, url);
 });
 
+/**
+ * Sends RUN_ARIA_SCAN to the background, stores results, and renders the ARIA tab.
+ */
+async function runAriaScan(): Promise<void> {
+  ariaOutput.innerHTML = '<p class="text-xs text-zinc-400">Scanning ARIA patterns...</p>';
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'RUN_ARIA_SCAN' });
+    if (response?.type === 'ARIA_SCAN_RESULT') {
+      ariaWidgets = response.widgets || [];
+    } else {
+      ariaWidgets = [];
+    }
+  } catch {
+    ariaWidgets = [];
+  }
+  renderAriaTab(ariaOutput, ariaWidgets);
+  updateAriaBadge();
+}
+
+/**
+ * Updates the ARIA badge with widget/issue counts.
+ */
+function updateAriaBadge(): void {
+  if (ariaWidgets.length === 0) {
+    ariaBadge.textContent = '';
+    ariaBadge.hidden = true;
+    return;
+  }
+  ariaBadge.hidden = false;
+  const issues = ariaWidgets.filter((w) => w.failCount > 0).length;
+  if (issues > 0) {
+    ariaBadge.textContent = `${issues}`;
+    ariaBadge.classList.remove('bg-zinc-200', 'text-zinc-600');
+    ariaBadge.classList.add('bg-red-100', 'text-red-700');
+  } else {
+    ariaBadge.textContent = `${ariaWidgets.length}`;
+    ariaBadge.classList.remove('bg-red-100', 'text-red-700');
+    ariaBadge.classList.add('bg-zinc-200', 'text-zinc-600');
+  }
+}
+
 function showResults(response: any): void {
   const version = wcagVersion.value as '2.0' | '2.1' | '2.2';
   const level = wcagLevel.value as 'A' | 'AA' | 'AAA';
@@ -133,9 +222,13 @@ function showResults(response: any): void {
 function hideResults(): void {
   output.innerHTML = '';
   manualListEl.innerHTML = '';
+  ariaOutput.innerHTML = '';
+  ariaWidgets = [];
+  updateAriaBadge();
   clearBtn.hidden = true;
   tabsEl.hidden = true;
   tabManualEl.hidden = true;
+  tabAriaEl.hidden = true;
   tabResultsEl.hidden = false;
   exportBar.hidden = true;
   resetState();

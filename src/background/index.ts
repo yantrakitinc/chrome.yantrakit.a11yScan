@@ -20,6 +20,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     handleSaveManualState(message.payload);
     return false;
   }
+  if (message.type === 'RUN_ARIA_SCAN') {
+    handleAriaScan(sendResponse);
+    return true;
+  }
+  if (message.type === 'APPLY_CVD_FILTER') {
+    handleCvdFilter(message.matrix, sendResponse);
+    return true;
+  }
+  if (message.type === 'HIGHLIGHT_ELEMENT') {
+    handleHighlight(message.selector, sendResponse);
+    return true;
+  }
 });
 
 /** When user switches tabs, notify side panel to update. */
@@ -123,5 +135,51 @@ async function handleSaveManualState(manualState: Record<string, string | null>)
     const results = tabResults.get(tab.id) as any;
     results._manualState = manualState;
     tabResults.set(tab.id, results);
+  }
+}
+
+async function handleHighlight(selector: string, sendResponse: (response: unknown) => void) {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) { sendResponse({ ok: false }); return; }
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+    const response = await chrome.tabs.sendMessage(tab.id, { type: 'HIGHLIGHT_ELEMENT', selector });
+    sendResponse(response);
+  } catch {
+    sendResponse({ ok: false });
+  }
+}
+
+async function handleCvdFilter(matrix: number[] | null, sendResponse: (response: unknown) => void) {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) { sendResponse({ ok: false }); return; }
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+    const response = await chrome.tabs.sendMessage(tab.id, { type: 'APPLY_CVD_FILTER', matrix });
+    sendResponse(response);
+  } catch {
+    sendResponse({ ok: false });
+  }
+}
+
+async function handleAriaScan(sendResponse: (response: unknown) => void) {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) {
+      sendResponse({ type: 'ARIA_SCAN_ERROR', message: 'No active tab found.' });
+      return;
+    }
+
+    const response = await chrome.tabs.sendMessage(tab.id, { type: 'RUN_ARIA_SCAN' });
+
+    // Store ARIA results alongside main scan results
+    if (tabResults.has(tab.id)) {
+      const results = tabResults.get(tab.id) as any;
+      results._ariaWidgets = response?.widgets || [];
+      tabResults.set(tab.id, results);
+    }
+    sendResponse(response);
+  } catch (err) {
+    sendResponse({ type: 'ARIA_SCAN_ERROR', message: String(err) });
   }
 }
