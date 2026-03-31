@@ -32,6 +32,38 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     handleHighlight(message.selector, sendResponse);
     return true;
   }
+  if (message.type === 'SHOW_VIOLATION_OVERLAY') {
+    forwardToContentScript({ type: 'SHOW_VIOLATION_OVERLAY', violations: message.violations }, sendResponse);
+    return true;
+  }
+  if (message.type === 'HIDE_VIOLATION_OVERLAY') {
+    forwardToContentScript({ type: 'HIDE_VIOLATION_OVERLAY' }, sendResponse);
+    return true;
+  }
+  if (message.type === 'SHOW_TAB_ORDER') {
+    forwardToContentScript({ type: 'SHOW_TAB_ORDER' }, sendResponse);
+    return true;
+  }
+  if (message.type === 'HIDE_TAB_ORDER') {
+    forwardToContentScript({ type: 'HIDE_TAB_ORDER' }, sendResponse);
+    return true;
+  }
+  if (message.type === 'SHOW_FOCUS_GAPS') {
+    forwardToContentScript({ type: 'SHOW_FOCUS_GAPS' }, sendResponse);
+    return true;
+  }
+  if (message.type === 'HIDE_FOCUS_GAPS') {
+    forwardToContentScript({ type: 'HIDE_FOCUS_GAPS' }, sendResponse);
+    return true;
+  }
+  if (message.type === 'GET_TAB_ORDER') {
+    forwardToContentScript({ type: 'GET_TAB_ORDER' }, sendResponse);
+    return true;
+  }
+  if (message.type === 'GET_FOCUS_GAPS') {
+    forwardToContentScript({ type: 'GET_FOCUS_GAPS' }, sendResponse);
+    return true;
+  }
 });
 
 /** When user switches tabs, notify side panel to update. */
@@ -156,6 +188,21 @@ async function handleCvdFilter(matrix: number[] | null, sendResponse: (response:
     if (!tab?.id) { sendResponse({ ok: false }); return; }
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
     const response = await chrome.tabs.sendMessage(tab.id, { type: 'APPLY_CVD_FILTER', matrix });
+    sendResponse(response);
+  } catch {
+    sendResponse({ ok: false });
+  }
+}
+
+/**
+ * Injects the content script if needed and forwards a message to the active tab.
+ */
+async function forwardToContentScript(message: Record<string, unknown>, sendResponse: (response: unknown) => void) {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) { sendResponse({ ok: false }); return; }
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+    const response = await chrome.tabs.sendMessage(tab.id, message);
     sendResponse(response);
   } catch {
     sendResponse({ ok: false });

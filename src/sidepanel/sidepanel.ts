@@ -38,6 +38,14 @@ const exportJsonBtn = document.getElementById('export-json') as HTMLButtonElemen
 const exportHtmlBtn = document.getElementById('export-html') as HTMLButtonElement;
 const exportPdfBtn = document.getElementById('export-pdf') as HTMLButtonElement;
 
+const overlayBar = document.getElementById('overlay-bar') as HTMLDivElement;
+const toggleViolationsBtn = document.getElementById('toggle-violations') as HTMLButtonElement;
+const toggleTabOrderBtn = document.getElementById('toggle-tab-order') as HTMLButtonElement;
+const toggleFocusGapsBtn = document.getElementById('toggle-focus-gaps') as HTMLButtonElement;
+const violationToggleIcon = document.getElementById('violation-toggle-icon') as HTMLSpanElement;
+const tabOrderToggleIcon = document.getElementById('tab-order-toggle-icon') as HTMLSpanElement;
+const focusGapsToggleIcon = document.getElementById('focus-gaps-toggle-icon') as HTMLSpanElement;
+
 const cvdSelect = document.getElementById('cvd-select') as HTMLSelectElement;
 
 const CVD_MATRICES: Record<string, number[]> = {
@@ -59,8 +67,91 @@ cvdSelect.addEventListener('change', async () => {
   } catch { /* no content script */ }
 });
 
+/** Overlay toggle state. */
+let violationOverlayOn = false;
+let tabOrderOverlayOn = false;
+let focusGapsOverlayOn = false;
+
 /** Cached ARIA widget results for the current scan. */
 let ariaWidgets: iAriaWidgetResult[] = [];
+
+/** Reset all overlay toggles to off and hide overlays on the page. */
+function resetOverlays(): void {
+  if (violationOverlayOn) {
+    violationOverlayOn = false;
+    updateToggleButton(toggleViolationsBtn, violationToggleIcon, false, 'red');
+    chrome.runtime.sendMessage({ type: 'HIDE_VIOLATION_OVERLAY' }).catch(() => {});
+  }
+  if (tabOrderOverlayOn) {
+    tabOrderOverlayOn = false;
+    updateToggleButton(toggleTabOrderBtn, tabOrderToggleIcon, false, 'indigo');
+    chrome.runtime.sendMessage({ type: 'HIDE_TAB_ORDER' }).catch(() => {});
+  }
+  if (focusGapsOverlayOn) {
+    focusGapsOverlayOn = false;
+    updateToggleButton(toggleFocusGapsBtn, focusGapsToggleIcon, false, 'amber');
+    chrome.runtime.sendMessage({ type: 'HIDE_FOCUS_GAPS' }).catch(() => {});
+  }
+}
+
+/**
+ * Updates a toggle button's icon and active/inactive style.
+ */
+function updateToggleButton(
+  btn: HTMLButtonElement,
+  icon: HTMLSpanElement,
+  active: boolean,
+  color: 'red' | 'indigo' | 'amber',
+): void {
+  icon.textContent = active ? '●' : '○';
+  if (active) {
+    btn.classList.remove(`bg-${color}-50`);
+    btn.classList.add(`bg-${color}-200`);
+  } else {
+    btn.classList.remove(`bg-${color}-200`);
+    btn.classList.add(`bg-${color}-50`);
+  }
+}
+
+toggleViolationsBtn.addEventListener('click', async () => {
+  violationOverlayOn = !violationOverlayOn;
+  updateToggleButton(toggleViolationsBtn, violationToggleIcon, violationOverlayOn, 'red');
+  try {
+    if (violationOverlayOn) {
+      const response = getLastScanResponse();
+      await chrome.runtime.sendMessage({
+        type: 'SHOW_VIOLATION_OVERLAY',
+        violations: response?.violations || [],
+      });
+    } else {
+      await chrome.runtime.sendMessage({ type: 'HIDE_VIOLATION_OVERLAY' });
+    }
+  } catch { /* no content script */ }
+});
+
+toggleTabOrderBtn.addEventListener('click', async () => {
+  tabOrderOverlayOn = !tabOrderOverlayOn;
+  updateToggleButton(toggleTabOrderBtn, tabOrderToggleIcon, tabOrderOverlayOn, 'indigo');
+  try {
+    if (tabOrderOverlayOn) {
+      await chrome.runtime.sendMessage({ type: 'SHOW_TAB_ORDER' });
+    } else {
+      await chrome.runtime.sendMessage({ type: 'HIDE_TAB_ORDER' });
+    }
+  } catch { /* no content script */ }
+});
+
+toggleFocusGapsBtn.addEventListener('click', async () => {
+  focusGapsOverlayOn = !focusGapsOverlayOn;
+  updateToggleButton(toggleFocusGapsBtn, focusGapsToggleIcon, focusGapsOverlayOn, 'amber');
+  try {
+    if (focusGapsOverlayOn) {
+      await chrome.runtime.sendMessage({ type: 'SHOW_FOCUS_GAPS' });
+    } else {
+      await chrome.runtime.sendMessage({ type: 'HIDE_FOCUS_GAPS' });
+    }
+  } catch { /* no content script */ }
+});
 
 initTabs(tabsEl, tabResultsEl, tabManualEl, tabAriaEl);
 initManualReview(manualListEl, manualBadge, wcagVersion, wcagLevel);
@@ -217,6 +308,7 @@ function showResults(response: any): void {
   clearBtn.hidden = false;
   tabsEl.hidden = false;
   exportBar.hidden = false;
+  overlayBar.hidden = false;
 }
 
 function hideResults(): void {
@@ -225,11 +317,13 @@ function hideResults(): void {
   ariaOutput.innerHTML = '';
   ariaWidgets = [];
   updateAriaBadge();
+  resetOverlays();
   clearBtn.hidden = true;
   tabsEl.hidden = true;
   tabManualEl.hidden = true;
   tabAriaEl.hidden = true;
   tabResultsEl.hidden = false;
   exportBar.hidden = true;
+  overlayBar.hidden = true;
   resetState();
 }

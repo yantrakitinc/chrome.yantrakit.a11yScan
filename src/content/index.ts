@@ -1,5 +1,14 @@
 import axe from 'axe-core';
 import { scanAriaPatterns } from './aria-scanner';
+import {
+  createOverlayContainer,
+  destroyOverlay,
+  renderTabOrderBadges,
+  renderViolationOverlay,
+  renderFocusGapOverlay,
+} from './overlay';
+import type { iViolationOverlayEntry } from './overlay';
+import { computeTabOrder, detectFocusGaps } from './tab-order';
 
 if (!(window as any).__a11yscan) {
   (window as any).__a11yscan = true;
@@ -55,6 +64,72 @@ if (!(window as any).__a11yscan) {
     if (message.type === 'RUN_ARIA_SCAN') {
       const results = scanAriaPatterns();
       sendResponse({ type: 'ARIA_SCAN_RESULT', widgets: results });
+      return;
+    }
+
+    if (message.type === 'SHOW_TAB_ORDER') {
+      const entries = computeTabOrder();
+      createOverlayContainer();
+      renderTabOrderBadges(entries);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'HIDE_TAB_ORDER') {
+      destroyOverlay();
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'SHOW_VIOLATION_OVERLAY') {
+      const violations = (message.violations || []) as iViolationOverlayEntry[];
+      // Resolve selectors to live elements
+      const resolved: iViolationOverlayEntry[] = [];
+      for (const v of violations) {
+        try {
+          const el = document.querySelector(v.selector);
+          if (el) {
+            resolved.push({ ...v, element: el });
+          }
+        } catch { /* invalid selector */ }
+      }
+      createOverlayContainer();
+      renderViolationOverlay(resolved);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'HIDE_VIOLATION_OVERLAY') {
+      destroyOverlay();
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'SHOW_FOCUS_GAPS') {
+      const gaps = detectFocusGaps();
+      createOverlayContainer();
+      renderFocusGapOverlay(gaps);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'GET_TAB_ORDER') {
+      const entries = computeTabOrder();
+      // Strip element references (not serializable) before sending
+      const data = entries.map(({ index, tabindex, selector, tagName }) => ({
+        index,
+        tabindex,
+        selector,
+        tagName,
+      }));
+      sendResponse({ type: 'TAB_ORDER_RESULT', entries: data });
+      return;
+    }
+
+    if (message.type === 'GET_FOCUS_GAPS') {
+      const gaps = detectFocusGaps();
+      const data = gaps.map(({ reason, selector }) => ({ reason, selector }));
+      sendResponse({ type: 'FOCUS_GAPS_RESULT', gaps: data });
       return;
     }
 

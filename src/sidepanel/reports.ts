@@ -8,6 +8,27 @@ import { SITE_URL } from '@shared/config';
 import { criterionSlug } from '@shared/utils';
 import type { iAriaWidgetResult } from '@shared/aria-patterns';
 
+/** Tab order entry included in exports. */
+export interface iTabOrderEntry {
+  index: number;
+  tabindex: number;
+  selector: string;
+  tagName: string;
+}
+
+/** Focus gap entry included in exports. */
+export interface iFocusGapEntry {
+  selector: string;
+  reason: string;
+}
+
+/** Tab order data attached to a scan response for export. */
+export interface iTabOrderData {
+  total: number;
+  positiveTabindex: number;
+  sequence: iTabOrderEntry[];
+}
+
 /**
  * Builds a kebab-case filename from the scanned URL.
  */
@@ -158,7 +179,14 @@ function enrichPassItem(item: any): any {
 /**
  * Exports scan results as an enriched JSON file with WCAG mappings and fix suggestions.
  */
-export function exportJSON(response: any, version: string, level: string, url: string): void {
+export function exportJSON(
+  response: any,
+  version: string,
+  level: string,
+  url: string,
+  tabOrder?: iTabOrderData | null,
+  focusGaps?: iFocusGapEntry[] | null,
+): void {
   const counts = extractCounts(response);
   const violations = Array.isArray(response.violations) ? response.violations : [];
   const incomplete = Array.isArray(response.incomplete) ? response.incomplete : [];
@@ -185,6 +213,25 @@ export function exportJSON(response: any, version: string, level: string, url: s
 
   if (ariaWidgets.length > 0) {
     report.ariaPatterns = buildAriaPatterns(ariaWidgets);
+  }
+
+  if (tabOrder) {
+    report.tabOrder = {
+      total: tabOrder.total,
+      positiveTabindex: tabOrder.positiveTabindex,
+      sequence: tabOrder.sequence.map((e) => ({
+        index: e.index,
+        selector: e.selector,
+        tagName: e.tagName,
+      })),
+    };
+  }
+
+  if (focusGaps && focusGaps.length > 0) {
+    report.focusGaps = focusGaps.map((g) => ({
+      selector: g.selector,
+      reason: g.reason,
+    }));
   }
 
   const json = JSON.stringify(report, null, 2);
@@ -235,6 +282,16 @@ function reportCSS(): string {
     .check-list li { font-size: 12px; padding: 2px 0; }
     .check-pass { color: #16a34a; }
     .check-fail { color: #dc2626; }
+    h2.tab-order { color: #4338ca; }
+    .card-tab-order { background: #eef2ff; border: 1px solid #a5b4fc; color: #3730a3; }
+    h2.focus-gaps { color: #d97706; }
+    .card-focus-gaps { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
+    .tab-seq-item { font-size: 12px; padding: 4px 8px; margin: 3px 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; font-family: monospace; }
+    .tab-seq-index { display: inline-block; width: 28px; font-weight: 700; color: #4338ca; }
+    .gap-item { font-size: 12px; padding: 6px 8px; margin: 3px 0; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 4px; }
+    .gap-selector { font-family: monospace; font-weight: 600; color: #1e1b4b; }
+    .gap-reason { color: #92400e; font-size: 11px; }
+    .warning-pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; background: #d97706; color: #fff; }
     footer { margin-top: 32px; padding-top: 16px; border-top: 2px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center; }
     @media print { body { padding: 12px; } .summary-card { min-width: 100px; } }
   `;
