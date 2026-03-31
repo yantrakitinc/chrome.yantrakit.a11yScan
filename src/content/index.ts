@@ -9,6 +9,7 @@ import {
 } from './overlay';
 import type { iViolationOverlayEntry } from './overlay';
 import { computeTabOrder, detectFocusGaps } from './tab-order';
+import { startMovieMode, pauseMovieMode, resumeMovieMode, stopMovieMode, setMovieSpeed, getMovieState } from './movie-mode';
 
 if (!(window as any).__a11yscan) {
   (window as any).__a11yscan = true;
@@ -130,6 +131,32 @@ if (!(window as any).__a11yscan) {
       const gaps = detectFocusGaps();
       const data = gaps.map(({ reason, selector }) => ({ reason, selector }));
       sendResponse({ type: 'FOCUS_GAPS_RESULT', gaps: data });
+      return;
+    }
+
+    if (message.type === 'START_MOVIE_MODE') {
+      startMovieMode(message.speed || 1000);
+      sendResponse({ ok: true });
+      return;
+    }
+    if (message.type === 'PAUSE_MOVIE_MODE') {
+      pauseMovieMode();
+      sendResponse({ ok: true });
+      return;
+    }
+    if (message.type === 'RESUME_MOVIE_MODE') {
+      resumeMovieMode();
+      sendResponse({ ok: true });
+      return;
+    }
+    if (message.type === 'STOP_MOVIE_MODE') {
+      stopMovieMode();
+      sendResponse({ ok: true });
+      return;
+    }
+    if (message.type === 'SET_MOVIE_SPEED') {
+      setMovieSpeed(message.speed || 1000);
+      sendResponse({ ok: true });
       return;
     }
 

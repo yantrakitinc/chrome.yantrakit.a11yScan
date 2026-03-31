@@ -1,3 +1,6 @@
+import { runMultiViewportScan } from './multi-viewport';
+import { startCrawl, pauseCrawl, resumeCrawl, cancelCrawl, getCrawlState } from './crawl';
+
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
 /** Per-tab scan results stored in memory. */
@@ -62,6 +65,41 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
   if (message.type === 'GET_FOCUS_GAPS') {
     forwardToContentScript({ type: 'GET_FOCUS_GAPS' }, sendResponse);
+    return true;
+  }
+  if (message.type === 'MULTI_VIEWPORT_SCAN') {
+    runMultiViewportScan().then((result) => {
+      sendResponse({ type: 'MULTI_VIEWPORT_RESULT', ...result });
+    }).catch((err) => {
+      sendResponse({ type: 'MULTI_VIEWPORT_ERROR', message: String(err) });
+    });
+    return true;
+  }
+  if (message.type === 'START_CRAWL') {
+    startCrawl(message.options).then((result) => {
+      sendResponse(result);
+    }).catch((err) => {
+      sendResponse({ type: 'CRAWL_ERROR', message: String(err) });
+    });
+    return true;
+  }
+  if (message.type === 'PAUSE_CRAWL') {
+    pauseCrawl(); sendResponse({ ok: true }); return false;
+  }
+  if (message.type === 'RESUME_CRAWL') {
+    resumeCrawl().then((r) => sendResponse(r)).catch(() => sendResponse({ ok: false }));
+    return true;
+  }
+  if (message.type === 'CANCEL_CRAWL') {
+    cancelCrawl(); sendResponse({ ok: true }); return false;
+  }
+  if (message.type === 'GET_CRAWL_STATE') {
+    getCrawlState().then((s) => sendResponse(s)).catch(() => sendResponse(null));
+    return true;
+  }
+  // Movie mode messages
+  if (['START_MOVIE_MODE', 'PAUSE_MOVIE_MODE', 'RESUME_MOVIE_MODE', 'STOP_MOVIE_MODE', 'SET_MOVIE_SPEED'].includes(message.type)) {
+    forwardToContentScript(message, sendResponse);
     return true;
   }
 });

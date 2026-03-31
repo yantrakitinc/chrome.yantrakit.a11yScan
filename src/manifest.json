@@ -3,7 +3,7 @@
   "name": "A11y Scan",
   "version": "0.1.0",
   "description": "Comprehensive accessibility audit toolkit powered by axe-core",
-  "permissions": ["activeTab", "scripting", "storage", "sidePanel"],
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "windows", "tabs", "webNavigation"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",

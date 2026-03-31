@@ -39,7 +39,42 @@
 
   <div class="flex gap-1.5 px-3.5 py-2">
     <button id="scan-btn" class="flex-1 py-2 px-3.5 text-sm font-semibold text-white bg-indigo-950 rounded-md hover:bg-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">Scan Page</button>
+    <button id="multi-scan-btn" class="py-2 px-2 text-[11px] font-semibold text-indigo-950 border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer" title="Scan at mobile, tablet, and desktop widths">Multi-VP</button>
+    <button id="crawl-btn" class="py-2 px-2 text-[11px] font-semibold text-indigo-950 border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer" title="Crawl entire site">Crawl</button>
     <button id="clear-btn" hidden class="py-2 px-3.5 text-sm bg-zinc-100 text-zinc-600 border border-zinc-300 rounded-md hover:bg-red-50 hover:text-red-700 hover:border-red-300 cursor-pointer">Clear</button>
+  </div>
+
+  <!-- Crawl config (hidden by default) -->
+  <div id="crawl-config" hidden class="px-3.5 pb-2 space-y-2">
+    <div class="flex gap-2 items-center">
+      <select id="crawl-mode" class="text-[11px] py-1 px-1.5 border border-zinc-300 rounded bg-white cursor-pointer">
+        <option value="discover">Discover links</option>
+        <option value="sitemap">Sitemap URL</option>
+      </select>
+      <input id="crawl-max" type="number" value="50" min="1" max="500" class="w-16 text-[11px] py-1 px-1.5 border border-zinc-300 rounded bg-white" title="Max pages">
+    </div>
+    <input id="crawl-sitemap-url" hidden type="url" placeholder="https://example.com/sitemap.xml" class="w-full text-[11px] py-1 px-1.5 border border-zinc-300 rounded bg-white">
+    <div class="flex gap-2">
+      <button id="crawl-start" class="px-3 py-1 text-[11px] font-semibold text-white bg-indigo-950 rounded hover:bg-indigo-900 cursor-pointer">Start Crawl</button>
+      <button id="crawl-cancel" hidden class="px-3 py-1 text-[11px] font-semibold text-zinc-600 border border-zinc-300 rounded hover:bg-red-50 cursor-pointer">Cancel</button>
+    </div>
+    <div id="crawl-progress" hidden class="text-[11px] text-zinc-600">
+      <div id="crawl-status"></div>
+      <div class="w-full bg-zinc-200 rounded-full h-1.5 mt-1"><div id="crawl-bar" class="bg-indigo-950 h-1.5 rounded-full" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- Movie mode controls (hidden by default) -->
+  <div id="movie-bar" hidden class="flex items-center gap-2 px-3.5 py-2 border-t border-zinc-100">
+    <button id="movie-play" class="px-2.5 py-1 text-[11px] font-semibold bg-indigo-950 text-white rounded hover:bg-indigo-900 cursor-pointer">▶ Play</button>
+    <button id="movie-pause" hidden class="px-2.5 py-1 text-[11px] font-semibold bg-zinc-100 text-zinc-700 rounded hover:bg-zinc-200 cursor-pointer">⏸ Pause</button>
+    <button id="movie-stop" hidden class="px-2.5 py-1 text-[11px] font-semibold bg-zinc-100 text-zinc-700 rounded hover:bg-zinc-200 cursor-pointer">⏹ Stop</button>
+    <select id="movie-speed" class="text-[11px] py-1 px-1 border border-zinc-300 rounded bg-white cursor-pointer">
+      <option value="2000">0.5x</option>
+      <option value="1000" selected>1x</option>
+      <option value="500">2x</option>
+    </select>
+    <span id="movie-progress" class="text-[11px] text-zinc-500 ml-auto"></span>
   </div>
 
   <div id="export-bar" hidden class="flex gap-1.5 px-3.5 pb-2">

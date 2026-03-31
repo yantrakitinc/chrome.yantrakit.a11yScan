@@ -21,7 +21,28 @@ import {
 import type { iAriaWidgetResult } from '@shared/aria-patterns';
 
 const scanBtn = document.getElementById('scan-btn') as HTMLButtonElement;
+const multiScanBtn = document.getElementById('multi-scan-btn') as HTMLButtonElement;
+const crawlBtn = document.getElementById('crawl-btn') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
+
+// Crawl elements
+const crawlConfig = document.getElementById('crawl-config') as HTMLDivElement;
+const crawlMode = document.getElementById('crawl-mode') as HTMLSelectElement;
+const crawlMax = document.getElementById('crawl-max') as HTMLInputElement;
+const crawlSitemapUrl = document.getElementById('crawl-sitemap-url') as HTMLInputElement;
+const crawlStartBtn = document.getElementById('crawl-start') as HTMLButtonElement;
+const crawlCancelBtn = document.getElementById('crawl-cancel') as HTMLButtonElement;
+const crawlProgressEl = document.getElementById('crawl-progress') as HTMLDivElement;
+const crawlStatusEl = document.getElementById('crawl-status') as HTMLDivElement;
+const crawlBar = document.getElementById('crawl-bar') as HTMLDivElement;
+
+// Movie mode elements
+const movieBar = document.getElementById('movie-bar') as HTMLDivElement;
+const moviePlayBtn = document.getElementById('movie-play') as HTMLButtonElement;
+const moviePauseBtn = document.getElementById('movie-pause') as HTMLButtonElement;
+const movieStopBtn = document.getElementById('movie-stop') as HTMLButtonElement;
+const movieSpeed = document.getElementById('movie-speed') as HTMLSelectElement;
+const movieProgressEl = document.getElementById('movie-progress') as HTMLSpanElement;
 const output = document.getElementById('output') as HTMLDivElement;
 const manualListEl = document.getElementById('manual-list') as HTMLDivElement;
 const ariaOutput = document.getElementById('aria-output') as HTMLDivElement;
@@ -239,25 +260,49 @@ async function getPageUrl(): Promise<string> {
   }
 }
 
+async function fetchTabOrderAndGaps() {
+  let tabOrder = null;
+  let focusGaps = null;
+  try {
+    const toRes = await chrome.runtime.sendMessage({ type: 'GET_TAB_ORDER' });
+    if (toRes?.entries) {
+      const entries = toRes.entries;
+      tabOrder = {
+        total: entries.filter((e: any) => e.index > 0).length,
+        positiveTabindex: entries.filter((e: any) => e.tabindex > 0).length,
+        sequence: entries,
+      };
+    }
+  } catch {}
+  try {
+    const fgRes = await chrome.runtime.sendMessage({ type: 'GET_FOCUS_GAPS' });
+    if (fgRes?.gaps) focusGaps = fgRes.gaps;
+  } catch {}
+  return { tabOrder, focusGaps };
+}
+
 exportJsonBtn.addEventListener('click', async () => {
   const response = getLastScanResponse();
   if (!response) return;
   const url = await getPageUrl();
-  exportJSON(response, wcagVersion.value, wcagLevel.value, url);
+  const { tabOrder, focusGaps } = await fetchTabOrderAndGaps();
+  exportJSON(response, wcagVersion.value, wcagLevel.value, url, tabOrder, focusGaps);
 });
 
 exportHtmlBtn.addEventListener('click', async () => {
   const response = getLastScanResponse();
   if (!response) return;
   const url = await getPageUrl();
-  exportHTML(response, wcagVersion.value, wcagLevel.value, url);
+  const { tabOrder, focusGaps } = await fetchTabOrderAndGaps();
+  exportHTML(response, wcagVersion.value, wcagLevel.value, url, tabOrder, focusGaps);
 });
 
 exportPdfBtn.addEventListener('click', async () => {
   const response = getLastScanResponse();
   if (!response) return;
   const url = await getPageUrl();
-  exportPDF(response, wcagVersion.value, wcagLevel.value, url);
+  const { tabOrder, focusGaps } = await fetchTabOrderAndGaps();
+  exportPDF(response, wcagVersion.value, wcagLevel.value, url, tabOrder, focusGaps);
 });
 
 /**
@@ -325,5 +370,172 @@ function hideResults(): void {
   tabResultsEl.hidden = false;
   exportBar.hidden = true;
   overlayBar.hidden = true;
+  movieBar.hidden = true;
   resetState();
 }
+
+// ─── Multi-Viewport Scan ─────────────────────────────────────────────────────
+
+multiScanBtn.addEventListener('click', async () => {
+  scanBtn.disabled = true;
+  multiScanBtn.disabled = true;
+  output.textContent = 'Scanning 3 viewports (375px, 768px, 1280px)...';
+  clearBtn.hidden = true;
+  tabsEl.hidden = true;
+
+  try {
+    const result = await chrome.runtime.sendMessage({ type: 'MULTI_VIEWPORT_SCAN' });
+    if (result?.type === 'MULTI_VIEWPORT_RESULT') {
+      let html = '<p class="mb-2 text-sm font-bold">Multi-Viewport Results</p>';
+
+      // Universal issues
+      if (result.allViewports.length > 0) {
+        html += `<h3 class="text-sm font-bold text-red-600 mb-1">All Viewports (${result.allViewports.length})</h3>`;
+        for (const v of result.allViewports) {
+          html += `<div class="my-0.5 py-1 px-2 text-[11px] border-l-3 border-red-600 bg-red-50 rounded-r"><strong>${v.id}</strong> (${v.impact}) — ${v.help}</div>`;
+        }
+      }
+
+      // Viewport-specific
+      for (const vp of result.viewportSpecific) {
+        if (vp.violations.length > 0) {
+          html += `<h3 class="text-sm font-bold text-amber-600 mb-1 mt-2">${vp.label} Only — ${vp.width}px (${vp.violations.length})</h3>`;
+          for (const v of vp.violations) {
+            html += `<div class="my-0.5 py-1 px-2 text-[11px] border-l-3 border-amber-500 bg-amber-50 rounded-r"><strong>${v.id}</strong> (${v.impact}) — ${v.help} <span class="text-amber-700 font-bold">📱 Responsive</span></div>`;
+          }
+        }
+      }
+
+      output.innerHTML = html;
+      clearBtn.hidden = false;
+      exportBar.hidden = false;
+    } else {
+      output.textContent = 'Error: ' + (result?.message || 'Multi-viewport scan failed');
+    }
+  } catch (err) {
+    output.textContent = 'Error: ' + String(err);
+  }
+
+  scanBtn.disabled = false;
+  multiScanBtn.disabled = false;
+});
+
+// ─── Crawl ───────────────────────────────────────────────────────────────────
+
+crawlBtn.addEventListener('click', () => {
+  crawlConfig.hidden = !crawlConfig.hidden;
+});
+
+crawlMode.addEventListener('change', () => {
+  crawlSitemapUrl.hidden = crawlMode.value !== 'sitemap';
+});
+
+crawlStartBtn.addEventListener('click', async () => {
+  crawlStartBtn.disabled = true;
+  crawlCancelBtn.hidden = false;
+  crawlProgressEl.hidden = false;
+  crawlStatusEl.textContent = 'Starting crawl...';
+
+  try {
+    await chrome.runtime.sendMessage({
+      type: 'START_CRAWL',
+      options: {
+        mode: crawlMode.value,
+        maxPages: parseInt(crawlMax.value) || 50,
+        sitemapUrl: crawlMode.value === 'sitemap' ? crawlSitemapUrl.value : undefined,
+      },
+    });
+  } catch (err) {
+    crawlStatusEl.textContent = 'Error: ' + String(err);
+  }
+  crawlStartBtn.disabled = false;
+});
+
+crawlCancelBtn.addEventListener('click', async () => {
+  await chrome.runtime.sendMessage({ type: 'CANCEL_CRAWL' });
+  crawlConfig.hidden = true;
+  crawlCancelBtn.hidden = true;
+  crawlProgressEl.hidden = true;
+});
+
+// Listen for crawl progress
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'CRAWL_PROGRESS' && message.state) {
+    const s = message.state;
+    const total = s.completed.length + s.failed.length + s.queue.length;
+    const done = s.completed.length + s.failed.length;
+    const pct = total > 0 ? Math.round((done / Math.min(total, s.maxPages)) * 100) : 0;
+    crawlBar.style.width = `${pct}%`;
+    crawlStatusEl.textContent = `${s.status}: ${done}/${Math.min(total, s.maxPages)} pages${s.current ? ` — ${s.current}` : ''} (${s.failed.length} failed)`;
+
+    if (s.status === 'complete') {
+      crawlCancelBtn.hidden = true;
+      crawlStartBtn.disabled = false;
+      // Show crawl results
+      let html = `<p class="mb-2 text-sm font-bold">Site Crawl Results — ${s.completed.length} pages scanned</p>`;
+      for (const r of s.results) {
+        const vCount = r.violations.reduce((sum: number, v: any) => sum + v.nodes.length, 0);
+        const statusIcon = r.status === 'scanned' ? (vCount > 0 ? '⚠️' : '✅') : '❌';
+        html += `<div class="my-0.5 py-1 px-2 text-[11px] border-l-3 ${vCount > 0 ? 'border-red-600 bg-red-50' : r.status === 'failed' ? 'border-zinc-400 bg-zinc-50' : 'border-green-600 bg-green-50'} rounded-r">`;
+        html += `${statusIcon} <strong>${r.url}</strong> — ${vCount} violations`;
+        if (r.error) html += ` <span class="text-red-600">(${r.error})</span>`;
+        html += `</div>`;
+      }
+      output.innerHTML = html;
+      clearBtn.hidden = false;
+      exportBar.hidden = false;
+    }
+  }
+
+  // Movie mode progress
+  if (message.type === 'MOVIE_PROGRESS' && message.state) {
+    const ms = message.state;
+    movieProgressEl.textContent = ms.status === 'complete'
+      ? `Done — ${ms.totalElements} elements`
+      : `Element ${ms.currentIndex} of ${ms.totalElements}`;
+
+    if (ms.status === 'playing') {
+      moviePlayBtn.hidden = true;
+      moviePauseBtn.hidden = false;
+      movieStopBtn.hidden = false;
+    } else if (ms.status === 'paused') {
+      moviePlayBtn.hidden = false;
+      moviePlayBtn.textContent = '▶ Resume';
+      moviePauseBtn.hidden = true;
+    } else {
+      moviePlayBtn.hidden = false;
+      moviePlayBtn.textContent = '▶ Play';
+      moviePauseBtn.hidden = true;
+      movieStopBtn.hidden = true;
+    }
+  }
+});
+
+// ─── Movie Mode ──────────────────────────────────────────────────────────────
+
+// Show movie bar when tab order overlay is toggled on (already handled by toggleTabOrderBtn)
+const origTabOrderClick = toggleTabOrderBtn.onclick;
+toggleTabOrderBtn.addEventListener('click', () => {
+  movieBar.hidden = !tabOrderOverlayOn;
+});
+
+moviePlayBtn.addEventListener('click', async () => {
+  const speed = parseInt(movieSpeed.value) || 1000;
+  if (moviePlayBtn.textContent?.includes('Resume')) {
+    await chrome.runtime.sendMessage({ type: 'RESUME_MOVIE_MODE' });
+  } else {
+    await chrome.runtime.sendMessage({ type: 'START_MOVIE_MODE', speed });
+  }
+});
+
+moviePauseBtn.addEventListener('click', async () => {
+  await chrome.runtime.sendMessage({ type: 'PAUSE_MOVIE_MODE' });
+});
+
+movieStopBtn.addEventListener('click', async () => {
+  await chrome.runtime.sendMessage({ type: 'STOP_MOVIE_MODE' });
+});
+
+movieSpeed.addEventListener('change', async () => {
+  await chrome.runtime.sendMessage({ type: 'SET_MOVIE_SPEED', speed: parseInt(movieSpeed.value) });
+});
