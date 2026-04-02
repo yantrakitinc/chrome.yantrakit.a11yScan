@@ -224,6 +224,41 @@ export function destroyOverlay(): void {
 }
 
 /**
+ * Removes only tab order badges and SVG lines. Other overlays remain.
+ */
+export function removeTabOrderOverlay(): void {
+  for (const { badge } of storedTabEntries) badge.remove();
+  storedTabEntries = [];
+  if (svgElement) { svgElement.remove(); svgElement = null; }
+  cleanupIfEmpty();
+}
+
+/**
+ * Removes only violation outlines and badges. Other overlays remain.
+ */
+export function removeViolationOverlay(): void {
+  for (const { outline, badge } of storedViolationEntries) { outline.remove(); badge.remove(); }
+  storedViolationEntries = [];
+  cleanupIfEmpty();
+}
+
+/**
+ * Removes only focus gap outlines. Other overlays remain.
+ */
+export function removeFocusGapOverlay(): void {
+  for (const { outline } of storedFocusGapEntries) outline.remove();
+  storedFocusGapEntries = [];
+  cleanupIfEmpty();
+}
+
+/** If no overlays remain, tear down the container to clean up listeners. */
+function cleanupIfEmpty(): void {
+  if (storedTabEntries.length === 0 && storedViolationEntries.length === 0 && storedFocusGapEntries.length === 0) {
+    destroyOverlay();
+  }
+}
+
+/**
  * Renders numbered badges on each focusable element and connecting SVG lines.
  */
 export function renderTabOrderBadges(elements: iTabOrderEntry[]): void {

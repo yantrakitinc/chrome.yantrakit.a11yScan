@@ -1,11 +1,15 @@
 import axe from 'axe-core';
 import { scanAriaPatterns } from './aria-scanner';
+import { collectBatchEnrichedContext } from './enriched-context';
 import {
   createOverlayContainer,
   destroyOverlay,
   renderTabOrderBadges,
   renderViolationOverlay,
   renderFocusGapOverlay,
+  removeTabOrderOverlay,
+  removeViolationOverlay,
+  removeFocusGapOverlay,
 } from './overlay';
 import type { iViolationOverlayEntry } from './overlay';
 import { computeTabOrder, detectFocusGaps } from './tab-order';
@@ -62,6 +66,13 @@ if (!(window as any).__a11yscan) {
       return;
     }
 
+    if (message.type === 'COLLECT_ENRICHED_CONTEXT') {
+      const selectors = (message.selectors || []) as string[];
+      const results = collectBatchEnrichedContext(selectors);
+      sendResponse({ type: 'ENRICHED_CONTEXT_RESULT', contexts: results });
+      return;
+    }
+
     if (message.type === 'RUN_ARIA_SCAN') {
       const results = scanAriaPatterns();
       sendResponse({ type: 'ARIA_SCAN_RESULT', widgets: results });
@@ -77,7 +88,7 @@ if (!(window as any).__a11yscan) {
     }
 
     if (message.type === 'HIDE_TAB_ORDER') {
-      destroyOverlay();
+      removeTabOrderOverlay();
       sendResponse({ ok: true });
       return;
     }
@@ -101,7 +112,7 @@ if (!(window as any).__a11yscan) {
     }
 
     if (message.type === 'HIDE_VIOLATION_OVERLAY') {
-      destroyOverlay();
+      removeViolationOverlay();
       sendResponse({ ok: true });
       return;
     }
@@ -110,6 +121,12 @@ if (!(window as any).__a11yscan) {
       const gaps = detectFocusGaps();
       createOverlayContainer();
       renderFocusGapOverlay(gaps);
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'HIDE_FOCUS_GAPS') {
+      removeFocusGapOverlay();
       sendResponse({ ok: true });
       return;
     }

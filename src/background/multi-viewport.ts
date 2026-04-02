@@ -16,7 +16,7 @@ export interface iMultiViewportResult {
   viewportSpecific: { width: number; label: string; violations: any[] }[];
 }
 
-const VIEWPORTS = [
+const DEFAULT_VIEWPORTS = [
   { width: 375, label: 'Mobile' },
   { width: 768, label: 'Tablet' },
   { width: 1280, label: 'Desktop' },
@@ -76,7 +76,7 @@ function diffResults(viewports: iViewportResult[]): { allViewports: any[]; viewp
   return { allViewports, viewportSpecific };
 }
 
-export async function runMultiViewportScan(): Promise<iMultiViewportResult> {
+export async function runMultiViewportScan(customViewports?: { label: string; width: number }[]): Promise<iMultiViewportResult> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id || !tab.windowId) throw new Error('No active tab');
 
@@ -85,8 +85,9 @@ export async function runMultiViewportScan(): Promise<iMultiViewportResult> {
   const originalHeight = win.height!;
 
   const viewportResults: iViewportResult[] = [];
+  const viewports = customViewports && customViewports.length > 0 ? customViewports : DEFAULT_VIEWPORTS;
 
-  for (const vp of VIEWPORTS) {
+  for (const vp of viewports) {
     await chrome.windows.update(tab.windowId, { width: vp.width, height: originalHeight });
     await new Promise((r) => setTimeout(r, 600));
 

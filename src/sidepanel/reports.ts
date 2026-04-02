@@ -7,6 +7,7 @@ import { axeRuleToWcag } from '@shared/wcag-mapping';
 import { SITE_URL } from '@shared/config';
 import { criterionSlug } from '@shared/utils';
 import type { iAriaWidgetResult } from '@shared/aria-patterns';
+import type { iEnrichedContext } from '@shared/types';
 
 /** Tab order entry included in exports. */
 export interface iTabOrderEntry {
@@ -111,7 +112,7 @@ function fixSuggestion(ruleId: string, helpText: string): string {
 /**
  * Builds an enriched violation/incomplete item with WCAG criterion mapping.
  */
-function enrichItem(item: any): any {
+function enrichItem(item: any, contextMap?: Record<string, iEnrichedContext | null>): any {
   const matchedCriteria = axeRuleToWcag(item.id);
   const wcagCriteria = matchedCriteria.map((c) => c.id);
   const wcagName = matchedCriteria.length > 0 ? matchedCriteria[0].name : '';
@@ -128,12 +129,20 @@ function enrichItem(item: any): any {
     help: item.help || '',
     helpUrl: item.helpUrl || '',
     wcagRef,
-    elements: (item.nodes || []).map((node: any) => ({
-      selector: (node.target || []).join(', '),
-      html: node.html || '',
-      issue: node.failureSummary || '',
-      fix: fixSuggestion(item.id, item.help || ''),
-    })),
+    elements: (item.nodes || []).map((node: any) => {
+      const sel = (node.target || []).join(', ');
+      const element: Record<string, any> = {
+        selector: sel,
+        html: node.html || '',
+        issue: node.failureSummary || '',
+        fix: fixSuggestion(item.id, item.help || ''),
+      };
+      if (contextMap) {
+        const ctx = contextMap[sel];
+        if (ctx) element.enrichedContext = ctx;
+      }
+      return element;
+    }),
   };
 }
 
@@ -177,22 +186,56 @@ function enrichPassItem(item: any): any {
 }
 
 /**
+ * Fetches enriched context for a list of selectors from the content script.
+ */
+async function fetchEnrichedContexts(selectors: string[]): Promise<Record<string, iEnrichedContext | null>> {
+  if (selectors.length === 0) return {};
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: 'COLLECT_ENRICHED_CONTEXT',
+      selectors,
+    });
+    return response?.contexts || {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Extracts all unique selectors from violations and incomplete items.
+ */
+function extractSelectors(items: any[]): string[] {
+  const selectors = new Set<string>();
+  for (const item of items) {
+    for (const node of item.nodes || []) {
+      const sel = (node.target || []).join(', ');
+      if (sel) selectors.add(sel);
+    }
+  }
+  return Array.from(selectors);
+}
+
+/**
  * Exports scan results as an enriched JSON file with WCAG mappings and fix suggestions.
  */
-export function exportJSON(
+export async function exportJSON(
   response: any,
   version: string,
   level: string,
   url: string,
   tabOrder?: iTabOrderData | null,
   focusGaps?: iFocusGapEntry[] | null,
-): void {
+): Promise<void> {
   const counts = extractCounts(response);
   const violations = Array.isArray(response.violations) ? response.violations : [];
   const incomplete = Array.isArray(response.incomplete) ? response.incomplete : [];
   const passes = Array.isArray(response.passes) ? response.passes : [];
 
   const ariaWidgets: iAriaWidgetResult[] = Array.isArray(response._ariaWidgets) ? response._ariaWidgets : [];
+
+  // Collect enriched context for all violation/incomplete selectors
+  const allSelectors = extractSelectors([...violations, ...incomplete]);
+  const contextMap = await fetchEnrichedContexts(allSelectors);
 
   const report: Record<string, any> = {
     tool: 'A11y Scan',
@@ -206,8 +249,8 @@ export function exportJSON(
       needsReview: counts.incomplete,
       passes: counts.passes,
     },
-    violations: violations.map(enrichItem),
-    needsReview: incomplete.map(enrichItem),
+    violations: violations.map((v: any) => enrichItem(v, contextMap)),
+    needsReview: incomplete.map((v: any) => enrichItem(v, contextMap)),
     passes: passes.map(enrichPassItem),
   };
 

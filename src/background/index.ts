@@ -67,8 +67,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     forwardToContentScript({ type: 'GET_FOCUS_GAPS' }, sendResponse);
     return true;
   }
+  if (message.type === 'COLLECT_ENRICHED_CONTEXT') {
+    forwardToContentScript({ type: 'COLLECT_ENRICHED_CONTEXT', selectors: message.selectors }, sendResponse);
+    return true;
+  }
   if (message.type === 'MULTI_VIEWPORT_SCAN') {
-    runMultiViewportScan().then((result) => {
+    runMultiViewportScan(message.viewports).then((result) => {
       sendResponse({ type: 'MULTI_VIEWPORT_RESULT', ...result });
     }).catch((err) => {
       sendResponse({ type: 'MULTI_VIEWPORT_ERROR', message: String(err) });
@@ -114,22 +118,19 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
   }).catch(() => {});
 });
 
-/** When a tab navigates to a new URL, clear its results and notify. */
+/** When a tab navigates, notify side panel but do NOT clear results.
+ *  Results persist so the user can navigate to scanned pages and toggle overlays. */
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.url || changeInfo.status === 'loading') {
-    if (tabResults.has(tabId)) {
-      tabResults.delete(tabId);
-      chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
-        if (activeTab?.id === tabId) {
-          chrome.runtime.sendMessage({
-            type: 'TAB_CHANGED',
-            tabId,
-            results: null,
-            reason: 'navigated',
-          }).catch(() => {});
-        }
-      });
-    }
+  if (changeInfo.url) {
+    chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
+      if (activeTab?.id === tabId) {
+        chrome.runtime.sendMessage({
+          type: 'TAB_NAVIGATED',
+          tabId,
+          url: changeInfo.url,
+        }).catch(() => {});
+      }
+    });
   }
 });
 

@@ -8,6 +8,8 @@ import { renderResultsTab } from './render-results';
 import { renderAriaTab } from './render-aria';
 import { initManualReview, renderManualTab } from './manual-review';
 import { exportJSON, exportHTML, exportPDF } from './reports';
+import { renderScanPresets, getSelectedPresets, clearPresets } from './scan-presets';
+import { initConfigPanel, loadSavedConfig, getActiveConfig } from './config-panel';
 import {
   requestTabResults,
   triggerScan,
@@ -21,18 +23,17 @@ import {
 import type { iAriaWidgetResult } from '@shared/aria-patterns';
 
 const scanBtn = document.getElementById('scan-btn') as HTMLButtonElement;
-const multiScanBtn = document.getElementById('multi-scan-btn') as HTMLButtonElement;
-const crawlBtn = document.getElementById('crawl-btn') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
 
 // Crawl elements
 const crawlConfig = document.getElementById('crawl-config') as HTMLDivElement;
 const crawlMode = document.getElementById('crawl-mode') as HTMLSelectElement;
-const crawlMax = document.getElementById('crawl-max') as HTMLInputElement;
 const crawlSitemapUrl = document.getElementById('crawl-sitemap-url') as HTMLInputElement;
 const crawlStartBtn = document.getElementById('crawl-start') as HTMLButtonElement;
+const crawlActiveBar = document.getElementById('crawl-active-bar') as HTMLDivElement;
+const crawlPauseBtn = document.getElementById('crawl-pause') as HTMLButtonElement;
+const crawlResumeBtn = document.getElementById('crawl-resume') as HTMLButtonElement;
 const crawlCancelBtn = document.getElementById('crawl-cancel') as HTMLButtonElement;
-const crawlProgressEl = document.getElementById('crawl-progress') as HTMLDivElement;
 const crawlStatusEl = document.getElementById('crawl-status') as HTMLDivElement;
 const crawlBar = document.getElementById('crawl-bar') as HTMLDivElement;
 
@@ -54,12 +55,11 @@ const tabManualEl = document.getElementById('tab-manual') as HTMLDivElement;
 const tabAriaEl = document.getElementById('tab-aria') as HTMLDivElement;
 const manualBadge = document.getElementById('manual-badge') as HTMLSpanElement;
 const ariaBadge = document.getElementById('aria-badge') as HTMLSpanElement;
-const exportBar = document.getElementById('export-bar') as HTMLDivElement;
+const postScanActions = document.getElementById('post-scan-actions') as HTMLDivElement;
 const exportJsonBtn = document.getElementById('export-json') as HTMLButtonElement;
 const exportHtmlBtn = document.getElementById('export-html') as HTMLButtonElement;
 const exportPdfBtn = document.getElementById('export-pdf') as HTMLButtonElement;
 
-const overlayBar = document.getElementById('overlay-bar') as HTMLDivElement;
 const toggleViolationsBtn = document.getElementById('toggle-violations') as HTMLButtonElement;
 const toggleTabOrderBtn = document.getElementById('toggle-tab-order') as HTMLButtonElement;
 const toggleFocusGapsBtn = document.getElementById('toggle-focus-gaps') as HTMLButtonElement;
@@ -67,6 +67,9 @@ const violationToggleIcon = document.getElementById('violation-toggle-icon') as 
 const tabOrderToggleIcon = document.getElementById('tab-order-toggle-icon') as HTMLSpanElement;
 const focusGapsToggleIcon = document.getElementById('focus-gaps-toggle-icon') as HTMLSpanElement;
 
+const emptyStateEl = document.getElementById('empty-state') as HTMLDivElement;
+const configPanelEl = document.getElementById('config-panel') as HTMLDivElement;
+const configGearBtn = document.getElementById('config-gear-btn') as HTMLButtonElement;
 const cvdSelect = document.getElementById('cvd-select') as HTMLSelectElement;
 
 const CVD_MATRICES: Record<string, number[]> = {
@@ -115,9 +118,6 @@ function resetOverlays(): void {
   }
 }
 
-/**
- * Updates a toggle button's icon and active/inactive style.
- */
 function updateToggleButton(
   btn: HTMLButtonElement,
   icon: HTMLSpanElement,
@@ -177,6 +177,22 @@ toggleFocusGapsBtn.addEventListener('click', async () => {
 initTabs(tabsEl, tabResultsEl, tabManualEl, tabAriaEl);
 initManualReview(manualListEl, manualBadge, wcagVersion, wcagLevel);
 
+// Initialize config panel (gear icon dropdown — hidden until clicked)
+loadSavedConfig().then(() => {
+  initConfigPanel(configGearBtn, configPanelEl, (_config) => {
+    const current = getActiveConfig();
+    if (current) {
+      wcagVersion.value = current.wcagVersion;
+      wcagLevel.value = current.wcagLevel;
+    }
+  });
+  const saved = getActiveConfig();
+  if (saved) {
+    wcagVersion.value = saved.wcagVersion;
+    wcagLevel.value = saved.wcagLevel;
+  }
+});
+
 /** Listen for tab changes from background. */
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'TAB_CHANGED') {
@@ -186,7 +202,6 @@ chrome.runtime.onMessage.addListener((message) => {
       setPageElements(message.results.pageElements || {});
       showResults(message.results);
       renderManualTab();
-      // Restore cached ARIA results if available
       if (message.results._ariaWidgets) {
         ariaWidgets = message.results._ariaWidgets;
         renderAriaTab(ariaOutput, ariaWidgets);
@@ -196,13 +211,11 @@ chrome.runtime.onMessage.addListener((message) => {
         ariaOutput.innerHTML = '';
         updateAriaBadge();
       }
-    } else if (message.reason === 'navigated') {
-      hideResults();
-      output.innerHTML = '<p class="text-xs text-amber-600">Page changed — rescan needed.</p>';
     } else {
       hideResults();
     }
   }
+  // TAB_NAVIGATED: page changed within the same tab — do NOT clear results
 });
 
 /** On side panel load, request current tab's results. */
@@ -210,29 +223,121 @@ requestTabResults((results) => {
   if (results) {
     showResults(results);
     renderManualTab();
-    // Restore cached ARIA results if available
     if (results._ariaWidgets) {
       ariaWidgets = results._ariaWidgets;
       renderAriaTab(ariaOutput, ariaWidgets);
       updateAriaBadge();
     }
+  } else {
+    renderScanPresets(emptyStateEl, () => {});
   }
 });
 
+/** Builds a clickable/expandable violation item for multi-viewport results. */
+function buildClickableViolation(v: any, color: 'red' | 'amber'): string {
+  const borderColor = color === 'red' ? 'border-red-600' : 'border-amber-500';
+  const bgColor = color === 'red' ? 'bg-red-50' : 'bg-amber-50';
+  const nodes = (v.nodes || []).map((n: any) => {
+    const selector = (n.target || []).join(', ');
+    return `<div class="mv-node mt-1 py-1 px-2 bg-white rounded border border-zinc-200 cursor-pointer hover:bg-indigo-50 transition-colors" data-selector="${selector.replace(/"/g, '&quot;')}">
+      <div class="text-[10px] font-mono text-indigo-800 truncate">${selector}</div>
+      <div class="text-[9px] text-zinc-500 truncate">${(n.html || '').replace(/</g, '&lt;').slice(0, 120)}</div>
+      ${n.failureSummary ? `<div class="text-[9px] text-red-600 mt-0.5">${n.failureSummary.replace(/</g, '&lt;').split('\n')[0]}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  return `<details class="my-0.5 border-l-3 ${borderColor} ${bgColor} rounded-r">
+    <summary class="py-1 px-2 text-[11px] cursor-pointer hover:bg-white/50 transition-colors">
+      <strong>${v.id}</strong> (${v.impact}) — ${v.help}
+      <span class="text-[9px] text-zinc-500 ml-1">${v.nodes?.length || 0} element(s)</span>
+    </summary>
+    <div class="px-2 pb-1.5">${nodes}</div>
+  </details>`;
+}
+
+/** Wires click handlers on violation nodes to highlight elements on the page. */
+function wireViolationClicks(container: HTMLElement): void {
+  container.querySelectorAll<HTMLElement>('.mv-node').forEach((node) => {
+    node.addEventListener('click', () => {
+      const selector = node.dataset.selector;
+      if (selector) {
+        chrome.runtime.sendMessage({ type: 'HIGHLIGHT_ELEMENT', selector }).catch(() => {});
+      }
+    });
+  });
+}
+
 scanBtn.addEventListener('click', async () => {
   scanBtn.disabled = true;
-  output.textContent = 'Scanning...';
+  emptyStateEl.hidden = true;
   clearBtn.hidden = true;
   tabsEl.hidden = true;
   tabManualEl.hidden = true;
   tabAriaEl.hidden = true;
 
+  const presets = getSelectedPresets();
+  const useSiteCrawl = presets.has('site-crawl');
+  const useMultiViewport = presets.has('multi-viewport');
+
+  // Site Crawl mode — show crawl config
+  if (useSiteCrawl) {
+    crawlConfig.hidden = false;
+    scanBtn.disabled = false;
+    return;
+  }
+
+  // Multi-Viewport mode
+  if (useMultiViewport) {
+    const config = getActiveConfig();
+    const customViewports = config?.viewports;
+    const vpLabels = customViewports
+      ? customViewports.map((v) => `${v.width}px`).join(', ')
+      : '375px, 768px, 1280px';
+    output.textContent = `Scanning viewports (${vpLabels})...`;
+
+    try {
+      const result = await chrome.runtime.sendMessage({
+        type: 'MULTI_VIEWPORT_SCAN',
+        viewports: customViewports || undefined,
+      });
+      if (result?.type === 'MULTI_VIEWPORT_RESULT') {
+        let html = '<p class="mb-2 text-sm font-bold">Multi-Viewport Results</p>';
+        if (result.allViewports.length > 0) {
+          html += `<h3 class="text-sm font-bold text-red-600 mb-1">All Viewports (${result.allViewports.length})</h3>`;
+          for (const v of result.allViewports) {
+            html += buildClickableViolation(v, 'red');
+          }
+        }
+        for (const vp of result.viewportSpecific) {
+          if (vp.violations.length > 0) {
+            html += `<h3 class="text-sm font-bold text-amber-600 mb-1 mt-2">${vp.label} Only — ${vp.width}px (${vp.violations.length})</h3>`;
+            for (const v of vp.violations) {
+              html += buildClickableViolation(v, 'amber');
+            }
+          }
+        }
+        output.innerHTML = html;
+        wireViolationClicks(output);
+        clearBtn.hidden = false;
+        postScanActions.hidden = false;
+      } else {
+        output.textContent = 'Error: ' + (result?.message || 'Multi-viewport scan failed');
+      }
+    } catch (err) {
+      output.textContent = 'Error: ' + String(err);
+    }
+
+    scanBtn.disabled = false;
+    return;
+  }
+
+  // Standard single-page scan
+  output.textContent = 'Scanning...';
   const response = await triggerScan();
 
   if (response.type === 'SCAN_RESULT') {
     showResults(response);
     renderManualTab();
-    // Run ARIA scan after main scan completes
     runAriaScan();
   } else {
     output.textContent = 'Error: ' + (response.message || 'Unknown error');
@@ -286,7 +391,7 @@ exportJsonBtn.addEventListener('click', async () => {
   if (!response) return;
   const url = await getPageUrl();
   const { tabOrder, focusGaps } = await fetchTabOrderAndGaps();
-  exportJSON(response, wcagVersion.value, wcagLevel.value, url, tabOrder, focusGaps);
+  await exportJSON(response, wcagVersion.value, wcagLevel.value, url, tabOrder, focusGaps);
 });
 
 exportHtmlBtn.addEventListener('click', async () => {
@@ -305,9 +410,6 @@ exportPdfBtn.addEventListener('click', async () => {
   exportPDF(response, wcagVersion.value, wcagLevel.value, url, tabOrder, focusGaps);
 });
 
-/**
- * Sends RUN_ARIA_SCAN to the background, stores results, and renders the ARIA tab.
- */
 async function runAriaScan(): Promise<void> {
   ariaOutput.innerHTML = '<p class="text-xs text-zinc-400">Scanning ARIA patterns...</p>';
   try {
@@ -324,9 +426,6 @@ async function runAriaScan(): Promise<void> {
   updateAriaBadge();
 }
 
-/**
- * Updates the ARIA badge with widget/issue counts.
- */
 function updateAriaBadge(): void {
   if (ariaWidgets.length === 0) {
     ariaBadge.textContent = '';
@@ -350,10 +449,10 @@ function showResults(response: any): void {
   const version = wcagVersion.value as '2.0' | '2.1' | '2.2';
   const level = wcagLevel.value as 'A' | 'AA' | 'AAA';
   renderResultsTab(output, response, version, level);
+  emptyStateEl.hidden = true;
   clearBtn.hidden = false;
   tabsEl.hidden = false;
-  exportBar.hidden = false;
-  overlayBar.hidden = false;
+  postScanActions.hidden = false;
 }
 
 function hideResults(): void {
@@ -363,77 +462,30 @@ function hideResults(): void {
   ariaWidgets = [];
   updateAriaBadge();
   resetOverlays();
+  emptyStateEl.hidden = false;
+  renderScanPresets(emptyStateEl, () => {});
   clearBtn.hidden = true;
   tabsEl.hidden = true;
   tabManualEl.hidden = true;
   tabAriaEl.hidden = true;
   tabResultsEl.hidden = false;
-  exportBar.hidden = true;
-  overlayBar.hidden = true;
+  postScanActions.hidden = true;
   movieBar.hidden = true;
+  movieModeActive = false;
   resetState();
 }
 
-// ─── Multi-Viewport Scan ─────────────────────────────────────────────────────
-
-multiScanBtn.addEventListener('click', async () => {
-  scanBtn.disabled = true;
-  multiScanBtn.disabled = true;
-  output.textContent = 'Scanning 3 viewports (375px, 768px, 1280px)...';
-  clearBtn.hidden = true;
-  tabsEl.hidden = true;
-
-  try {
-    const result = await chrome.runtime.sendMessage({ type: 'MULTI_VIEWPORT_SCAN' });
-    if (result?.type === 'MULTI_VIEWPORT_RESULT') {
-      let html = '<p class="mb-2 text-sm font-bold">Multi-Viewport Results</p>';
-
-      // Universal issues
-      if (result.allViewports.length > 0) {
-        html += `<h3 class="text-sm font-bold text-red-600 mb-1">All Viewports (${result.allViewports.length})</h3>`;
-        for (const v of result.allViewports) {
-          html += `<div class="my-0.5 py-1 px-2 text-[11px] border-l-3 border-red-600 bg-red-50 rounded-r"><strong>${v.id}</strong> (${v.impact}) — ${v.help}</div>`;
-        }
-      }
-
-      // Viewport-specific
-      for (const vp of result.viewportSpecific) {
-        if (vp.violations.length > 0) {
-          html += `<h3 class="text-sm font-bold text-amber-600 mb-1 mt-2">${vp.label} Only — ${vp.width}px (${vp.violations.length})</h3>`;
-          for (const v of vp.violations) {
-            html += `<div class="my-0.5 py-1 px-2 text-[11px] border-l-3 border-amber-500 bg-amber-50 rounded-r"><strong>${v.id}</strong> (${v.impact}) — ${v.help} <span class="text-amber-700 font-bold">📱 Responsive</span></div>`;
-          }
-        }
-      }
-
-      output.innerHTML = html;
-      clearBtn.hidden = false;
-      exportBar.hidden = false;
-    } else {
-      output.textContent = 'Error: ' + (result?.message || 'Multi-viewport scan failed');
-    }
-  } catch (err) {
-    output.textContent = 'Error: ' + String(err);
-  }
-
-  scanBtn.disabled = false;
-  multiScanBtn.disabled = false;
-});
-
 // ─── Crawl ───────────────────────────────────────────────────────────────────
-
-crawlBtn.addEventListener('click', () => {
-  crawlConfig.hidden = !crawlConfig.hidden;
-});
 
 crawlMode.addEventListener('change', () => {
   crawlSitemapUrl.hidden = crawlMode.value !== 'sitemap';
 });
 
 crawlStartBtn.addEventListener('click', async () => {
-  crawlStartBtn.disabled = true;
-  crawlCancelBtn.hidden = false;
-  crawlProgressEl.hidden = false;
+  crawlConfig.hidden = true;
+  crawlActiveBar.hidden = false;
+  crawlPauseBtn.hidden = false;
+  crawlResumeBtn.hidden = true;
   crawlStatusEl.textContent = 'Starting crawl...';
 
   try {
@@ -441,49 +493,74 @@ crawlStartBtn.addEventListener('click', async () => {
       type: 'START_CRAWL',
       options: {
         mode: crawlMode.value,
-        maxPages: parseInt(crawlMax.value) || 50,
+        maxPages: getActiveConfig()?.pages?.maxPages || 0,
         sitemapUrl: crawlMode.value === 'sitemap' ? crawlSitemapUrl.value : undefined,
       },
     });
   } catch (err) {
     crawlStatusEl.textContent = 'Error: ' + String(err);
   }
-  crawlStartBtn.disabled = false;
+});
+
+crawlPauseBtn.addEventListener('click', async () => {
+  await chrome.runtime.sendMessage({ type: 'PAUSE_CRAWL' });
+  crawlPauseBtn.hidden = true;
+  crawlResumeBtn.hidden = false;
+  crawlStatusEl.textContent = 'Paused — interact with the page, then resume';
+});
+
+crawlResumeBtn.addEventListener('click', async () => {
+  await chrome.runtime.sendMessage({ type: 'RESUME_CRAWL' });
+  crawlPauseBtn.hidden = false;
+  crawlResumeBtn.hidden = true;
 });
 
 crawlCancelBtn.addEventListener('click', async () => {
   await chrome.runtime.sendMessage({ type: 'CANCEL_CRAWL' });
-  crawlConfig.hidden = true;
-  crawlCancelBtn.hidden = true;
-  crawlProgressEl.hidden = true;
+  crawlActiveBar.hidden = true;
 });
 
-// Listen for crawl progress
+// Listen for crawl progress + movie mode progress
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'CRAWL_PROGRESS' && message.state) {
     const s = message.state;
-    const total = s.completed.length + s.failed.length + s.queue.length;
     const done = s.completed.length + s.failed.length;
-    const pct = total > 0 ? Math.round((done / Math.min(total, s.maxPages)) * 100) : 0;
-    crawlBar.style.width = `${pct}%`;
-    crawlStatusEl.textContent = `${s.status}: ${done}/${Math.min(total, s.maxPages)} pages${s.current ? ` — ${s.current}` : ''} (${s.failed.length} failed)`;
+    const discovered = s.totalDiscovered + done;
+    const unlimited = s.maxPages === 0;
+    const limit = unlimited ? discovered : s.maxPages;
+    const pct = limit > 0 ? Math.round((done / limit) * 100) : 0;
+    crawlBar.style.width = `${Math.min(pct, 100)}%`;
+    crawlStatusEl.textContent = `${s.status}: ${done} scanned (depth ${s.depth})${s.current ? ` — ${s.current}` : ''} (${s.failed.length} failed)`;
 
     if (s.status === 'complete') {
-      crawlCancelBtn.hidden = true;
-      crawlStartBtn.disabled = false;
-      // Show crawl results
+      crawlActiveBar.hidden = true;
       let html = `<p class="mb-2 text-sm font-bold">Site Crawl Results — ${s.completed.length} pages scanned</p>`;
       for (const r of s.results) {
-        const vCount = r.violations.reduce((sum: number, v: any) => sum + v.nodes.length, 0);
-        const statusIcon = r.status === 'scanned' ? (vCount > 0 ? '⚠️' : '✅') : '❌';
-        html += `<div class="my-0.5 py-1 px-2 text-[11px] border-l-3 ${vCount > 0 ? 'border-red-600 bg-red-50' : r.status === 'failed' ? 'border-zinc-400 bg-zinc-50' : 'border-green-600 bg-green-50'} rounded-r">`;
-        html += `${statusIcon} <strong>${r.url}</strong> — ${vCount} violations`;
+        const vCount = r.violations.reduce((sum: number, v: any) => sum + (v.nodes?.length || 0), 0);
+        const statusIcon = r.status === 'scanned' ? (vCount > 0 ? '⚠️' : '✅') : r.status === 'redirected' ? '↪️' : '❌';
+        const borderColor = vCount > 0 ? 'border-red-600 bg-red-50' : r.status === 'failed' ? 'border-zinc-400 bg-zinc-50' : r.status === 'redirected' ? 'border-amber-400 bg-amber-50' : 'border-green-600 bg-green-50';
+        html += `<div class="crawl-result my-0.5 py-1.5 px-2 text-[11px] border-l-3 ${borderColor} rounded-r cursor-pointer hover:brightness-95 transition-all" data-url="${r.url.replace(/"/g, '&quot;')}">`;
+        html += `${statusIcon} <strong class="break-all">${r.url}</strong> — ${vCount} violations`;
+        if (r.redirectedTo) html += ` <span class="text-amber-600">(→ ${r.redirectedTo})</span>`;
         if (r.error) html += ` <span class="text-red-600">(${r.error})</span>`;
         html += `</div>`;
       }
       output.innerHTML = html;
+
+      // Make crawl results clickable — navigate to that page
+      output.querySelectorAll<HTMLElement>('.crawl-result').forEach((el) => {
+        el.addEventListener('click', () => {
+          const url = el.dataset.url;
+          if (url) {
+            chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+              if (tab?.id) chrome.tabs.update(tab.id, { url });
+            });
+          }
+        });
+      });
+
       clearBtn.hidden = false;
-      exportBar.hidden = false;
+      postScanActions.hidden = false;
     }
   }
 
@@ -513,11 +590,7 @@ chrome.runtime.onMessage.addListener((message) => {
 
 // ─── Movie Mode ──────────────────────────────────────────────────────────────
 
-// Show movie bar when tab order overlay is toggled on (already handled by toggleTabOrderBtn)
-const origTabOrderClick = toggleTabOrderBtn.onclick;
-toggleTabOrderBtn.addEventListener('click', () => {
-  movieBar.hidden = !tabOrderOverlayOn;
-});
+let movieModeActive = false;
 
 moviePlayBtn.addEventListener('click', async () => {
   const speed = parseInt(movieSpeed.value) || 1000;

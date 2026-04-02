@@ -3,6 +3,8 @@
  * Communicates with the background service worker.
  */
 
+import type { iTestConfig } from '@shared/test-config';
+
 /** Manual review state: criterion ID → 'pass' | 'fail' | 'na' | null */
 let manualState: Record<string, string | null> = {};
 
@@ -11,6 +13,17 @@ let pageElements: Record<string, boolean> = {};
 
 /** Last scan response */
 let lastScanResponse: any = null;
+
+/** Active test config (null = defaults) */
+let testConfig: iTestConfig | null = null;
+
+export function getTestConfig(): iTestConfig | null {
+  return testConfig;
+}
+
+export function setTestConfig(config: iTestConfig | null): void {
+  testConfig = config;
+}
 
 export function getManualState(): Record<string, string | null> {
   return manualState;
