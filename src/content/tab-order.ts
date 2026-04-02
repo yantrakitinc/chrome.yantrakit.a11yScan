@@ -187,11 +187,18 @@ export function detectFocusGaps(): iFocusGapEntry[] {
 
   const candidates = Array.from(document.querySelectorAll(INTERACTIVE_SELECTOR));
 
-  // Also check for elements with cursor:pointer
+  // Also check for elements with cursor:pointer, but only block-level or
+  // inline-block elements that aren't inside an already-focusable parent.
+  // Skip images, SVGs, spans inside links, etc.
+  const SKIP_TAGS = new Set(['IMG', 'SVG', 'PATH', 'CIRCLE', 'RECT', 'LINE', 'POLYLINE', 'POLYGON', 'USE', 'G', 'DEFS', 'CLIPPATH', 'BR', 'HR', 'LABEL']);
   const allElements = document.querySelectorAll('body *');
   for (const el of allElements) {
+    if (SKIP_TAGS.has(el.tagName)) continue;
+    if (candidates.includes(el)) continue;
+    // Skip elements inside a focusable parent (link, button, etc.)
+    if (el.closest('a[href], button, [tabindex], input, select, textarea, summary')) continue;
     const style = getComputedStyle(el);
-    if (style.cursor === 'pointer' && !candidates.includes(el)) {
+    if (style.cursor === 'pointer') {
       candidates.push(el);
     }
   }
@@ -200,6 +207,10 @@ export function detectFocusGaps(): iFocusGapEntry[] {
 
   for (const el of candidates) {
     if (isHidden(el)) continue;
+    if (SKIP_TAGS.has(el.tagName)) continue;
+
+    // Skip elements inside a focusable parent
+    if (el.closest('a[href], button, [tabindex="0"], input, select, textarea, summary') && !el.matches('[role="button"], [role="link"], [role="tab"], [role="menuitem"]')) continue;
 
     // Check if element is already properly focusable
     if (isNativelyFocusable(el)) continue;

@@ -67,6 +67,7 @@ const violationToggleIcon = document.getElementById('violation-toggle-icon') as 
 const tabOrderToggleIcon = document.getElementById('tab-order-toggle-icon') as HTMLSpanElement;
 const focusGapsToggleIcon = document.getElementById('focus-gaps-toggle-icon') as HTMLSpanElement;
 
+const movieModeBtn = document.getElementById('movie-mode-btn') as HTMLButtonElement;
 const emptyStateEl = document.getElementById('empty-state') as HTMLDivElement;
 const configPanelEl = document.getElementById('config-panel') as HTMLDivElement;
 const configGearBtn = document.getElementById('config-gear-btn') as HTMLButtonElement;
@@ -124,7 +125,7 @@ function updateToggleButton(
   active: boolean,
   color: 'red' | 'indigo' | 'amber',
 ): void {
-  icon.textContent = active ? '●' : '○';
+  icon.textContent = active ? '✓' : '○';
   if (active) {
     btn.classList.remove(`bg-${color}-50`);
     btn.classList.add(`bg-${color}-200`);
@@ -472,6 +473,7 @@ function hideResults(): void {
   postScanActions.hidden = true;
   movieBar.hidden = true;
   movieModeActive = false;
+  movieModeBtn.classList.remove('bg-indigo-200');
   resetState();
 }
 
@@ -591,6 +593,17 @@ chrome.runtime.onMessage.addListener((message) => {
 // ─── Movie Mode ──────────────────────────────────────────────────────────────
 
 let movieModeActive = false;
+
+movieModeBtn.addEventListener('click', () => {
+  movieModeActive = !movieModeActive;
+  movieBar.hidden = !movieModeActive;
+  if (movieModeActive) {
+    movieModeBtn.classList.add('bg-indigo-200');
+  } else {
+    movieModeBtn.classList.remove('bg-indigo-200');
+    chrome.runtime.sendMessage({ type: 'STOP_MOVIE_MODE' }).catch(() => {});
+  }
+});
 
 moviePlayBtn.addEventListener('click', async () => {
   const speed = parseInt(movieSpeed.value) || 1000;
