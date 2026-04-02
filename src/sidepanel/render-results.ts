@@ -153,7 +153,7 @@ export function renderResultsTab(
         html += `<div class="bg-red-50/50 border border-red-100 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
         html += `<div class="flex items-start justify-between gap-1 mb-0.5">`;
         html += `<div class="text-indigo-800 font-semibold">${sel}</div>`;
-        html += `<button class="highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline underline-offset-1" data-selector="${sel}">Highlight</button>`;
+        html += `<button class="highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline underline-offset-1" data-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">Highlight</button>`;
         html += `</div>`;
         html += `<div class="text-zinc-600 whitespace-pre-wrap break-all mb-1">${esc(truncate(node.html, 200))}</div>`;
         if (node.failureSummary) {
@@ -199,7 +199,7 @@ export function renderResultsTab(
           html += `<div class="bg-amber-50/50 border border-amber-100 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
           html += `<div class="flex items-start justify-between gap-1 mb-0.5">`;
           html += `<div class="text-indigo-800 font-semibold">${sel}</div>`;
-          html += `<button class="highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline underline-offset-1" data-selector="${sel}">Highlight</button>`;
+          html += `<button class="highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline underline-offset-1" data-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">Highlight</button>`;
           html += `</div>`;
           html += `<div class="text-zinc-600 whitespace-pre-wrap break-all">${esc(truncate(node.html, 200))}</div>`;
           html += `</div>`;

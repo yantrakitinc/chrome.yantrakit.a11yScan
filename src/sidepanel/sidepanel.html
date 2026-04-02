@@ -133,14 +133,14 @@
   </div>
 
   <!-- Crawl active bar (visible during crawling) -->
-  <div id="crawl-active-bar" hidden class="shrink-0 px-3.5 py-2 space-y-2 border-t-2 border-indigo-950 bg-indigo-50">
-    <div class="flex items-center gap-2">
-      <button id="crawl-pause" class="px-2.5 py-1 text-[10px] font-bold text-white bg-amber-600 rounded hover:bg-amber-700 cursor-pointer">⏸ Pause</button>
-      <button id="crawl-resume" hidden class="px-2.5 py-1 text-[10px] font-bold text-white bg-green-600 rounded hover:bg-green-700 cursor-pointer">▶ Resume</button>
-      <button id="crawl-cancel" class="px-2.5 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded hover:bg-red-50 cursor-pointer">Cancel</button>
-      <span id="crawl-status" class="text-[10px] text-indigo-800 ml-auto"></span>
+  <div id="crawl-active-bar" hidden class="shrink-0 px-3 py-2 border-t border-zinc-200 bg-zinc-50">
+    <div id="crawl-status" class="text-[10px] text-zinc-600 mb-1.5 truncate"></div>
+    <div class="w-full bg-zinc-200 rounded-full h-1 mb-1.5"><div id="crawl-bar" class="bg-indigo-950 h-1 rounded-full transition-all" style="width:0%"></div></div>
+    <div class="flex items-center gap-1">
+      <button id="crawl-pause" class="px-1.5 py-0.5 text-[9px] font-bold text-zinc-600 border border-zinc-300 rounded hover:bg-zinc-100 cursor-pointer">⏸ Pause</button>
+      <button id="crawl-resume" hidden class="px-1.5 py-0.5 text-[9px] font-bold text-indigo-800 border border-indigo-200 rounded hover:bg-indigo-50 cursor-pointer">▶ Resume</button>
+      <button id="crawl-cancel" class="px-1.5 py-0.5 text-[9px] font-bold text-zinc-400 hover:text-red-600 cursor-pointer">Cancel</button>
     </div>
-    <div class="w-full bg-indigo-200 rounded-full h-1.5"><div id="crawl-bar" class="bg-indigo-950 h-1.5 rounded-full transition-all" style="width:0%"></div></div>
   </div>
 
   <script src="sidepanel.js"></script>
