@@ -100,6 +100,9 @@ let focusGapsOverlayOn = false;
 /** Cached ARIA widget results for the current scan. */
 let ariaWidgets: iAriaWidgetResult[] = [];
 
+/** Cached crawl results for export. */
+let lastCrawlResults: any = null;
+
 /** Reset all overlay toggles to off and hide overlays on the page. */
 function resetOverlays(): void {
   if (violationOverlayOn) {
@@ -388,6 +391,21 @@ async function fetchTabOrderAndGaps() {
 }
 
 exportJsonBtn.addEventListener('click', async () => {
+  // Crawl results export
+  if (lastCrawlResults) {
+    const json = JSON.stringify(lastCrawlResults, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `A11y-Scan-Crawl-Report-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return;
+  }
+  // Single page export
   const response = getLastScanResponse();
   if (!response) return;
   const url = await getPageUrl();
@@ -474,7 +492,40 @@ function hideResults(): void {
   movieBar.hidden = true;
   movieModeActive = false;
   movieModeBtn.classList.remove('bg-indigo-200');
+  lastCrawlResults = null;
   resetState();
+}
+
+/** Renders crawl results into the output area. Called live during crawl and on completion. */
+function renderCrawlResults(results: any[], completedCount: number | null): void {
+  const header = completedCount !== null
+    ? `<p class="mb-2 text-sm font-bold">Site Crawl Results — ${completedCount} pages scanned</p>`
+    : `<p class="mb-2 text-sm font-bold text-indigo-800">Crawling — ${results.length} pages so far...</p>`;
+
+  let html = header;
+  for (const r of results) {
+    const vCount = r.violations.reduce((sum: number, v: any) => sum + (v.nodes?.length || 0), 0);
+    const statusIcon = r.status === 'scanned' ? (vCount > 0 ? '⚠️' : '✅') : r.status === 'redirected' ? '↪️' : '❌';
+    const borderColor = vCount > 0 ? 'border-red-600 bg-red-50' : r.status === 'failed' ? 'border-zinc-400 bg-zinc-50' : r.status === 'redirected' ? 'border-amber-400 bg-amber-50' : 'border-green-600 bg-green-50';
+    html += `<div class="crawl-result my-0.5 py-1.5 px-2 text-[11px] border-l-3 ${borderColor} rounded-r cursor-pointer hover:brightness-95 transition-all" data-url="${r.url.replace(/"/g, '&quot;')}">`;
+    html += `${statusIcon} <strong class="break-all">${r.url}</strong> — ${vCount} violations`;
+    if (r.redirectedTo) html += ` <span class="text-amber-600">(→ ${r.redirectedTo})</span>`;
+    if (r.error) html += ` <span class="text-red-600">(${r.error})</span>`;
+    html += `</div>`;
+  }
+  output.innerHTML = html;
+
+  // Wire click handlers
+  output.querySelectorAll<HTMLElement>('.crawl-result').forEach((el) => {
+    el.addEventListener('click', () => {
+      const url = el.dataset.url;
+      if (url) {
+        chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+          if (tab?.id) chrome.tabs.update(tab.id, { url });
+        });
+      }
+    });
+  });
 }
 
 // ─── Crawl ───────────────────────────────────────────────────────────────────
@@ -486,6 +537,7 @@ crawlMode.addEventListener('change', () => {
 crawlStartBtn.addEventListener('click', async () => {
   crawlConfig.hidden = true;
   crawlActiveBar.hidden = false;
+  scanBtn.disabled = true;
   crawlPauseBtn.hidden = false;
   crawlResumeBtn.hidden = true;
   crawlStatusEl.textContent = 'Starting crawl...';
@@ -520,6 +572,7 @@ crawlResumeBtn.addEventListener('click', async () => {
 crawlCancelBtn.addEventListener('click', async () => {
   await chrome.runtime.sendMessage({ type: 'CANCEL_CRAWL' });
   crawlActiveBar.hidden = true;
+  scanBtn.disabled = false;
 });
 
 // Listen for crawl progress + movie mode progress
@@ -534,32 +587,46 @@ chrome.runtime.onMessage.addListener((message) => {
     crawlBar.style.width = `${Math.min(pct, 100)}%`;
     crawlStatusEl.textContent = `${s.status}: ${done} scanned (depth ${s.depth})${s.current ? ` — ${s.current}` : ''} (${s.failed.length} failed)`;
 
+    // Disable Start Scan during crawl
+    if (s.status === 'crawling') {
+      scanBtn.disabled = true;
+    }
+
+    // Show results as they come in (live update)
+    if (s.results && s.results.length > 0) {
+      renderCrawlResults(s.results, s.status === 'complete' ? s.completed.length : null);
+    }
+
     if (s.status === 'complete') {
       crawlActiveBar.hidden = true;
-      let html = `<p class="mb-2 text-sm font-bold">Site Crawl Results — ${s.completed.length} pages scanned</p>`;
-      for (const r of s.results) {
-        const vCount = r.violations.reduce((sum: number, v: any) => sum + (v.nodes?.length || 0), 0);
-        const statusIcon = r.status === 'scanned' ? (vCount > 0 ? '⚠️' : '✅') : r.status === 'redirected' ? '↪️' : '❌';
-        const borderColor = vCount > 0 ? 'border-red-600 bg-red-50' : r.status === 'failed' ? 'border-zinc-400 bg-zinc-50' : r.status === 'redirected' ? 'border-amber-400 bg-amber-50' : 'border-green-600 bg-green-50';
-        html += `<div class="crawl-result my-0.5 py-1.5 px-2 text-[11px] border-l-3 ${borderColor} rounded-r cursor-pointer hover:brightness-95 transition-all" data-url="${r.url.replace(/"/g, '&quot;')}">`;
-        html += `${statusIcon} <strong class="break-all">${r.url}</strong> — ${vCount} violations`;
-        if (r.redirectedTo) html += ` <span class="text-amber-600">(→ ${r.redirectedTo})</span>`;
-        if (r.error) html += ` <span class="text-red-600">(${r.error})</span>`;
-        html += `</div>`;
-      }
-      output.innerHTML = html;
+      scanBtn.disabled = false;
 
-      // Make crawl results clickable — navigate to that page
-      output.querySelectorAll<HTMLElement>('.crawl-result').forEach((el) => {
-        el.addEventListener('click', () => {
-          const url = el.dataset.url;
-          if (url) {
-            chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-              if (tab?.id) chrome.tabs.update(tab.id, { url });
-            });
-          }
-        });
-      });
+      // Store crawl results for export
+      lastCrawlResults = {
+        tool: 'A11y Scan',
+        toolVersion: '1.0.0',
+        type: 'site-crawl',
+        origin: s.origin,
+        scanDate: new Date().toISOString(),
+        wcagVersion: wcagVersion.value,
+        wcagLevel: wcagLevel.value,
+        summary: {
+          pagesScanned: s.completed.length,
+          pagesFailed: s.failed.length,
+          totalViolations: s.results.reduce((sum: number, r: any) =>
+            sum + r.violations.reduce((vs: number, v: any) => vs + (v.nodes?.length || 0), 0), 0),
+        },
+        pages: s.results.map((r: any) => ({
+          url: r.url,
+          status: r.status,
+          depth: r.depth,
+          redirectedTo: r.redirectedTo,
+          error: r.error,
+          violations: r.violations,
+          passes: r.passes,
+          incomplete: r.incomplete,
+        })),
+      };
 
       clearBtn.hidden = false;
       postScanActions.hidden = false;
