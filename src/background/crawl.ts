@@ -14,13 +14,14 @@
  * - Auth-gated pages that redirect logged-in users are handled gracefully
  */
 
-import type { iPageRule, iPageRuleWaitType } from '@shared/test-config';
+import type { iPageRule, iPageRuleWaitType, iMockEndpoint } from '@shared/test-config';
 
 export interface iCrawlOptions {
   mode: 'discover' | 'sitemap';
   maxPages: number;
   sitemapUrl?: string;
   pageRules?: iPageRule[];
+  mocks?: iMockEndpoint[];
 }
 
 export interface iCrawlPageResult {
@@ -58,6 +59,7 @@ let crawlCancelled = false;
 let crawlPaused = false;
 let crawlResolveResume: (() => void) | null = null;
 let crawlPageRules: iPageRule[] = [];
+let crawlMocks: iMockEndpoint[] = [];
 let waitingForUser = false;
 let resolveUserContinue: (() => void) | null = null;
 /** Recorded page rules during crawl (for smart config generation). */
@@ -220,7 +222,14 @@ async function scanPage(tabId: number, url: string, origin: string, depth: numbe
     }
 
     await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
-    await new Promise((r) => setTimeout(r, 300));
+
+    // Inject mocks before scanning if configured
+    if (crawlMocks.length > 0) {
+      await chrome.tabs.sendMessage(tabId, { type: 'ACTIVATE_MOCKS', mocks: crawlMocks });
+      await new Promise((r) => setTimeout(r, 500)); // Wait for mocked data to load
+    } else {
+      await new Promise((r) => setTimeout(r, 300));
+    }
 
     const response = await chrome.tabs.sendMessage(tabId, { type: 'RUN_SCAN' });
     const links = await discoverLinks(tabId, origin);
@@ -329,6 +338,7 @@ export async function startCrawl(options: iCrawlOptions): Promise<iCrawlState> {
   crawlCancelled = false;
   crawlPaused = false;
   crawlPageRules = options.pageRules || [];
+  crawlMocks = options.mocks || [];
   recordedPageRules = [];
   const origin = new URL(tab.url).origin;
 

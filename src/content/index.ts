@@ -1,6 +1,7 @@
 import axe from 'axe-core';
 import { scanAriaPatterns } from './aria-scanner';
 import { collectBatchEnrichedContext } from './enriched-context';
+import { activateMocks } from './mock-interceptor';
 import {
   createOverlayContainer,
   destroyOverlay,
@@ -62,6 +63,12 @@ if (!(window as any).__a11yscan) {
           }, 3000);
         }
       } catch { /* invalid selector */ }
+      sendResponse({ ok: true });
+      return;
+    }
+
+    if (message.type === 'ACTIVATE_MOCKS') {
+      activateMocks(message.mocks || []);
       sendResponse({ ok: true });
       return;
     }

@@ -87,6 +87,20 @@ export interface iTestConfig {
   rules: iRuleFilter;
   enrichment: iEnrichmentOptions;
   pageRules: iPageRule[];
+  mocks: iMockEndpoint[];
+}
+
+/** HTTP method for mock endpoints. */
+export type iMockMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+/** A mock API endpoint — intercepts matching requests and returns canned data. */
+export interface iMockEndpoint {
+  urlPattern: string;
+  method: iMockMethod;
+  status: number;
+  responseBody: unknown;
+  responseHeaders?: Record<string, string>;
+  description?: string;
 }
 
 /** Default viewport presets. */
@@ -141,6 +155,7 @@ export function createDefaultConfig(name = 'Default'): iTestConfig {
     rules: { ...DEFAULT_RULES, ruleIds: [] },
     enrichment: { ...DEFAULT_ENRICHMENT },
     pageRules: [],
+    mocks: [],
   };
 }
 
@@ -326,6 +341,31 @@ export function validateTestConfig(config: unknown): iValidationError[] {
     }
   }
 
+  // mocks
+  if (c.mocks !== undefined) {
+    if (!Array.isArray(c.mocks)) {
+      errors.push({ field: 'mocks', message: 'Must be an array' });
+    } else {
+      const validMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
+      for (let i = 0; i < c.mocks.length; i++) {
+        const mock = c.mocks[i] as Record<string, unknown>;
+        if (!mock || typeof mock !== 'object') {
+          errors.push({ field: `mocks[${i}]`, message: 'Must be an object' });
+          continue;
+        }
+        if (typeof mock.urlPattern !== 'string' || mock.urlPattern.trim().length === 0) {
+          errors.push({ field: `mocks[${i}].urlPattern`, message: 'Must be a non-empty string' });
+        }
+        if (!validMethods.includes(mock.method as string)) {
+          errors.push({ field: `mocks[${i}].method`, message: `Must be one of: ${validMethods.join(', ')}` });
+        }
+        if (typeof mock.status !== 'number' || mock.status < 100 || mock.status > 599) {
+          errors.push({ field: `mocks[${i}].status`, message: 'Must be a number between 100 and 599' });
+        }
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -355,6 +395,7 @@ export function mergeWithDefaults(partial: unknown): { config: iTestConfig; erro
       rules: p.rules ? { ...defaults.rules, ...p.rules } : defaults.rules,
       enrichment: p.enrichment ? { ...defaults.enrichment, ...p.enrichment } : defaults.enrichment,
       pageRules: p.pageRules ?? defaults.pageRules,
+      mocks: p.mocks ?? defaults.mocks,
     },
     errors: [],
   };

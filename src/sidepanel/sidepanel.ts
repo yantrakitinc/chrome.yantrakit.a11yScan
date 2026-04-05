@@ -557,6 +557,7 @@ crawlStartBtn.addEventListener('click', async () => {
         maxPages: getActiveConfig()?.pages?.maxPages || 0,
         sitemapUrl: crawlMode.value === 'sitemap' ? crawlSitemapUrl.value : undefined,
         pageRules: getActiveConfig()?.pageRules || [],
+        mocks: getActiveConfig()?.mocks || [],
       },
     });
   } catch (err) {
