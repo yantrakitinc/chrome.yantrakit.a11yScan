@@ -90,15 +90,16 @@ const OVERLAY_STYLES = `
     z-index: 2147483646;
   }
 
-  .a11y-outline--critical { outline: 3px solid #ef4444; outline-offset: 2px; box-shadow: 0 0 0 1px #fff, 0 0 0 5px rgba(239,68,68,0.3); }
-  .a11y-outline--serious  { outline: 3px solid #f97316; outline-offset: 2px; box-shadow: 0 0 0 1px #fff, 0 0 0 5px rgba(249,115,22,0.3); }
-  .a11y-outline--moderate { outline: 3px solid #eab308; outline-offset: 2px; box-shadow: 0 0 0 1px #fff, 0 0 0 5px rgba(234,179,8,0.3); }
-  .a11y-outline--minor    { outline: 3px solid #3b82f6; outline-offset: 2px; box-shadow: 0 0 0 1px #fff, 0 0 0 5px rgba(59,130,246,0.3); }
+  .a11y-outline--critical { outline: 3px solid #ef4444; outline-offset: 2px; border: 2px solid rgba(253,224,71,0.7); box-shadow: inset 0 0 10px rgba(253,224,71,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2); }
+  .a11y-outline--serious  { outline: 3px solid #f97316; outline-offset: 2px; border: 2px solid rgba(253,224,71,0.7); box-shadow: inset 0 0 10px rgba(253,224,71,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2); }
+  .a11y-outline--moderate { outline: 3px solid #eab308; outline-offset: 2px; border: 2px solid rgba(255,255,255,0.7); box-shadow: inset 0 0 10px rgba(255,255,255,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2); }
+  .a11y-outline--minor    { outline: 3px solid #3b82f6; outline-offset: 2px; border: 2px solid rgba(253,224,71,0.7); box-shadow: inset 0 0 10px rgba(253,224,71,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2); }
 
   .a11y-outline--gap {
     outline: 3px dashed #ef4444;
     outline-offset: 2px;
-    box-shadow: 0 0 0 1px #fff, 0 0 0 5px rgba(239,68,68,0.2);
+    border: 2px solid rgba(253,224,71,0.7);
+    box-shadow: inset 0 0 10px rgba(253,224,71,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2);
   }
 
   .a11y-svg {
