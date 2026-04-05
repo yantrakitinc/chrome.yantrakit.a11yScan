@@ -61,6 +61,16 @@ export interface iTimingConfig {
   delayBetweenPages: number;
 }
 
+/** Wait type for page rules. */
+export type iPageRuleWaitType = 'login' | 'interaction' | 'deferred-content';
+
+/** A rule that tells the crawler to pause at matching URLs. */
+export interface iPageRule {
+  urlPattern: string;
+  waitType: iPageRuleWaitType;
+  description?: string;
+}
+
 /**
  * Full test configuration schema.
  * All fields are optional — the extension applies smart defaults for any missing field.
@@ -76,6 +86,7 @@ export interface iTestConfig {
   auth: iAuthConfig | null;
   rules: iRuleFilter;
   enrichment: iEnrichmentOptions;
+  pageRules: iPageRule[];
 }
 
 /** Default viewport presets. */
@@ -129,6 +140,7 @@ export function createDefaultConfig(name = 'Default'): iTestConfig {
     auth: null,
     rules: { ...DEFAULT_RULES, ruleIds: [] },
     enrichment: { ...DEFAULT_ENRICHMENT },
+    pageRules: [],
   };
 }
 
@@ -289,6 +301,31 @@ export function validateTestConfig(config: unknown): iValidationError[] {
     }
   }
 
+  // pageRules
+  if (c.pageRules !== undefined) {
+    if (!Array.isArray(c.pageRules)) {
+      errors.push({ field: 'pageRules', message: 'Must be an array' });
+    } else {
+      const validWaitTypes = ['login', 'interaction', 'deferred-content'];
+      for (let i = 0; i < c.pageRules.length; i++) {
+        const rule = c.pageRules[i] as Record<string, unknown>;
+        if (!rule || typeof rule !== 'object') {
+          errors.push({ field: `pageRules[${i}]`, message: 'Must be an object' });
+          continue;
+        }
+        if (typeof rule.urlPattern !== 'string' || rule.urlPattern.trim().length === 0) {
+          errors.push({ field: `pageRules[${i}].urlPattern`, message: 'Must be a non-empty string' });
+        }
+        if (!validWaitTypes.includes(rule.waitType as string)) {
+          errors.push({ field: `pageRules[${i}].waitType`, message: `Must be one of: ${validWaitTypes.join(', ')}` });
+        }
+        if (rule.description !== undefined && typeof rule.description !== 'string') {
+          errors.push({ field: `pageRules[${i}].description`, message: 'Must be a string' });
+        }
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -317,6 +354,7 @@ export function mergeWithDefaults(partial: unknown): { config: iTestConfig; erro
       auth: p.auth !== undefined ? p.auth : defaults.auth,
       rules: p.rules ? { ...defaults.rules, ...p.rules } : defaults.rules,
       enrichment: p.enrichment ? { ...defaults.enrichment, ...p.enrichment } : defaults.enrichment,
+      pageRules: p.pageRules ?? defaults.pageRules,
     },
     errors: [],
   };

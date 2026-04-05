@@ -14,10 +14,13 @@
  * - Auth-gated pages that redirect logged-in users are handled gracefully
  */
 
+import type { iPageRule, iPageRuleWaitType } from '@shared/test-config';
+
 export interface iCrawlOptions {
   mode: 'discover' | 'sitemap';
   maxPages: number;
   sitemapUrl?: string;
+  pageRules?: iPageRule[];
 }
 
 export interface iCrawlPageResult {
@@ -54,6 +57,11 @@ let crawlTabId: number | null = null;
 let crawlCancelled = false;
 let crawlPaused = false;
 let crawlResolveResume: (() => void) | null = null;
+let crawlPageRules: iPageRule[] = [];
+let waitingForUser = false;
+let resolveUserContinue: (() => void) | null = null;
+/** Recorded page rules during crawl (for smart config generation). */
+let recordedPageRules: iPageRule[] = [];
 
 /** Waits if the crawl is paused. Resolves when resumed or cancelled. */
 async function waitIfPaused(): Promise<void> {
@@ -62,6 +70,52 @@ async function waitIfPaused(): Promise<void> {
     crawlResolveResume = resolve;
   });
   crawlResolveResume = null;
+}
+
+/** Checks if a URL matches any page rule. Returns the matching rule or null. */
+function matchPageRule(url: string): iPageRule | null {
+  for (const rule of crawlPageRules) {
+    try {
+      if (url.includes(rule.urlPattern) || new RegExp(rule.urlPattern).test(url)) {
+        return rule;
+      }
+    } catch {
+      if (url.includes(rule.urlPattern)) return rule;
+    }
+  }
+  return null;
+}
+
+/** Pauses the crawl and waits for the user to click Continue. */
+async function waitForUserContinue(url: string, waitType: iPageRuleWaitType, description?: string): Promise<void> {
+  waitingForUser = true;
+  chrome.runtime.sendMessage({
+    type: 'CRAWL_WAITING_FOR_USER',
+    waitType,
+    url,
+    description,
+  }).catch(() => {});
+
+  await new Promise<void>((resolve) => {
+    resolveUserContinue = resolve;
+  });
+  resolveUserContinue = null;
+  waitingForUser = false;
+}
+
+/** Called when user clicks Continue in the side panel. */
+export function userContinue(): void {
+  if (resolveUserContinue) resolveUserContinue();
+}
+
+/** Records a manual pause as a page rule for smart config generation. */
+export function recordManualPause(url: string, waitType: iPageRuleWaitType, description?: string): void {
+  recordedPageRules.push({ urlPattern: new URL(url).pathname, waitType, description });
+}
+
+/** Returns recorded page rules for config generation. */
+export function getRecordedPageRules(): iPageRule[] {
+  return [...recordedPageRules];
 }
 
 function sendProgress() {
@@ -146,7 +200,7 @@ async function discoverLinks(tabId: number, origin: string): Promise<string[]> {
   }
 }
 
-/** Scans a single page. Handles failures and redirects gracefully. */
+/** Scans a single page. Handles failures, redirects, and page rules. */
 async function scanPage(tabId: number, url: string, origin: string, depth: number): Promise<{ result: iCrawlPageResult; links: string[] }> {
   try {
     const finalUrl = await navigateAndWait(tabId, url);
@@ -157,6 +211,12 @@ async function scanPage(tabId: number, url: string, origin: string, depth: numbe
         result: { url, status: 'redirected', violations: [], passes: 0, incomplete: 0, redirectedTo: finalUrl, depth },
         links: [],
       };
+    }
+
+    // Check page rules — pause if URL matches a rule
+    const rule = matchPageRule(finalUrl);
+    if (rule) {
+      await waitForUserContinue(finalUrl, rule.waitType, rule.description);
     }
 
     await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
@@ -268,6 +328,8 @@ export async function startCrawl(options: iCrawlOptions): Promise<iCrawlState> {
   crawlTabId = tab.id;
   crawlCancelled = false;
   crawlPaused = false;
+  crawlPageRules = options.pageRules || [];
+  recordedPageRules = [];
   const origin = new URL(tab.url).origin;
 
   let startUrls: string[];

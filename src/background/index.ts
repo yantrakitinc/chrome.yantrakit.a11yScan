@@ -1,5 +1,5 @@
 import { runMultiViewportScan } from './multi-viewport';
-import { startCrawl, pauseCrawl, resumeCrawl, cancelCrawl, getCrawlState } from './crawl';
+import { startCrawl, pauseCrawl, resumeCrawl, cancelCrawl, getCrawlState, userContinue, recordManualPause, getRecordedPageRules } from './crawl';
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
@@ -96,6 +96,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
   if (message.type === 'CANCEL_CRAWL') {
     cancelCrawl(); sendResponse({ ok: true }); return false;
+  }
+  if (message.type === 'USER_CONTINUE') {
+    userContinue(); sendResponse({ ok: true }); return false;
+  }
+  if (message.type === 'RECORD_MANUAL_PAUSE') {
+    recordManualPause(message.url, message.waitType, message.description);
+    sendResponse({ ok: true }); return false;
+  }
+  if (message.type === 'GET_RECORDED_PAGE_RULES') {
+    sendResponse({ rules: getRecordedPageRules() }); return false;
   }
   if (message.type === 'GET_CRAWL_STATE') {
     getCrawlState().then((s) => sendResponse(s)).catch(() => sendResponse(null));

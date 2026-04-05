@@ -33,9 +33,16 @@ const crawlStartBtn = document.getElementById('crawl-start') as HTMLButtonElemen
 const crawlActiveBar = document.getElementById('crawl-active-bar') as HTMLDivElement;
 const crawlPauseBtn = document.getElementById('crawl-pause') as HTMLButtonElement;
 const crawlResumeBtn = document.getElementById('crawl-resume') as HTMLButtonElement;
+const crawlRescanBtn = document.getElementById('crawl-rescan') as HTMLButtonElement;
 const crawlCancelBtn = document.getElementById('crawl-cancel') as HTMLButtonElement;
 const crawlStatusEl = document.getElementById('crawl-status') as HTMLDivElement;
 const crawlBar = document.getElementById('crawl-bar') as HTMLDivElement;
+const crawlUserWait = document.getElementById('crawl-user-wait') as HTMLDivElement;
+const crawlWaitMessage = document.getElementById('crawl-wait-message') as HTMLDivElement;
+const crawlWaitUrl = document.getElementById('crawl-wait-url') as HTMLDivElement;
+const crawlContinueBtn = document.getElementById('crawl-continue') as HTMLButtonElement;
+const crawlRescanWaitBtn = document.getElementById('crawl-rescan-wait') as HTMLButtonElement;
+const crawlCancelWaitBtn = document.getElementById('crawl-cancel-wait') as HTMLButtonElement;
 
 // Movie mode elements
 const movieBar = document.getElementById('movie-bar') as HTMLDivElement;
@@ -549,6 +556,7 @@ crawlStartBtn.addEventListener('click', async () => {
         mode: crawlMode.value,
         maxPages: getActiveConfig()?.pages?.maxPages || 0,
         sitemapUrl: crawlMode.value === 'sitemap' ? crawlSitemapUrl.value : undefined,
+        pageRules: getActiveConfig()?.pageRules || [],
       },
     });
   } catch (err) {
@@ -560,16 +568,64 @@ crawlPauseBtn.addEventListener('click', async () => {
   await chrome.runtime.sendMessage({ type: 'PAUSE_CRAWL' });
   crawlPauseBtn.hidden = true;
   crawlResumeBtn.hidden = false;
-  crawlStatusEl.textContent = 'Paused — interact with the page, then resume';
+  crawlRescanBtn.hidden = false;
+  crawlStatusEl.textContent = 'Paused — interact with the page, then resume or rescan';
 });
 
 crawlResumeBtn.addEventListener('click', async () => {
   await chrome.runtime.sendMessage({ type: 'RESUME_CRAWL' });
   crawlPauseBtn.hidden = false;
   crawlResumeBtn.hidden = true;
+  crawlRescanBtn.hidden = true;
+});
+
+crawlRescanBtn.addEventListener('click', async () => {
+  crawlStatusEl.textContent = 'Rescanning current page...';
+  crawlRescanBtn.hidden = true;
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN' });
+    }
+  } catch { /* ignore */ }
+  crawlStatusEl.textContent = 'Rescan complete — resume to continue crawling';
 });
 
 crawlCancelBtn.addEventListener('click', async () => {
+  await chrome.runtime.sendMessage({ type: 'CANCEL_CRAWL' });
+  crawlActiveBar.hidden = true;
+  crawlUserWait.hidden = true;
+  scanBtn.disabled = false;
+});
+
+// Page rule wait UI handlers
+const WAIT_MESSAGES: Record<string, string> = {
+  'login': 'This page requires login. Log in, then click Continue.',
+  'interaction': 'This page needs interaction. Make your changes, then click Continue.',
+  'deferred-content': 'Waiting for content to load. When ready, click Continue.',
+};
+
+crawlContinueBtn.addEventListener('click', async () => {
+  crawlUserWait.hidden = true;
+  await chrome.runtime.sendMessage({ type: 'USER_CONTINUE' });
+});
+
+crawlRescanWaitBtn.addEventListener('click', async () => {
+  crawlUserWait.hidden = true;
+  // Rescan current page first, then continue
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
+      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN' });
+    }
+  } catch { /* ignore */ }
+  await chrome.runtime.sendMessage({ type: 'USER_CONTINUE' });
+});
+
+crawlCancelWaitBtn.addEventListener('click', async () => {
+  crawlUserWait.hidden = true;
   await chrome.runtime.sendMessage({ type: 'CANCEL_CRAWL' });
   crawlActiveBar.hidden = true;
   scanBtn.disabled = false;
@@ -577,6 +633,15 @@ crawlCancelBtn.addEventListener('click', async () => {
 
 // Listen for crawl progress + movie mode progress
 chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'CRAWL_WAITING_FOR_USER') {
+    crawlUserWait.hidden = false;
+    crawlWaitMessage.textContent = WAIT_MESSAGES[message.waitType] || 'Waiting for your action.';
+    crawlWaitUrl.textContent = message.url || '';
+    if (message.description) {
+      crawlWaitMessage.textContent += ` (${message.description})`;
+    }
+  }
+
   if (message.type === 'CRAWL_PROGRESS' && message.state) {
     const s = message.state;
     const done = s.completed.length + s.failed.length;
