@@ -103,9 +103,7 @@ describe('validateTestConfig', () => {
     expect(validateTestConfig({ pages: { maxPages: -1 } })).toContainEqual(
       expect.objectContaining({ field: 'pages.maxPages' }),
     );
-    expect(validateTestConfig({ pages: { maxPages: 0 } })).toContainEqual(
-      expect.objectContaining({ field: 'pages.maxPages' }),
-    );
+    expect(validateTestConfig({ pages: { maxPages: 0 } })).toHaveLength(0);
     expect(validateTestConfig({ pages: { autoDiscover: 'yes' } })).toContainEqual(
       expect.objectContaining({ field: 'pages.autoDiscover' }),
     );
