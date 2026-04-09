@@ -226,8 +226,8 @@ export function validateTestConfig(config: unknown): iValidationError[] {
         errors.push({ field: 'pages.autoDiscover', message: 'Must be a boolean' });
       }
       if (p.maxPages !== undefined) {
-        if (typeof p.maxPages !== 'number' || !Number.isInteger(p.maxPages) || p.maxPages < 1) {
-          errors.push({ field: 'pages.maxPages', message: 'Must be a positive integer' });
+        if (typeof p.maxPages !== 'number' || !Number.isInteger(p.maxPages) || p.maxPages < 0) {
+          errors.push({ field: 'pages.maxPages', message: 'Must be a non-negative integer (0 = unlimited)' });
         }
       }
     }
