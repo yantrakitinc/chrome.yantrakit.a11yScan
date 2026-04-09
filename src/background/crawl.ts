@@ -14,18 +14,24 @@
  * - Auth-gated pages that redirect logged-in users are handled gracefully
  */
 
-import type { iPageRule, iPageRuleWaitType, iMockEndpoint } from '@shared/test-config';
+import type { iPageRule, iPageRuleWaitType, iMockEndpoint, iAuthConfig } from '@shared/test-config';
 
 export interface iCrawlOptions {
-  mode: 'discover' | 'sitemap';
+  mode: 'discover' | 'sitemap' | 'url-list';
   maxPages: number;
   sitemapUrl?: string;
+  urls?: string[];
+  autoDiscover?: boolean;
   pageRules?: iPageRule[];
   mocks?: iMockEndpoint[];
   pageLoadTimeout?: number;
   scanTimeout?: number;
   delayBetweenPages?: number;
   crawlScope?: string;
+  wcagTags?: string[];
+  rulesMode?: string;
+  ruleIds?: string[];
+  auth?: iAuthConfig | null;
 }
 
 export interface iCrawlPageResult {
@@ -68,7 +74,11 @@ let crawlPageLoadTimeout = 15000;
 let crawlScanTimeout = 0;
 let crawlDelayBetweenPages = 300;
 let crawlScope = '';
-let crawlMode: 'discover' | 'sitemap' = 'discover';
+let crawlMode: 'discover' | 'sitemap' | 'url-list' = 'discover';
+let crawlAutoDiscover = true;
+let crawlWcagTags: string[] = [];
+let crawlRulesMode = 'all';
+let crawlRuleIds: string[] = [];
 let waitingForUser = false;
 let resolveUserContinue: (() => void) | null = null;
 /** Recorded page rules during crawl (for smart config generation). */
@@ -155,6 +165,34 @@ async function fetchSitemapUrls(sitemapUrl: string): Promise<string[]> {
   } catch {
     return [];
   }
+}
+
+/** Performs login authentication before crawling. */
+async function performAuth(tabId: number, auth: iAuthConfig): Promise<void> {
+  await navigateAndWait(tabId, auth.loginUrl, crawlPageLoadTimeout);
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (usr, pwd, usrSel, pwdSel, submitSel) => {
+      const usrEl = document.querySelector(usrSel) as HTMLInputElement | null;
+      const pwdEl = document.querySelector(pwdSel) as HTMLInputElement | null;
+      if (usrEl) { usrEl.value = usr; usrEl.dispatchEvent(new Event('input', { bubbles: true })); }
+      if (pwdEl) { pwdEl.value = pwd; pwdEl.dispatchEvent(new Event('input', { bubbles: true })); }
+      const submitEl = document.querySelector(submitSel) as HTMLElement | null;
+      if (submitEl) submitEl.click();
+    },
+    args: [auth.username, auth.password, auth.usernameSelector, auth.passwordSelector, auth.submitSelector],
+  });
+  // Wait for login redirect to complete
+  await new Promise<void>((resolve) => {
+    const listener = (tid: number, info: { status?: string }) => {
+      if (tid === tabId && info.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+    setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, crawlPageLoadTimeout);
+  });
 }
 
 /** Navigates a tab and waits for load. Returns the final URL (may differ if redirected). */
@@ -246,9 +284,16 @@ async function scanPage(tabId: number, url: string, origin: string, depth: numbe
       await new Promise((r) => setTimeout(r, crawlDelayBetweenPages));
     }
 
-    const response = await chrome.tabs.sendMessage(tabId, { type: 'RUN_SCAN', scanTimeout: crawlScanTimeout });
-    // In sitemap mode, don't discover links — only scan the provided URLs
-    const links = crawlMode === 'sitemap' ? [] : await discoverLinks(tabId, origin);
+    const response = await chrome.tabs.sendMessage(tabId, {
+      type: 'RUN_SCAN',
+      scanTimeout: crawlScanTimeout,
+      wcagTags: crawlWcagTags.length > 0 ? crawlWcagTags : undefined,
+      rulesMode: crawlRulesMode !== 'all' ? crawlRulesMode : undefined,
+      ruleIds: crawlRuleIds.length > 0 ? crawlRuleIds : undefined,
+    });
+    // Only discover links in discover mode with autoDiscover enabled
+    const shouldDiscover = crawlMode === 'discover' && crawlAutoDiscover;
+    const links = shouldDiscover ? await discoverLinks(tabId, origin) : [];
 
     return {
       result: {
@@ -360,11 +405,22 @@ export async function startCrawl(options: iCrawlOptions): Promise<iCrawlState> {
   crawlDelayBetweenPages = options.delayBetweenPages || 300;
   crawlScope = options.crawlScope || '';
   crawlMode = options.mode;
+  crawlAutoDiscover = options.autoDiscover ?? true;
+  crawlWcagTags = options.wcagTags || [];
+  crawlRulesMode = options.rulesMode || 'all';
+  crawlRuleIds = options.ruleIds || [];
   recordedPageRules = [];
   const origin = new URL(tab.url).origin;
 
+  // Perform auth before crawling if configured
+  if (options.auth) {
+    await performAuth(crawlTabId, options.auth);
+  }
+
   let startUrls: string[];
-  if (options.mode === 'sitemap' && options.sitemapUrl) {
+  if (options.mode === 'url-list' && options.urls?.length) {
+    startUrls = options.urls;
+  } else if (options.mode === 'sitemap' && options.sitemapUrl) {
     startUrls = await fetchSitemapUrls(options.sitemapUrl);
   } else {
     startUrls = [tab.url];

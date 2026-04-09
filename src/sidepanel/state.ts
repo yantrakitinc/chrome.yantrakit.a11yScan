@@ -5,6 +5,22 @@
 
 import type { iTestConfig } from '@shared/test-config';
 
+function buildWcagTagsFromConfig(version: string, level: string): string[] {
+  const tags: string[] = [];
+  const versions = ['2.0', '2.1', '2.2'];
+  const levels = ['A', 'AA', 'AAA'];
+  for (const v of versions) {
+    if (versions.indexOf(v) > versions.indexOf(version)) break;
+    for (const l of levels) {
+      if (levels.indexOf(l) > levels.indexOf(level)) break;
+      const vTag = v === '2.0' ? '2' : v.replace('.', '');
+      tags.push(`wcag${vTag}${l.toLowerCase()}`);
+    }
+  }
+  tags.push('best-practice');
+  return tags;
+}
+
 /** Manual review state: criterion ID → 'pass' | 'fail' | 'na' | null */
 let manualState: Record<string, string | null> = {};
 
@@ -111,6 +127,9 @@ export async function triggerScan(): Promise<any> {
   const response = await chrome.runtime.sendMessage({
     type: 'SCAN_REQUEST',
     scanTimeout: config?.timing?.scanTimeout || 0,
+    wcagTags: config?.wcagVersion ? buildWcagTagsFromConfig(config.wcagVersion, config.wcagLevel) : undefined,
+    rulesMode: config?.rules?.mode !== 'all' ? config?.rules?.mode : undefined,
+    ruleIds: config?.rules?.ruleIds?.length ? config.rules.ruleIds : undefined,
   });
   if (response.type === 'SCAN_RESULT') {
     lastScanResponse = response;

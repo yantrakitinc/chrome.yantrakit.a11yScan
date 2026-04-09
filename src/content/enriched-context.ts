@@ -9,7 +9,14 @@ import type { iEnrichedContext, iDomContext, iCssContext, iFrameworkHints, iFile
  * Collects enriched context for an element matched by selector.
  * Returns null if the element cannot be found.
  */
-export function collectEnrichedContext(selector: string): iEnrichedContext | null {
+export interface iEnrichmentFlags {
+  domContext?: boolean;
+  cssComputedStyles?: boolean;
+  frameworkHints?: boolean;
+  filePathGuesses?: boolean;
+}
+
+export function collectEnrichedContext(selector: string, flags?: iEnrichmentFlags): iEnrichedContext | null {
   let el: Element | null = null;
   try {
     el = document.querySelector(selector);
@@ -19,20 +26,20 @@ export function collectEnrichedContext(selector: string): iEnrichedContext | nul
   if (!el) return null;
 
   return {
-    dom: collectDomContext(el),
-    css: collectCssContext(el),
-    framework: detectFramework(el),
-    filePathGuesses: guessFilePaths(el),
+    dom: flags?.domContext !== false ? collectDomContext(el) : { parentSelector: '', parentTagName: '', siblingSelectors: [], nearestLandmark: '', nearestHeading: '' },
+    css: flags?.cssComputedStyles !== false ? collectCssContext(el) : { color: '', backgroundColor: '', fontSize: '', display: '', visibility: '', position: '' },
+    framework: flags?.frameworkHints !== false ? detectFramework(el) : { detected: null, componentName: null, testId: null },
+    filePathGuesses: flags?.filePathGuesses !== false ? guessFilePaths(el) : [],
   };
 }
 
 /**
  * Collects enriched context for multiple selectors in one call.
  */
-export function collectBatchEnrichedContext(selectors: string[]): Record<string, iEnrichedContext | null> {
+export function collectBatchEnrichedContext(selectors: string[], flags?: iEnrichmentFlags): Record<string, iEnrichedContext | null> {
   const result: Record<string, iEnrichedContext | null> = {};
   for (const selector of selectors) {
-    result[selector] = collectEnrichedContext(selector);
+    result[selector] = collectEnrichedContext(selector, flags);
   }
   return result;
 }

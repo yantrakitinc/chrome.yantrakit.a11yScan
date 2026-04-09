@@ -125,10 +125,12 @@
       <select id="crawl-mode" class="text-[11px] py-1 px-1.5 border border-zinc-300 rounded bg-white cursor-pointer">
         <option value="discover">Discover links</option>
         <option value="sitemap">Sitemap URL</option>
+        <option value="url-list">URL List</option>
       </select>
-      <span class="text-[10px] text-zinc-400">All pages</span>
+      <span id="crawl-page-count" class="text-[10px] text-zinc-400">All pages</span>
     </div>
     <input id="crawl-sitemap-url" hidden type="url" placeholder="https://example.com/sitemap.xml" class="w-full text-[11px] py-1.5 px-2 border border-zinc-300 rounded bg-white">
+    <div id="crawl-url-list-info" hidden class="text-[10px] text-zinc-500 bg-white border border-zinc-200 rounded p-2 max-h-24 overflow-y-auto"></div>
     <button id="crawl-start" class="px-3 py-1 text-[11px] font-bold text-white bg-indigo-950 rounded cursor-pointer">Start Crawl</button>
   </div>
 
