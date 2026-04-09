@@ -8,7 +8,7 @@ import { renderResultsTab } from './render-results';
 import { renderAriaTab } from './render-aria';
 import { initManualReview, renderManualTab } from './manual-review';
 import { exportJSON, exportHTML, exportPDF } from './reports';
-import { renderScanPresets, getSelectedPresets, clearPresets, selectPreset, deselectPreset } from './scan-presets';
+import { renderScanPresets, getSelectedPresets, clearPresets, selectPreset } from './scan-presets';
 import { initConfigPanel, loadSavedConfig, getActiveConfig } from './config-panel';
 import {
   requestTabResults,
@@ -156,6 +156,10 @@ function resetOverlays(): void {
   }
 }
 
+// Explicit class maps to avoid dynamic Tailwind class name construction
+const toggleBgInactive: Record<string, string> = { red: 'bg-red-50', indigo: 'bg-indigo-50', amber: 'bg-amber-50' };
+const toggleBgActive: Record<string, string> = { red: 'bg-red-200', indigo: 'bg-indigo-200', amber: 'bg-amber-200' };
+
 function updateToggleButton(
   btn: HTMLButtonElement,
   icon: HTMLSpanElement,
@@ -164,11 +168,11 @@ function updateToggleButton(
 ): void {
   icon.textContent = active ? '✓' : '○';
   if (active) {
-    btn.classList.remove(`bg-${color}-50`);
-    btn.classList.add(`bg-${color}-200`);
+    btn.classList.remove(toggleBgInactive[color]);
+    btn.classList.add(toggleBgActive[color]);
   } else {
-    btn.classList.remove(`bg-${color}-200`);
-    btn.classList.add(`bg-${color}-50`);
+    btn.classList.remove(toggleBgActive[color]);
+    btn.classList.add(toggleBgInactive[color]);
   }
 }
 

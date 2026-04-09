@@ -147,8 +147,13 @@ export function initConfigPanel(
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (!file) return;
+    errorEl.classList.add('hidden');
     const reader = new FileReader();
     reader.onload = () => { textarea.value = reader.result as string; };
+    reader.onerror = () => {
+      errorEl.textContent = 'Failed to read file.';
+      errorEl.classList.remove('hidden');
+    };
     reader.readAsText(file);
     fileInput.value = '';
   });

@@ -33,7 +33,7 @@ export const SCAN_PRESETS: iScanPreset[] = [
 const selectedPresets = new Set<iPresetId>();
 
 export function getSelectedPresets(): Set<iPresetId> {
-  return selectedPresets;
+  return new Set(selectedPresets);
 }
 
 export function isPresetSelected(id: iPresetId): boolean {
@@ -50,10 +50,6 @@ export function togglePreset(id: iPresetId): void {
 
 export function selectPreset(id: iPresetId): void {
   selectedPresets.add(id);
-}
-
-export function deselectPreset(id: iPresetId): void {
-  selectedPresets.delete(id);
 }
 
 export function clearPresets(): void {
