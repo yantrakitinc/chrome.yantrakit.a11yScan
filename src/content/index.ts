@@ -52,9 +52,11 @@ if (!(window as any).__a11yscan) {
 
     if (message.type === 'HIGHLIGHT_ELEMENT') {
       const selector = message.selector as string;
+      let found = false;
       try {
         const el = document.querySelector(selector);
         if (el) {
+          found = true;
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           const prev = (el as HTMLElement).style.cssText;
           (el as HTMLElement).style.cssText += ';outline: 3px solid #f59e0b !important; outline-offset: 2px !important; box-shadow: 0 0 0 6px rgba(245,158,11,0.3) !important; transition: outline 0.3s, box-shadow 0.3s !important;';
@@ -63,7 +65,7 @@ if (!(window as any).__a11yscan) {
           }, 3000);
         }
       } catch { /* invalid selector */ }
-      sendResponse({ ok: true });
+      sendResponse({ ok: true, found });
       return;
     }
 
@@ -152,9 +154,13 @@ if (!(window as any).__a11yscan) {
     }
 
     if (message.type === 'GET_FOCUS_GAPS') {
-      const gaps = detectFocusGaps();
-      const data = gaps.map(({ reason, selector }) => ({ reason, selector }));
-      sendResponse({ type: 'FOCUS_GAPS_RESULT', gaps: data });
+      try {
+        const gaps = detectFocusGaps();
+        const data = gaps.map(({ reason, selector }) => ({ reason, selector }));
+        sendResponse({ type: 'FOCUS_GAPS_RESULT', gaps: data });
+      } catch (err) {
+        sendResponse({ type: 'FOCUS_GAPS_RESULT', gaps: [], error: String(err) });
+      }
       return;
     }
 
