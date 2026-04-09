@@ -48,6 +48,14 @@ export function togglePreset(id: iPresetId): void {
   }
 }
 
+export function selectPreset(id: iPresetId): void {
+  selectedPresets.add(id);
+}
+
+export function deselectPreset(id: iPresetId): void {
+  selectedPresets.delete(id);
+}
+
 export function clearPresets(): void {
   selectedPresets.clear();
 }

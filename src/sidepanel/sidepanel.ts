@@ -8,7 +8,7 @@ import { renderResultsTab } from './render-results';
 import { renderAriaTab } from './render-aria';
 import { initManualReview, renderManualTab } from './manual-review';
 import { exportJSON, exportHTML, exportPDF } from './reports';
-import { renderScanPresets, getSelectedPresets, clearPresets } from './scan-presets';
+import { renderScanPresets, getSelectedPresets, clearPresets, selectPreset, deselectPreset } from './scan-presets';
 import { initConfigPanel, loadSavedConfig, getActiveConfig } from './config-panel';
 import {
   requestTabResults,
@@ -215,7 +215,17 @@ loadSavedConfig().then(() => {
     if (current) {
       wcagVersion.value = current.wcagVersion;
       wcagLevel.value = current.wcagLevel;
+      // Auto-select presets based on config
+      if (current.scanMode === 'sitemap' || current.scanMode === 'discover') {
+        selectPreset('site-crawl');
+      }
+      if (current.viewports && current.viewports.length > 0) {
+        selectPreset('multi-viewport');
+      }
+    } else {
+      clearPresets();
     }
+    renderScanPresets(emptyStateEl, () => {});
   });
   const saved = getActiveConfig();
   if (saved) {
