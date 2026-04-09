@@ -761,15 +761,20 @@ function updateCrawlUrlListInfo(): void {
 function populateCrawlFromConfig(): void {
   const config = getActiveConfig();
   if (!config) return;
-  if (config.scanMode === 'sitemap' || config.scanMode === 'discover' || config.scanMode === 'url-list') {
-    crawlMode.value = config.scanMode === 'discover' ? 'discover' : config.scanMode;
-    crawlSitemapUrl.hidden = config.scanMode !== 'sitemap';
-    crawlUrlListInfo.hidden = config.scanMode !== 'url-list';
-    if (config.scanMode === 'sitemap' && config.pages.sitemapUrl) {
-      crawlSitemapUrl.value = config.pages.sitemapUrl;
-    }
-    updateCrawlUrlListInfo();
+  if (config.scanMode === 'single') return;
+
+  // If URLs are already resolved (from sitemap fetch or manual entry), use url-list mode
+  const hasUrls = config.pages.urls && config.pages.urls.length > 0;
+  const effectiveMode = hasUrls ? 'url-list' : (config.scanMode === 'discover' ? 'discover' : config.scanMode);
+
+  crawlMode.value = effectiveMode;
+  crawlSitemapUrl.hidden = effectiveMode !== 'sitemap';
+  crawlUrlListInfo.hidden = effectiveMode !== 'url-list';
+
+  if (effectiveMode === 'sitemap' && config.pages.sitemapUrl) {
+    crawlSitemapUrl.value = config.pages.sitemapUrl;
   }
+  updateCrawlUrlListInfo();
 }
 
 crawlStartBtn.addEventListener('click', async () => {
@@ -839,6 +844,7 @@ crawlCancelBtn.addEventListener('click', async () => {
   crawlActiveBar.hidden = true;
   crawlUserWait.hidden = true;
   scanBtn.disabled = false;
+  clearBtn.hidden = false;
 });
 
 // Page rule wait UI handlers
@@ -907,6 +913,7 @@ chrome.runtime.onMessage.addListener((message) => {
     if (s.status === 'complete') {
       crawlActiveBar.hidden = true;
       scanBtn.disabled = false;
+      clearBtn.hidden = false;
 
       // Store crawl results for export
       lastCrawlResults = {
