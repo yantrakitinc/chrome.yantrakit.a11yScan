@@ -52,6 +52,8 @@ export interface iPagesConfig {
   sitemapUrl: string;
   autoDiscover: boolean;
   maxPages: number;
+  /** URL prefix to restrict crawl scope. Only links starting with this prefix are followed. Empty = use origin. */
+  crawlScope: string;
 }
 
 /** Timing configuration for scan delays. */
@@ -131,6 +133,7 @@ export const DEFAULT_PAGES: iPagesConfig = {
   sitemapUrl: '',
   autoDiscover: false,
   maxPages: 50,
+  crawlScope: '',
 };
 
 /** Default rule filter — run all rules. */
@@ -229,6 +232,9 @@ export function validateTestConfig(config: unknown): iValidationError[] {
         if (typeof p.maxPages !== 'number' || !Number.isInteger(p.maxPages) || p.maxPages < 0) {
           errors.push({ field: 'pages.maxPages', message: 'Must be a non-negative integer (0 = unlimited)' });
         }
+      }
+      if (p.crawlScope !== undefined && typeof p.crawlScope !== 'string') {
+        errors.push({ field: 'pages.crawlScope', message: 'Must be a string (URL prefix)' });
       }
     }
   }

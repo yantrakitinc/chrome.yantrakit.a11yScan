@@ -25,6 +25,7 @@ export interface iCrawlOptions {
   pageLoadTimeout?: number;
   scanTimeout?: number;
   delayBetweenPages?: number;
+  crawlScope?: string;
 }
 
 export interface iCrawlPageResult {
@@ -66,6 +67,7 @@ let crawlMocks: iMockEndpoint[] = [];
 let crawlPageLoadTimeout = 15000;
 let crawlScanTimeout = 0;
 let crawlDelayBetweenPages = 300;
+let crawlScope = '';
 let waitingForUser = false;
 let resolveUserContinue: (() => void) | null = null;
 /** Recorded page rules during crawl (for smart config generation). */
@@ -179,12 +181,18 @@ async function navigateAndWait(tabId: number, url: string, timeout = 15000): Pro
   });
 }
 
-/** Discovers same-origin links on a page, skipping nofollow. */
+/** Discovers links on a page, filtering by crawlScope (or origin). Skips nofollow. */
 async function discoverLinks(tabId: number, origin: string): Promise<string[]> {
+  // Use crawlScope if set, otherwise fall back to origin.
+  // Ensure the scope prefix ends with '/' to prevent /creator matching /creators.
+  let scopePrefix = crawlScope || origin;
+  if (scopePrefix && !scopePrefix.endsWith('/')) {
+    scopePrefix += '/';
+  }
   try {
     const [result] = await chrome.scripting.executeScript({
       target: { tabId },
-      func: (orig: string) => {
+      func: (prefix: string) => {
         return Array.from(document.querySelectorAll('a[href]'))
           .filter((a) => {
             const rel = a.getAttribute('rel') || '';
@@ -198,9 +206,9 @@ async function discoverLinks(tabId: number, origin: string): Promise<string[]> {
               return parsed.href;
             } catch { return ''; }
           })
-          .filter((href) => href.startsWith(orig) && href !== '');
+          .filter((href) => href !== '' && (href.startsWith(prefix) || href === prefix.replace(/\/$/, '')));
       },
-      args: [origin],
+      args: [scopePrefix],
     });
     return [...new Set(result?.result || [])];
   } catch {
@@ -348,6 +356,7 @@ export async function startCrawl(options: iCrawlOptions): Promise<iCrawlState> {
   crawlPageLoadTimeout = options.pageLoadTimeout || 15000;
   crawlScanTimeout = options.scanTimeout || 0;
   crawlDelayBetweenPages = options.delayBetweenPages || 300;
+  crawlScope = options.crawlScope || '';
   recordedPageRules = [];
   const origin = new URL(tab.url).origin;
 
