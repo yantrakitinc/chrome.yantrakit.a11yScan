@@ -76,7 +76,7 @@ function diffResults(viewports: iViewportResult[]): { allViewports: any[]; viewp
   return { allViewports, viewportSpecific };
 }
 
-export async function runMultiViewportScan(customViewports?: { label: string; width: number }[]): Promise<iMultiViewportResult> {
+export async function runMultiViewportScan(customViewports?: { label: string; width: number }[], scanTimeout?: number): Promise<iMultiViewportResult> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id || !tab.windowId) throw new Error('No active tab');
 
@@ -93,7 +93,7 @@ export async function runMultiViewportScan(customViewports?: { label: string; wi
 
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
 
-    const response = await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN' });
+    const response = await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: scanTimeout || 0 });
 
     viewportResults.push({
       width: vp.width,

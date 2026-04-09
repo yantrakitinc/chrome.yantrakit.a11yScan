@@ -185,7 +185,11 @@ if (!(window as any).__a11yscan) {
     }
 
     if (message.type === 'RUN_SCAN') {
-      axe.run(document).then((results) => {
+      const axeOptions: axe.RunOptions = {};
+      if (message.scanTimeout && message.scanTimeout > 0) {
+        (axeOptions as Record<string, unknown>).timeout = message.scanTimeout;
+      }
+      axe.run(document, axeOptions).then((results: axe.AxeResults) => {
         sendResponse({
           type: 'SCAN_RESULT',
           violations: results.violations.map((v) => ({
@@ -196,7 +200,7 @@ if (!(window as any).__a11yscan) {
             description: v.description,
             tags: v.tags,
             nodes: v.nodes.map((n) => ({
-              target: n.target.map(String),
+              target: n.target.map((path) => Array.isArray(path) ? path.join(' > ') : path),
               html: n.html,
               failureSummary: n.failureSummary ?? '',
             })),

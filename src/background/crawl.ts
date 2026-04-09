@@ -22,6 +22,9 @@ export interface iCrawlOptions {
   sitemapUrl?: string;
   pageRules?: iPageRule[];
   mocks?: iMockEndpoint[];
+  pageLoadTimeout?: number;
+  scanTimeout?: number;
+  delayBetweenPages?: number;
 }
 
 export interface iCrawlPageResult {
@@ -60,6 +63,9 @@ let crawlPaused = false;
 let crawlResolveResume: (() => void) | null = null;
 let crawlPageRules: iPageRule[] = [];
 let crawlMocks: iMockEndpoint[] = [];
+let crawlPageLoadTimeout = 15000;
+let crawlScanTimeout = 0;
+let crawlDelayBetweenPages = 300;
 let waitingForUser = false;
 let resolveUserContinue: (() => void) | null = null;
 /** Recorded page rules during crawl (for smart config generation). */
@@ -205,7 +211,7 @@ async function discoverLinks(tabId: number, origin: string): Promise<string[]> {
 /** Scans a single page. Handles failures, redirects, and page rules. */
 async function scanPage(tabId: number, url: string, origin: string, depth: number): Promise<{ result: iCrawlPageResult; links: string[] }> {
   try {
-    const finalUrl = await navigateAndWait(tabId, url);
+    const finalUrl = await navigateAndWait(tabId, url, crawlPageLoadTimeout);
 
     const redirected = finalUrl !== url && !finalUrl.startsWith(url + '#');
     if (redirected && !finalUrl.startsWith(origin)) {
@@ -228,10 +234,10 @@ async function scanPage(tabId: number, url: string, origin: string, depth: numbe
       await chrome.tabs.sendMessage(tabId, { type: 'ACTIVATE_MOCKS', mocks: crawlMocks });
       await new Promise((r) => setTimeout(r, 500)); // Wait for mocked data to load
     } else {
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, crawlDelayBetweenPages));
     }
 
-    const response = await chrome.tabs.sendMessage(tabId, { type: 'RUN_SCAN' });
+    const response = await chrome.tabs.sendMessage(tabId, { type: 'RUN_SCAN', scanTimeout: crawlScanTimeout });
     const links = await discoverLinks(tabId, origin);
 
     return {
@@ -339,6 +345,9 @@ export async function startCrawl(options: iCrawlOptions): Promise<iCrawlState> {
   crawlPaused = false;
   crawlPageRules = options.pageRules || [];
   crawlMocks = options.mocks || [];
+  crawlPageLoadTimeout = options.pageLoadTimeout || 15000;
+  crawlScanTimeout = options.scanTimeout || 0;
+  crawlDelayBetweenPages = options.delayBetweenPages || 300;
   recordedPageRules = [];
   const origin = new URL(tab.url).origin;
 
