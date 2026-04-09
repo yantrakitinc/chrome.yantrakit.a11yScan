@@ -156,7 +156,6 @@ export function initConfigPanel(
   clearBtn.addEventListener('click', async () => {
     await setActiveConfig(null);
     refreshUI();
-    hidePanel();
     onConfigChange(null);
   });
 }

@@ -68,6 +68,7 @@ let crawlPageLoadTimeout = 15000;
 let crawlScanTimeout = 0;
 let crawlDelayBetweenPages = 300;
 let crawlScope = '';
+let crawlMode: 'discover' | 'sitemap' = 'discover';
 let waitingForUser = false;
 let resolveUserContinue: (() => void) | null = null;
 /** Recorded page rules during crawl (for smart config generation). */
@@ -246,7 +247,8 @@ async function scanPage(tabId: number, url: string, origin: string, depth: numbe
     }
 
     const response = await chrome.tabs.sendMessage(tabId, { type: 'RUN_SCAN', scanTimeout: crawlScanTimeout });
-    const links = await discoverLinks(tabId, origin);
+    // In sitemap mode, don't discover links — only scan the provided URLs
+    const links = crawlMode === 'sitemap' ? [] : await discoverLinks(tabId, origin);
 
     return {
       result: {
@@ -357,6 +359,7 @@ export async function startCrawl(options: iCrawlOptions): Promise<iCrawlState> {
   crawlScanTimeout = options.scanTimeout || 0;
   crawlDelayBetweenPages = options.delayBetweenPages || 300;
   crawlScope = options.crawlScope || '';
+  crawlMode = options.mode;
   recordedPageRules = [];
   const origin = new URL(tab.url).origin;
 
@@ -379,6 +382,13 @@ export async function startCrawl(options: iCrawlOptions): Promise<iCrawlState> {
   crawlState.status = crawlCancelled ? 'idle' : 'complete';
   crawlState.current = undefined;
   await chrome.storage.local.set({ crawlState });
+
+  // Navigate back to the starting page after crawl completes
+  if (!crawlCancelled && crawlTabId && tab.url) {
+    try {
+      await chrome.tabs.update(crawlTabId, { url: tab.url });
+    } catch { /* tab may have been closed */ }
+  }
   sendProgress();
 
   return crawlState;
