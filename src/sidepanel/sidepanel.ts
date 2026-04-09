@@ -21,6 +21,7 @@ import {
   getLastScanResponse,
 } from './state';
 import type { iAriaWidgetResult } from '@shared/aria-patterns';
+import { filterCriteria, axeRuleToWcag } from '@shared/wcag-mapping';
 
 const scanBtn = document.getElementById('scan-btn') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
@@ -110,6 +111,11 @@ let ariaWidgets: iAriaWidgetResult[] = [];
 /** Cached crawl results for export. */
 let lastCrawlResults: any = null;
 
+/** Cached crawl page results for re-rendering on toggle. */
+let lastCrawlPageResults: any[] = [];
+let lastCrawlCompletedCount: number | null = null;
+let crawlGroupBy: 'page' | 'wcag' = 'page';
+
 /** Reset all overlay toggles to off and hide overlays on the page. */
 function resetOverlays(): void {
   if (violationOverlayOn) {
@@ -151,9 +157,23 @@ toggleViolationsBtn.addEventListener('click', async () => {
   try {
     if (violationOverlayOn) {
       const response = getLastScanResponse();
+      // Flatten violations: each node.target becomes a separate overlay entry
+      const flatViolations = [];
+      for (const v of (response?.violations || [])) {
+        for (const node of (v.nodes || [])) {
+          for (const selector of (node.target || [])) {
+            flatViolations.push({
+              selector: selector.toString(),
+              impact: v.impact,
+              ruleId: v.id,
+              description: v.help,
+            });
+          }
+        }
+      }
       await chrome.runtime.sendMessage({
         type: 'SHOW_VIOLATION_OVERLAY',
-        violations: response?.violations || [],
+        violations: flatViolations,
       });
     } else {
       await chrome.runtime.sendMessage({ type: 'HIDE_VIOLATION_OVERLAY' });
@@ -310,6 +330,7 @@ scanBtn.addEventListener('click', async () => {
       const result = await chrome.runtime.sendMessage({
         type: 'MULTI_VIEWPORT_SCAN',
         viewports: customViewports || undefined,
+        scanTimeout: getActiveConfig()?.timing?.scanTimeout || 0,
       });
       if (result?.type === 'MULTI_VIEWPORT_RESULT') {
         let html = '<p class="mb-2 text-sm font-bold">Multi-Viewport Results</p>';
@@ -505,31 +526,175 @@ function hideResults(): void {
 
 /** Renders crawl results into the output area. Called live during crawl and on completion. */
 function renderCrawlResults(results: any[], completedCount: number | null): void {
-  const header = completedCount !== null
-    ? `<p class="mb-2 text-sm font-bold">Site Crawl Results — ${completedCount} pages scanned</p>`
-    : `<p class="mb-2 text-sm font-bold text-indigo-800">Crawling — ${results.length} pages so far...</p>`;
+  // Cache for re-rendering on group toggle
+  lastCrawlPageResults = results;
+  lastCrawlCompletedCount = completedCount;
 
-  let html = header;
+  const isLive = completedCount === null;
+  const header = isLive
+    ? `<p class="mb-1 text-sm font-bold text-indigo-800">Crawling — ${results.length} pages so far...</p>`
+    : `<p class="mb-1 text-sm font-bold">Site Crawl Results — ${completedCount} pages scanned</p>`;
+
+  // Toggle buttons (only show when not live)
+  const toggleHtml = isLive ? '' : `
+    <div class="flex gap-1 mb-2">
+      <button class="crawl-group-btn px-2 py-0.5 text-[9px] font-bold rounded border cursor-pointer ${crawlGroupBy === 'page' ? 'bg-indigo-950 text-white border-indigo-950' : 'bg-white text-zinc-600 border-zinc-300 hover:bg-zinc-50'}" data-group="page">By Page</button>
+      <button class="crawl-group-btn px-2 py-0.5 text-[9px] font-bold rounded border cursor-pointer ${crawlGroupBy === 'wcag' ? 'bg-indigo-950 text-white border-indigo-950' : 'bg-white text-zinc-600 border-zinc-300 hover:bg-zinc-50'}" data-group="wcag">By WCAG</button>
+    </div>`;
+
+  const criteria = filterCriteria(wcagVersion.value as '2.0' | '2.1' | '2.2', wcagLevel.value as 'A' | 'AA' | 'AAA');
+
+  let html = header + toggleHtml;
+
+  if (crawlGroupBy === 'wcag' && !isLive) {
+    // ── Group by WCAG criterion ──
+    const wcagMap = new Map<string, { name: string; level: string; impact: string; pages: Map<string, any[]> }>();
+
+    for (const r of results) {
+      if (r.status !== 'scanned') continue;
+      for (const v of r.violations) {
+        const matched = axeRuleToWcag(v.id).filter((c) => criteria.some((fc) => fc.id === c.id));
+        const targets = matched.length > 0 ? matched : [{ id: v.id, name: v.help, level: '' }];
+        for (const c of targets) {
+          if (!wcagMap.has(c.id)) wcagMap.set(c.id, { name: c.name, level: (c as any).level || '', impact: v.impact || '', pages: new Map() });
+          const entry = wcagMap.get(c.id)!;
+          if (!entry.pages.has(r.url)) entry.pages.set(r.url, []);
+          entry.pages.get(r.url)!.push(...(v.nodes || []));
+        }
+      }
+    }
+
+    if (wcagMap.size === 0) {
+      html += `<p class="text-xs text-zinc-500 mt-2">No violations found across all pages.</p>`;
+    }
+
+    const impactOrder: Record<string, number> = { critical: 0, serious: 1, moderate: 2, minor: 3 };
+    const sorted = Array.from(wcagMap.entries()).sort(([, a], [, b]) => (impactOrder[a.impact] ?? 4) - (impactOrder[b.impact] ?? 4));
+
+    for (const [cId, { name, level, impact, pages }] of sorted) {
+      const totalNodes = Array.from(pages.values()).reduce((s, nodes) => s + nodes.length, 0);
+      const impactColors: Record<string, string> = { critical: 'border-red-600 bg-red-50', serious: 'border-orange-500 bg-orange-50', moderate: 'border-yellow-500 bg-yellow-50', minor: 'border-blue-400 bg-blue-50' };
+      const colors = impactColors[impact] || 'border-zinc-400 bg-zinc-50';
+      html += `<details class="my-0.5 border-l-3 ${colors} rounded-r">`;
+      html += `<summary class="py-1.5 px-2 text-[11px] cursor-pointer hover:brightness-95">`;
+      html += `<strong>${cId}${level ? ` (${level})` : ''}</strong> ${name}`;
+      html += ` <span class="text-zinc-500">· ${pages.size} page${pages.size !== 1 ? 's' : ''}, ${totalNodes} element${totalNodes !== 1 ? 's' : ''}</span>`;
+      html += `</summary>`;
+      html += `<div class="px-2 pb-2 pt-1 space-y-0.5">`;
+      for (const [pageUrl, nodes] of pages) {
+        html += `<details class="border-l-2 border-zinc-300 bg-white rounded-r">`;
+        html += `<summary class="py-1 px-2 text-[10px] cursor-pointer hover:bg-zinc-50 break-all">${pageUrl} <span class="text-zinc-400">(${nodes.length})</span></summary>`;
+        html += `<div class="px-2 pb-1.5 space-y-1">`;
+        for (const node of nodes) {
+          const sel = (node.target || []).join(', ');
+          html += `<div class="bg-zinc-50 border border-zinc-200 rounded p-1.5 text-[10px] font-mono">`;
+          html += `<div class="flex items-start justify-between gap-1 mb-0.5">`;
+          html += `<div class="text-indigo-800 font-semibold truncate">${sel}</div>`;
+          html += `<button class="crawl-highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline" data-selector="${sel.replace(/"/g, '&quot;')}" data-url="${pageUrl.replace(/"/g, '&quot;')}">Highlight</button>`;
+          html += `</div>`;
+          if (node.html) html += `<div class="text-zinc-500 truncate">${node.html.replace(/</g, '&lt;').slice(0, 120)}</div>`;
+          html += `</div>`;
+        }
+        html += `</div></details>`;
+      }
+      html += `</div></details>`;
+    }
+  } else {
+    // ── Group by Page ──
   for (const r of results) {
     const vCount = r.violations.reduce((sum: number, v: any) => sum + (v.nodes?.length || 0), 0);
     const statusIcon = r.status === 'scanned' ? (vCount > 0 ? '⚠️' : '✅') : r.status === 'redirected' ? '↪️' : '❌';
-    const borderColor = vCount > 0 ? 'border-red-600 bg-red-50' : r.status === 'failed' ? 'border-zinc-400 bg-zinc-50' : r.status === 'redirected' ? 'border-amber-400 bg-amber-50' : 'border-green-600 bg-green-50';
-    html += `<div class="crawl-result my-0.5 py-1.5 px-2 text-[11px] border-l-3 ${borderColor} rounded-r cursor-pointer hover:brightness-95 transition-all" data-url="${r.url.replace(/"/g, '&quot;')}">`;
-    html += `${statusIcon} <strong class="break-all">${r.url}</strong> — ${vCount} violations`;
-    if (r.redirectedTo) html += ` <span class="text-amber-600">(→ ${r.redirectedTo})</span>`;
-    if (r.error) html += ` <span class="text-red-600">(${r.error})</span>`;
-    html += `</div>`;
+    const borderColor = vCount > 0 ? 'border-red-600' : r.status === 'failed' ? 'border-zinc-400' : r.status === 'redirected' ? 'border-amber-400' : 'border-green-600';
+    const bgColor = vCount > 0 ? 'bg-red-50' : r.status === 'failed' ? 'bg-zinc-50' : r.status === 'redirected' ? 'bg-amber-50' : 'bg-green-50';
+
+    html += `<details class="my-0.5 border-l-3 ${borderColor} ${bgColor} rounded-r">`;
+    html += `<summary class="py-1.5 px-2 text-[11px] cursor-pointer hover:brightness-95 list-none flex items-center gap-1">`;
+    html += `<span>${statusIcon}</span>`;
+    html += `<span class="font-semibold break-all flex-1">${r.url}</span>`;
+    html += `<span class="${vCount > 0 ? 'text-red-700 font-bold' : 'text-zinc-500'} shrink-0">${vCount}V</span>`;
+    if (r.passes) html += ` <span class="text-green-700 shrink-0">${r.passes}P</span>`;
+    if (r.redirectedTo) html += ` <span class="text-amber-600 text-[10px]">→ ${r.redirectedTo}</span>`;
+    if (r.error) html += ` <span class="text-red-600 text-[10px]">${r.error}</span>`;
+    html += `</summary>`;
+
+    if (r.status !== 'scanned') {
+      html += `<div class="px-2 py-1.5 text-[10px] text-zinc-500">${r.status}${r.error ? ': ' + r.error : ''}</div>`;
+    } else if (vCount === 0) {
+      html += `<div class="px-2 py-1.5 text-[10px] text-green-700">No violations found.</div>`;
+    } else {
+      // Group violations by WCAG criterion
+      const mapped = new Map<string, { name: string; level: string; impact: string; rules: any[] }>();
+      for (const v of r.violations) {
+        const matched = axeRuleToWcag(v.id).filter((c) => criteria.some((fc) => fc.id === c.id));
+        const targets = matched.length > 0 ? matched : [{ id: v.id, name: v.help, level: '' }];
+        for (const c of targets) {
+          if (!mapped.has(c.id)) mapped.set(c.id, { name: c.name, level: (c as any).level || '', impact: v.impact || '', rules: [] });
+          mapped.get(c.id)!.rules.push(v);
+        }
+      }
+
+      html += `<div class="px-2 pb-2 pt-1 space-y-0.5">`;
+      for (const [cId, { name, level, impact, rules }] of mapped) {
+        const totalNodes = rules.reduce((s: number, v: any) => s + (v.nodes?.length || 0), 0);
+        const impactColors: Record<string, string> = { critical: 'border-red-600 bg-red-50', serious: 'border-orange-500 bg-orange-50', moderate: 'border-yellow-500 bg-yellow-50', minor: 'border-blue-400 bg-blue-50' };
+        const colors = impactColors[impact] || 'border-zinc-400 bg-zinc-50';
+        html += `<details class="border-l-2 ${colors} rounded-r">`;
+        html += `<summary class="py-1 px-2 text-[10px] cursor-pointer hover:brightness-95">`;
+        html += `<strong>${cId}${level ? ` (${level})` : ''}</strong> ${name}`;
+        html += ` <span class="text-zinc-500">· ${totalNodes} element${totalNodes !== 1 ? 's' : ''}</span>`;
+        html += `</summary>`;
+        html += `<div class="px-2 pb-1.5 space-y-1">`;
+        for (const v of rules) {
+          for (const node of (v.nodes || [])) {
+            const sel = (node.target || []).join(', ');
+            html += `<div class="bg-white border border-zinc-200 rounded p-1.5 text-[10px] font-mono">`;
+            html += `<div class="flex items-start justify-between gap-1 mb-0.5">`;
+            html += `<div class="text-indigo-800 font-semibold truncate">${sel}</div>`;
+            html += `<button class="crawl-highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline" data-selector="${sel.replace(/"/g, '&quot;')}" data-url="${r.url.replace(/"/g, '&quot;')}">Highlight</button>`;
+            html += `</div>`;
+            if (node.html) html += `<div class="text-zinc-500 truncate">${node.html.replace(/</g, '&lt;').slice(0, 120)}</div>`;
+            html += `</div>`;
+          }
+        }
+        html += `</div></details>`;
+      }
+      html += `</div>`;
+    }
+
+    html += `</details>`;
   }
+  } // end else (group by page)
+
   output.innerHTML = html;
 
-  // Wire click handlers
-  output.querySelectorAll<HTMLElement>('.crawl-result').forEach((el) => {
-    el.addEventListener('click', () => {
-      const url = el.dataset.url;
-      if (url) {
-        chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-          if (tab?.id) chrome.tabs.update(tab.id, { url });
-        });
+  // Wire group toggle buttons
+  output.querySelectorAll<HTMLElement>('.crawl-group-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      crawlGroupBy = btn.dataset.group as 'page' | 'wcag';
+      renderCrawlResults(lastCrawlPageResults, lastCrawlCompletedCount);
+    });
+  });
+
+  // Wire highlight buttons — navigate to page if needed, then highlight
+  output.querySelectorAll<HTMLElement>('.crawl-highlight-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const selector = btn.dataset.selector;
+      const url = btn.dataset.url;
+      if (!selector || !url) return;
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return;
+      if (tab.url !== url) {
+        await chrome.tabs.update(tab.id, { url });
+        const listener = (tabId: number, info: { status?: string }) => {
+          if (tabId === tab.id && info.status === 'complete') {
+            chrome.tabs.onUpdated.removeListener(listener);
+            setTimeout(() => chrome.runtime.sendMessage({ type: 'HIGHLIGHT_ELEMENT', selector }).catch(() => {}), 500);
+          }
+        };
+        chrome.tabs.onUpdated.addListener(listener);
+      } else {
+        chrome.runtime.sendMessage({ type: 'HIGHLIGHT_ELEMENT', selector }).catch(() => {});
       }
     });
   });
@@ -558,6 +723,9 @@ crawlStartBtn.addEventListener('click', async () => {
         sitemapUrl: crawlMode.value === 'sitemap' ? crawlSitemapUrl.value : undefined,
         pageRules: getActiveConfig()?.pageRules || [],
         mocks: getActiveConfig()?.mocks || [],
+        pageLoadTimeout: getActiveConfig()?.timing?.pageLoadTimeout,
+        scanTimeout: getActiveConfig()?.timing?.scanTimeout,
+        delayBetweenPages: getActiveConfig()?.timing?.delayBetweenPages,
       },
     });
   } catch (err) {
@@ -587,7 +755,7 @@ crawlRescanBtn.addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN' });
+      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: getActiveConfig()?.timing?.scanTimeout || 0 });
     }
   } catch { /* ignore */ }
   crawlStatusEl.textContent = 'Rescan complete — resume to continue crawling';
@@ -619,7 +787,7 @@ crawlRescanWaitBtn.addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN' });
+      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: getActiveConfig()?.timing?.scanTimeout || 0 });
     }
   } catch { /* ignore */ }
   await chrome.runtime.sendMessage({ type: 'USER_CONTINUE' });

@@ -85,9 +85,33 @@ export function requestTabResults(callback: (results: any | null) => void): void
 
 /**
  * Triggers a scan via the background service worker.
+ * If a config with pages.urls is active, navigates to that URL first.
  */
 export async function triggerScan(): Promise<any> {
-  const response = await chrome.runtime.sendMessage({ type: 'SCAN_REQUEST' });
+  const config = getTestConfig();
+
+  // If config specifies a URL, navigate to it first
+  if (config?.pages?.urls && config.pages.urls.length > 0) {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.tabs.update(tab.id, { url: config.pages.urls[0] });
+      // Wait for page to load
+      await new Promise<void>((resolve) => {
+        const listener = (tabId: number, info: { status?: string }) => {
+          if (tabId === tab.id && info.status === 'complete') {
+            chrome.tabs.onUpdated.removeListener(listener);
+            resolve();
+          }
+        };
+        chrome.tabs.onUpdated.addListener(listener);
+      });
+    }
+  }
+
+  const response = await chrome.runtime.sendMessage({
+    type: 'SCAN_REQUEST',
+    scanTimeout: config?.timing?.scanTimeout || 0,
+  });
   if (response.type === 'SCAN_RESULT') {
     lastScanResponse = response;
     manualState = {};
