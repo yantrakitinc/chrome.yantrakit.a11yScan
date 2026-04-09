@@ -726,6 +726,7 @@ crawlStartBtn.addEventListener('click', async () => {
         pageLoadTimeout: getActiveConfig()?.timing?.pageLoadTimeout,
         scanTimeout: getActiveConfig()?.timing?.scanTimeout,
         delayBetweenPages: getActiveConfig()?.timing?.delayBetweenPages,
+        crawlScope: getActiveConfig()?.pages?.crawlScope || '',
       },
     });
   } catch (err) {
