@@ -75,7 +75,7 @@ if (!(window as any).__a11yscan) {
 
     if (message.type === 'COLLECT_ENRICHED_CONTEXT') {
       const selectors = (message.selectors || []) as string[];
-      const results = collectBatchEnrichedContext(selectors);
+      const results = collectBatchEnrichedContext(selectors, message.enrichmentFlags);
       sendResponse({ type: 'ENRICHED_CONTEXT_RESULT', contexts: results });
       return;
     }
@@ -188,6 +188,18 @@ if (!(window as any).__a11yscan) {
       const axeOptions: axe.RunOptions = {};
       if (message.scanTimeout && message.scanTimeout > 0) {
         (axeOptions as Record<string, unknown>).timeout = message.scanTimeout;
+      }
+      // WCAG tag filtering
+      if (message.wcagTags && message.wcagTags.length > 0) {
+        axeOptions.runOnly = { type: 'tag', values: message.wcagTags };
+      }
+      // Rule include/exclude filtering (overrides tag filtering)
+      if (message.rulesMode === 'include' && message.ruleIds?.length > 0) {
+        axeOptions.runOnly = { type: 'rule', values: message.ruleIds };
+      } else if (message.rulesMode === 'exclude' && message.ruleIds?.length > 0) {
+        const disabledRules: Record<string, { enabled: boolean }> = {};
+        for (const id of message.ruleIds) { disabledRules[id] = { enabled: false }; }
+        axeOptions.rules = disabledRules;
       }
       axe.run(document, axeOptions).then((results: axe.AxeResults) => {
         sendResponse({

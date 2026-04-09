@@ -188,12 +188,13 @@ function enrichPassItem(item: any): any {
 /**
  * Fetches enriched context for a list of selectors from the content script.
  */
-async function fetchEnrichedContexts(selectors: string[]): Promise<Record<string, iEnrichedContext | null>> {
+async function fetchEnrichedContexts(selectors: string[], enrichmentFlags?: Record<string, boolean>): Promise<Record<string, iEnrichedContext | null>> {
   if (selectors.length === 0) return {};
   try {
     const response = await chrome.runtime.sendMessage({
       type: 'COLLECT_ENRICHED_CONTEXT',
       selectors,
+      enrichmentFlags,
     });
     return response?.contexts || {};
   } catch {
@@ -225,6 +226,7 @@ export async function exportJSON(
   url: string,
   tabOrder?: iTabOrderData | null,
   focusGaps?: iFocusGapEntry[] | null,
+  enrichmentFlags?: Record<string, boolean>,
 ): Promise<void> {
   const counts = extractCounts(response);
   const violations = Array.isArray(response.violations) ? response.violations : [];
@@ -235,7 +237,7 @@ export async function exportJSON(
 
   // Collect enriched context for all violation/incomplete selectors
   const allSelectors = extractSelectors([...violations, ...incomplete]);
-  const contextMap = await fetchEnrichedContexts(allSelectors);
+  const contextMap = await fetchEnrichedContexts(allSelectors, enrichmentFlags);
 
   const report: Record<string, any> = {
     tool: 'A11y Scan',

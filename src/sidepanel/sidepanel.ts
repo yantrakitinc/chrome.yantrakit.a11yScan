@@ -23,6 +23,25 @@ import {
 import type { iAriaWidgetResult } from '@shared/aria-patterns';
 import { filterCriteria, axeRuleToWcag } from '@shared/wcag-mapping';
 
+/** Build axe-core WCAG tag filters from version/level dropdowns or config. */
+function buildWcagTags(): string[] {
+  const version = (getActiveConfig()?.wcagVersion || wcagVersion.value) as string;
+  const level = (getActiveConfig()?.wcagLevel || wcagLevel.value) as string;
+  const tags: string[] = [];
+  const versions = ['2.0', '2.1', '2.2'];
+  const levels = ['A', 'AA', 'AAA'];
+  for (const v of versions) {
+    if (versions.indexOf(v) > versions.indexOf(version)) break;
+    for (const l of levels) {
+      if (levels.indexOf(l) > levels.indexOf(level)) break;
+      const vTag = v === '2.0' ? '2' : v.replace('.', '');
+      tags.push(`wcag${vTag}${l.toLowerCase()}`);
+    }
+  }
+  tags.push('best-practice');
+  return tags;
+}
+
 const scanBtn = document.getElementById('scan-btn') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
 
@@ -30,6 +49,8 @@ const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
 const crawlConfig = document.getElementById('crawl-config') as HTMLDivElement;
 const crawlMode = document.getElementById('crawl-mode') as HTMLSelectElement;
 const crawlSitemapUrl = document.getElementById('crawl-sitemap-url') as HTMLInputElement;
+const crawlUrlListInfo = document.getElementById('crawl-url-list-info') as HTMLDivElement;
+const crawlPageCount = document.getElementById('crawl-page-count') as HTMLSpanElement;
 const crawlStartBtn = document.getElementById('crawl-start') as HTMLButtonElement;
 const crawlActiveBar = document.getElementById('crawl-active-bar') as HTMLDivElement;
 const crawlPauseBtn = document.getElementById('crawl-pause') as HTMLButtonElement;
@@ -216,12 +237,13 @@ loadSavedConfig().then(() => {
       wcagVersion.value = current.wcagVersion;
       wcagLevel.value = current.wcagLevel;
       // Auto-select presets based on config
-      if (current.scanMode === 'sitemap' || current.scanMode === 'discover') {
+      if (current.scanMode === 'sitemap' || current.scanMode === 'discover' || current.scanMode === 'url-list') {
         selectPreset('site-crawl');
       }
       if (current.viewports && current.viewports.length > 0) {
         selectPreset('multi-viewport');
       }
+      populateCrawlFromConfig();
     } else {
       clearPresets();
     }
@@ -231,6 +253,7 @@ loadSavedConfig().then(() => {
   if (saved) {
     wcagVersion.value = saved.wcagVersion;
     wcagLevel.value = saved.wcagLevel;
+    populateCrawlFromConfig();
   }
 });
 
@@ -341,6 +364,9 @@ scanBtn.addEventListener('click', async () => {
         type: 'MULTI_VIEWPORT_SCAN',
         viewports: customViewports || undefined,
         scanTimeout: getActiveConfig()?.timing?.scanTimeout || 0,
+        wcagTags: buildWcagTags(),
+        rulesMode: getActiveConfig()?.rules?.mode || 'all',
+        ruleIds: getActiveConfig()?.rules?.ruleIds || [],
       });
       if (result?.type === 'MULTI_VIEWPORT_RESULT') {
         let html = '<p class="mb-2 text-sm font-bold">Multi-Viewport Results</p>';
@@ -448,7 +474,7 @@ exportJsonBtn.addEventListener('click', async () => {
   if (!response) return;
   const url = await getPageUrl();
   const { tabOrder, focusGaps } = await fetchTabOrderAndGaps();
-  await exportJSON(response, wcagVersion.value, wcagLevel.value, url, tabOrder, focusGaps);
+  await exportJSON(response, wcagVersion.value, wcagLevel.value, url, tabOrder, focusGaps, getActiveConfig()?.enrichment as Record<string, boolean> | undefined);
 });
 
 exportHtmlBtn.addEventListener('click', async () => {
@@ -714,7 +740,37 @@ function renderCrawlResults(results: any[], completedCount: number | null): void
 
 crawlMode.addEventListener('change', () => {
   crawlSitemapUrl.hidden = crawlMode.value !== 'sitemap';
+  crawlUrlListInfo.hidden = crawlMode.value !== 'url-list';
+  updateCrawlUrlListInfo();
 });
+
+function updateCrawlUrlListInfo(): void {
+  const config = getActiveConfig();
+  const urls = config?.pages?.urls || [];
+  if (crawlMode.value === 'url-list' && urls.length > 0) {
+    crawlUrlListInfo.innerHTML = urls.map((u) => `<div class="truncate">${u}</div>`).join('');
+    crawlPageCount.textContent = `${urls.length} URLs`;
+  } else if (crawlMode.value === 'url-list') {
+    crawlUrlListInfo.innerHTML = '<span class="text-zinc-400 italic">No URLs in config</span>';
+    crawlPageCount.textContent = '0 URLs';
+  } else {
+    crawlPageCount.textContent = 'All pages';
+  }
+}
+
+function populateCrawlFromConfig(): void {
+  const config = getActiveConfig();
+  if (!config) return;
+  if (config.scanMode === 'sitemap' || config.scanMode === 'discover' || config.scanMode === 'url-list') {
+    crawlMode.value = config.scanMode === 'discover' ? 'discover' : config.scanMode;
+    crawlSitemapUrl.hidden = config.scanMode !== 'sitemap';
+    crawlUrlListInfo.hidden = config.scanMode !== 'url-list';
+    if (config.scanMode === 'sitemap' && config.pages.sitemapUrl) {
+      crawlSitemapUrl.value = config.pages.sitemapUrl;
+    }
+    updateCrawlUrlListInfo();
+  }
+}
 
 crawlStartBtn.addEventListener('click', async () => {
   crawlConfig.hidden = true;
@@ -731,12 +787,18 @@ crawlStartBtn.addEventListener('click', async () => {
         mode: crawlMode.value,
         maxPages: getActiveConfig()?.pages?.maxPages || 0,
         sitemapUrl: crawlMode.value === 'sitemap' ? crawlSitemapUrl.value : undefined,
+        urls: crawlMode.value === 'url-list' ? (getActiveConfig()?.pages?.urls || []) : undefined,
+        autoDiscover: getActiveConfig()?.pages?.autoDiscover ?? true,
         pageRules: getActiveConfig()?.pageRules || [],
         mocks: getActiveConfig()?.mocks || [],
         pageLoadTimeout: getActiveConfig()?.timing?.pageLoadTimeout,
         scanTimeout: getActiveConfig()?.timing?.scanTimeout,
         delayBetweenPages: getActiveConfig()?.timing?.delayBetweenPages,
         crawlScope: getActiveConfig()?.pages?.crawlScope || '',
+        wcagTags: buildWcagTags(),
+        rulesMode: getActiveConfig()?.rules?.mode || 'all',
+        ruleIds: getActiveConfig()?.rules?.ruleIds || [],
+        auth: getActiveConfig()?.auth || null,
       },
     });
   } catch (err) {
@@ -766,7 +828,7 @@ crawlRescanBtn.addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: getActiveConfig()?.timing?.scanTimeout || 0 });
+      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: getActiveConfig()?.timing?.scanTimeout || 0, wcagTags: buildWcagTags(), rulesMode: getActiveConfig()?.rules?.mode || 'all', ruleIds: getActiveConfig()?.rules?.ruleIds || [] });
     }
   } catch { /* ignore */ }
   crawlStatusEl.textContent = 'Rescan complete — resume to continue crawling';
@@ -798,7 +860,7 @@ crawlRescanWaitBtn.addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: getActiveConfig()?.timing?.scanTimeout || 0 });
+      await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: getActiveConfig()?.timing?.scanTimeout || 0, wcagTags: buildWcagTags(), rulesMode: getActiveConfig()?.rules?.mode || 'all', ruleIds: getActiveConfig()?.rules?.ruleIds || [] });
     }
   } catch { /* ignore */ }
   await chrome.runtime.sendMessage({ type: 'USER_CONTINUE' });

@@ -8,7 +8,7 @@ const tabResults = new Map<number, unknown>();
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'SCAN_REQUEST') {
-    handleScan(sendResponse, message.scanTimeout);
+    handleScan(sendResponse, message.scanTimeout, message.wcagTags, message.rulesMode, message.ruleIds);
     return true;
   }
   if (message.type === 'GET_TAB_RESULTS') {
@@ -72,7 +72,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
   if (message.type === 'MULTI_VIEWPORT_SCAN') {
-    runMultiViewportScan(message.viewports, message.scanTimeout).then((result) => {
+    runMultiViewportScan(message.viewports, message.scanTimeout, message.wcagTags, message.rulesMode, message.ruleIds).then((result) => {
       sendResponse({ type: 'MULTI_VIEWPORT_RESULT', ...result });
     }).catch((err) => {
       sendResponse({ type: 'MULTI_VIEWPORT_ERROR', message: String(err) });
@@ -149,7 +149,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   tabResults.delete(tabId);
 });
 
-async function handleScan(sendResponse: (response: unknown) => void, scanTimeout?: number) {
+async function handleScan(sendResponse: (response: unknown) => void, scanTimeout?: number, wcagTags?: string[], rulesMode?: string, ruleIds?: string[]) {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -180,7 +180,7 @@ async function handleScan(sendResponse: (response: unknown) => void, scanTimeout
 
     await new Promise((r) => setTimeout(r, 100));
 
-    chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: scanTimeout || 0 }, (response) => {
+    chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: scanTimeout || 0, wcagTags, rulesMode, ruleIds }, (response) => {
       if (chrome.runtime.lastError) {
         sendResponse({ type: 'SCAN_ERROR', message: chrome.runtime.lastError.message });
       } else {
