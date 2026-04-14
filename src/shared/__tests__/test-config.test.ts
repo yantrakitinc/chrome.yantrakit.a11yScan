@@ -254,7 +254,7 @@ describe('mergeWithDefaults', () => {
     expect(config.auth).toBeNull();
   });
 
-  it('preserves auth when provided', () => {
+  it('preserves auth when provided and defaults gatedUrls', () => {
     const auth = {
       loginUrl: 'https://example.com',
       usernameSelector: '#user',
@@ -264,7 +264,21 @@ describe('mergeWithDefaults', () => {
       password: 'master-sword',
     };
     const { config } = mergeWithDefaults({ auth });
-    expect(config.auth).toEqual(auth);
+    expect(config.auth).toEqual({ ...auth, gatedUrls: { mode: 'none', patterns: [] } });
+  });
+
+  it('preserves auth.gatedUrls when provided', () => {
+    const auth = {
+      loginUrl: 'https://example.com',
+      usernameSelector: '#user',
+      passwordSelector: '#pass',
+      submitSelector: '#go',
+      username: 'zelda@hyrule.com',
+      password: 'triforce',
+      gatedUrls: { mode: 'prefix' as const, patterns: ['https://example.com/admin/'] },
+    };
+    const { config } = mergeWithDefaults({ auth });
+    expect(config.auth?.gatedUrls).toEqual(auth.gatedUrls);
   });
 });
 
