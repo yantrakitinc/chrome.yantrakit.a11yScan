@@ -10,6 +10,8 @@ import { initManualReview, renderManualTab } from './manual-review';
 import { exportJSON, exportHTML, exportPDF } from './reports';
 import { renderScanPresets, getSelectedPresets, clearPresets, selectPreset } from './scan-presets';
 import { initConfigPanel, loadSavedConfig, getActiveConfig } from './config-panel';
+import { initObserverHistoryTab, onObserverScanComplete } from './observer-history';
+import { initObserverSettingsPanel, showObserverConsent } from './observer-settings';
 import {
   requestTabResults,
   triggerScan,
@@ -82,6 +84,8 @@ const tabsEl = document.getElementById('tabs') as HTMLDivElement;
 const tabResultsEl = document.getElementById('tab-results') as HTMLDivElement;
 const tabManualEl = document.getElementById('tab-manual') as HTMLDivElement;
 const tabAriaEl = document.getElementById('tab-aria') as HTMLDivElement;
+const tabHistoryEl = document.getElementById('tab-history') as HTMLDivElement;
+const observerHistoryRoot = document.getElementById('observer-history-root') as HTMLDivElement;
 const manualBadge = document.getElementById('manual-badge') as HTMLSpanElement;
 const ariaBadge = document.getElementById('aria-badge') as HTMLSpanElement;
 const postScanActions = document.getElementById('post-scan-actions') as HTMLDivElement;
@@ -230,8 +234,42 @@ toggleFocusGapsBtn.addEventListener('click', async () => {
   } catch { /* no content script */ }
 });
 
-initTabs(tabsEl, tabResultsEl, tabManualEl, tabAriaEl);
+initTabs(tabsEl, tabResultsEl, tabManualEl, tabAriaEl, tabHistoryEl);
 initManualReview(manualListEl, manualBadge, wcagVersion, wcagLevel);
+
+// Observer Mode — History tab and settings panel
+let refreshObserverHistory: (() => void) | null = null;
+initObserverHistoryTab({
+  root: observerHistoryRoot,
+  onToggle: async (nextEnabled) => {
+    if (nextEnabled) {
+      const state = await chrome.runtime.sendMessage({ type: 'OBSERVER_GET_STATE' });
+      if (!state?.payload?.consentGiven) {
+        showObserverConsent(async () => {
+          await chrome.runtime.sendMessage({ type: 'OBSERVER_ENABLE' });
+          refreshObserverHistory?.();
+        });
+      } else {
+        await chrome.runtime.sendMessage({ type: 'OBSERVER_ENABLE' });
+        refreshObserverHistory?.();
+      }
+    } else {
+      await chrome.runtime.sendMessage({ type: 'OBSERVER_DISABLE' });
+      refreshObserverHistory?.();
+    }
+  },
+  onOpenSettings: () => {
+    // The settings panel is part of the gear-icon config panel
+    configGearBtn.click();
+  },
+}).then((refresh) => {
+  refreshObserverHistory = refresh;
+  // Show the tab bar if we already have observer history so History is reachable.
+  chrome.runtime.sendMessage({ type: 'OBSERVER_GET_HISTORY' }).then((resp) => {
+    if (resp?.payload?.length > 0) tabsEl.hidden = false;
+  });
+});
+initObserverSettingsPanel();
 
 // Initialize config panel (gear icon dropdown — hidden until clicked)
 loadSavedConfig().then(() => {
@@ -263,6 +301,11 @@ loadSavedConfig().then(() => {
 
 /** Listen for tab changes from background. */
 chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'OBSERVER_SCAN_COMPLETE') {
+    onObserverScanComplete();
+    tabsEl.hidden = false;
+    return;
+  }
   if (message.type === 'TAB_CHANGED') {
     if (message.results) {
       setLastScanResponse(message.results);
@@ -943,6 +986,7 @@ chrome.runtime.onMessage.addListener((message) => {
           violations: r.violations,
           passes: r.passes,
           incomplete: r.incomplete,
+          authWarning: r.authWarning,
         })),
       };
 

@@ -14,7 +14,7 @@
  * - Auth-gated pages that redirect logged-in users are handled gracefully
  */
 
-import type { iPageRule, iPageRuleWaitType, iMockEndpoint, iAuthConfig } from '@shared/test-config';
+import type { iPageRule, iPageRuleWaitType, iMockEndpoint, iAuthConfig, iGatedUrlsConfig } from '@shared/test-config';
 
 export interface iCrawlOptions {
   mode: 'discover' | 'sitemap' | 'url-list';
@@ -43,6 +43,8 @@ export interface iCrawlPageResult {
   error?: string;
   redirectedTo?: string;
   depth: number;
+  /** Warning flag when auth behavior was unexpected. */
+  authWarning?: 'unexpected-login-redirect';
 }
 
 export interface iCrawlState {
@@ -83,6 +85,8 @@ let waitingForUser = false;
 let resolveUserContinue: (() => void) | null = null;
 /** Recorded page rules during crawl (for smart config generation). */
 let recordedPageRules: iPageRule[] = [];
+let crawlAuth: iAuthConfig | null = null;
+let crawlGatedUrls: iGatedUrlsConfig = { mode: 'none', patterns: [] };
 
 /** Waits if the crawl is paused. Resolves when resumed or cancelled. */
 async function waitIfPaused(): Promise<void> {
@@ -91,6 +95,40 @@ async function waitIfPaused(): Promise<void> {
     crawlResolveResume = resolve;
   });
   crawlResolveResume = null;
+}
+
+/**
+ * Returns true when the given URL is declared "behind the login wall"
+ * by the supplied gated-URLs config. Bad regexes are logged and treated
+ * as non-matching so a typo can't break the whole crawl.
+ */
+export function isGated(url: string, cfg: iGatedUrlsConfig | undefined): boolean {
+  if (!cfg || cfg.mode === 'none' || !cfg.patterns.length) return false;
+  if (cfg.mode === 'list') return cfg.patterns.includes(url);
+  if (cfg.mode === 'prefix') return cfg.patterns.some((p) => p.length > 0 && url.startsWith(p));
+  if (cfg.mode === 'regex') {
+    for (const p of cfg.patterns) {
+      try {
+        if (new RegExp(p).test(url)) return true;
+      } catch (err) {
+        console.warn('[crawl] invalid gatedUrls regex', p, err);
+      }
+    }
+    return false;
+  }
+  return false;
+}
+
+/** Returns true if the final URL looks like it resolved to the configured login URL. */
+export function looksLikeLoginRedirect(finalUrl: string, auth: iAuthConfig | null): boolean {
+  if (!auth || !auth.loginUrl) return false;
+  try {
+    const final = new URL(finalUrl);
+    const login = new URL(auth.loginUrl);
+    return final.origin === login.origin && final.pathname === login.pathname;
+  } catch {
+    return finalUrl.startsWith(auth.loginUrl);
+  }
 }
 
 /** Checks if a URL matches any page rule. Returns the matching rule or null. */
@@ -268,6 +306,13 @@ async function scanPage(tabId: number, url: string, origin: string, depth: numbe
       };
     }
 
+    // Auth warning: a page we did not flag as gated has been redirected to the login page.
+    // This usually means the user forgot to include it in `auth.gatedUrls` or their session expired.
+    let authWarning: iCrawlPageResult['authWarning'];
+    if (redirected && !isGated(url, crawlGatedUrls) && looksLikeLoginRedirect(finalUrl, crawlAuth)) {
+      authWarning = 'unexpected-login-redirect';
+    }
+
     // Check page rules — pause if URL matches a rule
     const rule = matchPageRule(finalUrl);
     if (rule) {
@@ -304,6 +349,7 @@ async function scanPage(tabId: number, url: string, origin: string, depth: numbe
         incomplete: (response?.incomplete || []).length,
         redirectedTo: redirected ? finalUrl : undefined,
         depth,
+        authWarning,
       },
       links,
     };
@@ -410,6 +456,8 @@ export async function startCrawl(options: iCrawlOptions): Promise<iCrawlState> {
   crawlRulesMode = options.rulesMode || 'all';
   crawlRuleIds = options.ruleIds || [];
   recordedPageRules = [];
+  crawlAuth = options.auth ?? null;
+  crawlGatedUrls = options.auth?.gatedUrls ?? { mode: 'none', patterns: [] };
   const origin = new URL(tab.url).origin;
 
   // Perform auth before crawling if configured

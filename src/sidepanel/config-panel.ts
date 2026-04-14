@@ -85,6 +85,9 @@ export function initConfigPanel(
         <button id="cfg-clear" class="px-2.5 py-1 text-[10px] font-bold text-red-600 border border-red-200 rounded hover:bg-red-50 cursor-pointer hidden">Remove</button>
         <button id="cfg-close" class="ml-auto px-2.5 py-1 text-[10px] font-bold text-zinc-400 hover:text-zinc-600 cursor-pointer">Close</button>
       </div>
+
+      <!-- Observer Mode settings slot — populated by observer-settings.ts -->
+      <div id="observer-settings-root" class="mt-3 pt-3 border-t border-zinc-200"></div>
     </div>
   `;
 

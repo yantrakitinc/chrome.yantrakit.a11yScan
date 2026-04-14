@@ -6,7 +6,8 @@ export function initTabs(
   tabsEl: HTMLDivElement,
   tabResults: HTMLDivElement,
   tabManual: HTMLDivElement,
-  tabAria: HTMLDivElement
+  tabAria: HTMLDivElement,
+  tabHistory?: HTMLDivElement,
 ): void {
   tabsEl.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('.tab') as HTMLButtonElement;
@@ -23,5 +24,6 @@ export function initTabs(
     tabResults.hidden = tab !== 'results';
     tabManual.hidden = tab !== 'manual';
     tabAria.hidden = tab !== 'aria';
+    if (tabHistory) tabHistory.hidden = tab !== 'history';
   });
 }

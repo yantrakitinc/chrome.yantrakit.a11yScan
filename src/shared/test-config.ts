@@ -16,6 +16,21 @@ export type iWcagLevel = 'A' | 'AA' | 'AAA';
 /** Rule filter mode: run all rules, include only listed, or exclude listed. */
 export type iRuleFilterMode = 'all' | 'include' | 'exclude';
 
+/** How gated-URL patterns are matched. */
+export type iGatedUrlMode = 'none' | 'list' | 'prefix' | 'regex';
+
+/**
+ * Declares which URLs are behind the login wall.
+ * - `none`  — no URLs are gated (default)
+ * - `list`  — `patterns` is an array of exact URLs
+ * - `prefix`— `patterns` is an array of URL prefixes
+ * - `regex` — `patterns` is an array of regex sources
+ */
+export interface iGatedUrlsConfig {
+  mode: iGatedUrlMode;
+  patterns: string[];
+}
+
 /** Authentication config for pages behind login. */
 export interface iAuthConfig {
   loginUrl: string;
@@ -24,6 +39,8 @@ export interface iAuthConfig {
   submitSelector: string;
   username: string;
   password: string;
+  /** Which URLs in `pages.urls` require the login session. Optional — treated as `{ mode: 'none', patterns: [] }` if absent. */
+  gatedUrls?: iGatedUrlsConfig;
 }
 
 /** Viewport preset with label and width. */
@@ -140,6 +157,12 @@ export const DEFAULT_PAGES: iPagesConfig = {
 export const DEFAULT_RULES: iRuleFilter = {
   mode: 'all',
   ruleIds: [],
+};
+
+/** Default gated-URLs config — no URLs gated. */
+export const DEFAULT_GATED_URLS: iGatedUrlsConfig = {
+  mode: 'none',
+  patterns: [],
 };
 
 /**
@@ -287,6 +310,37 @@ export function validateTestConfig(config: unknown): iValidationError[] {
           errors.push({ field: `auth.${key}`, message: 'Must be a string' });
         }
       }
+      // gatedUrls — optional, backwards compatible
+      if (a.gatedUrls !== undefined) {
+        if (!a.gatedUrls || typeof a.gatedUrls !== 'object') {
+          errors.push({ field: 'auth.gatedUrls', message: 'Must be an object' });
+        } else {
+          const g = a.gatedUrls as Record<string, unknown>;
+          const validModes: iGatedUrlMode[] = ['none', 'list', 'prefix', 'regex'];
+          if (g.mode !== undefined && !validModes.includes(g.mode as iGatedUrlMode)) {
+            errors.push({ field: 'auth.gatedUrls.mode', message: `Must be one of: ${validModes.join(', ')}` });
+          }
+          if (g.patterns !== undefined && !Array.isArray(g.patterns)) {
+            errors.push({ field: 'auth.gatedUrls.patterns', message: 'Must be an array of strings' });
+          }
+          if (Array.isArray(g.patterns) && g.patterns.some((p: unknown) => typeof p !== 'string')) {
+            errors.push({ field: 'auth.gatedUrls.patterns', message: 'All entries must be strings' });
+          }
+          // Regex sanity check for mode='regex'
+          if (g.mode === 'regex' && Array.isArray(g.patterns)) {
+            for (let i = 0; i < g.patterns.length; i++) {
+              const p = g.patterns[i];
+              if (typeof p === 'string') {
+                try {
+                  new RegExp(p);
+                } catch {
+                  errors.push({ field: `auth.gatedUrls.patterns[${i}]`, message: 'Invalid regex' });
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -397,7 +451,9 @@ export function mergeWithDefaults(partial: unknown): { config: iTestConfig; erro
       wcagLevel: p.wcagLevel ?? defaults.wcagLevel,
       viewports: p.viewports ?? defaults.viewports,
       timing: p.timing ? { ...defaults.timing, ...p.timing } : defaults.timing,
-      auth: p.auth !== undefined ? p.auth : defaults.auth,
+      auth: p.auth !== undefined && p.auth !== null
+        ? { ...p.auth, gatedUrls: p.auth.gatedUrls ? { ...DEFAULT_GATED_URLS, ...p.auth.gatedUrls } : { ...DEFAULT_GATED_URLS } }
+        : p.auth === null ? null : defaults.auth,
       rules: p.rules ? { ...defaults.rules, ...p.rules } : defaults.rules,
       enrichment: p.enrichment ? { ...defaults.enrichment, ...p.enrichment } : defaults.enrichment,
       pageRules: p.pageRules ?? defaults.pageRules,

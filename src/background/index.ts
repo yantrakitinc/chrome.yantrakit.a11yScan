@@ -1,5 +1,17 @@
 import { runMultiViewportScan } from './multi-viewport';
 import { startCrawl, pauseCrawl, resumeCrawl, cancelCrawl, getCrawlState, userContinue, recordManualPause, getRecordedPageRules } from './crawl';
+import {
+  getObserverState,
+  enableObserver,
+  disableObserver,
+  updateObserverSettings,
+  getObserverHistory,
+  clearObserverHistory,
+  exportObserverHistory,
+  runObserverScan,
+  isScannableUrl,
+  shouldObserveUrl,
+} from './observer';
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
@@ -116,6 +128,40 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     forwardToContentScript(message, sendResponse);
     return true;
   }
+
+  // Observer mode messages
+  if (message.type === 'OBSERVER_GET_STATE') {
+    getObserverState().then((state) => sendResponse({ type: 'OBSERVER_STATE', payload: state }));
+    return true;
+  }
+  if (message.type === 'OBSERVER_ENABLE') {
+    enableObserver().then((state) => sendResponse({ type: 'OBSERVER_STATE', payload: state }));
+    return true;
+  }
+  if (message.type === 'OBSERVER_DISABLE') {
+    disableObserver().then((state) => sendResponse({ type: 'OBSERVER_STATE', payload: state }));
+    return true;
+  }
+  if (message.type === 'OBSERVER_UPDATE_SETTINGS') {
+    updateObserverSettings(message.payload || {}).then((state) =>
+      sendResponse({ type: 'OBSERVER_STATE', payload: state }),
+    );
+    return true;
+  }
+  if (message.type === 'OBSERVER_GET_HISTORY') {
+    getObserverHistory(message.filters).then((history) =>
+      sendResponse({ type: 'OBSERVER_HISTORY', payload: history }),
+    );
+    return true;
+  }
+  if (message.type === 'OBSERVER_CLEAR_HISTORY') {
+    clearObserverHistory().then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (message.type === 'OBSERVER_EXPORT_HISTORY') {
+    exportObserverHistory().then((json) => sendResponse({ type: 'OBSERVER_EXPORT', json }));
+    return true;
+  }
 });
 
 /** When user switches tabs, notify side panel to update. */
@@ -129,8 +175,9 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 });
 
 /** When a tab navigates, notify side panel but do NOT clear results.
- *  Results persist so the user can navigate to scanned pages and toggle overlays. */
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+ *  Results persist so the user can navigate to scanned pages and toggle overlays.
+ *  Also powers Observer Mode: when a navigation completes, we run an axe scan in the background. */
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.url) {
     chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
       if (activeTab?.id === tabId) {
@@ -141,6 +188,18 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
         }).catch(() => {});
       }
     });
+  }
+
+  // Observer Mode — passive auto-scan on load complete.
+  if (changeInfo.status === 'complete' && tab.url && isScannableUrl(tab.url)) {
+    try {
+      const state = await getObserverState();
+      if (!state.enabled) return;
+      if (!shouldObserveUrl(tab.url, state.settings)) return;
+      await runObserverScan(tabId, tab.url, tab.title ?? '', state.settings);
+    } catch (err) {
+      console.warn('[observer] onUpdated handler failed', err);
+    }
   }
 });
 
