@@ -3,11 +3,83 @@
 @source "./*.ts";
 @source "./*.html";
 
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+
+:root {
+  --c-bg: #fafafa;
+  --c-surface: #ffffff;
+  --c-border: #e4e4e7;
+  --c-border-subtle: #f0f0f3;
+  --c-text: #18181b;
+  --c-text-secondary: #52525b;
+  --c-text-muted: #71717a;
+  --c-primary: #1e1b4b;
+  --c-primary-hover: #312e81;
+  --c-primary-light: #eef2ff;
+  --c-accent: #4f46e5;
+  --c-danger: #dc2626;
+  --c-danger-light: #fef2f2;
+  --c-warning: #d97706;
+  --c-warning-light: #fffbeb;
+  --c-success: #16a34a;
+  --c-success-light: #f0fdf4;
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+
 @layer base {
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    @apply text-sm text-zinc-900 bg-white;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--c-text);
+    background: var(--c-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Ensure all interactive elements meet 24px min tap target */
+  button, select, [role="tab"] {
+    min-height: 24px;
+  }
+
+  /* Scrollbar refinement */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+
+  /* Details/summary refinement */
+  details summary { list-style: none; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 1em;
+    font-size: 11px;
+    color: var(--c-text-muted);
+    transition: transform 0.15s ease;
+  }
+  details[open] > summary::before {
+    transform: rotate(90deg);
+  }
+
+  /* Focus visible for keyboard nav */
+  :focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 1px;
+    border-radius: 2px;
+  }
+}
+
+/* ─── Component Overrides ─────────────────────────────────────────────────── */
+
+@layer components {
+  /* Tab active state override for JS-toggled tabs */
+  .tab-active {
+    color: var(--c-primary) !important;
+    border-color: var(--c-primary) !important;
   }
 }

@@ -9,6 +9,7 @@ import {
   clearObserverHistory,
   exportObserverHistory,
   runObserverScan,
+  recordManualObserverScan,
   isScannableUrl,
   shouldObserveUrl,
 } from './observer';
@@ -160,6 +161,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
   if (message.type === 'OBSERVER_EXPORT_HISTORY') {
     exportObserverHistory().then((json) => sendResponse({ type: 'OBSERVER_EXPORT', json }));
+    return true;
+  }
+  if (message.type === 'OBSERVER_RECORD_SCAN') {
+    recordManualObserverScan(message.entry).then(() => sendResponse({ ok: true }));
     return true;
   }
 });

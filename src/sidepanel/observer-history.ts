@@ -85,8 +85,8 @@ function render() {
     <section aria-label="Observer Mode status" class="mb-3 p-3 border border-indigo-200 rounded-lg bg-indigo-50/60">
       <div class="flex items-center justify-between gap-2 mb-2">
         <div>
-          <div class="text-[11px] font-bold text-indigo-950">Observer Mode</div>
-          <div class="text-[9px] text-zinc-600">${enabled ? 'On — scanning every page you visit' : 'Off — enable to auto-scan pages'}</div>
+          <div class="text-[12px] font-semibold text-[var(--c-primary)]">Observer Mode</div>
+          <div class="text-[11px] text-[var(--c-text-muted)]">${enabled ? 'On — auto-scans pages + manual scans logged here' : 'Off — select the Observer preset to enable'}</div>
         </div>
         <div class="flex items-center gap-1.5">
           <button id="observer-toggle-btn" class="px-2 py-1 text-[10px] font-bold rounded-lg cursor-pointer ${enabled ? 'text-white bg-indigo-950 hover:bg-indigo-900' : 'text-indigo-700 border border-indigo-300 hover:bg-indigo-100'}">${enabled ? 'Turn Off' : 'Turn On'}</button>
@@ -147,7 +147,7 @@ function renderList(entries: iObserverScanResult[]) {
   if (!list) return;
 
   if (entries.length === 0) {
-    list.innerHTML = `<div class="p-4 text-center text-[11px] text-zinc-400 border border-dashed border-zinc-300 rounded-lg">No observer scans yet. Enable Observer Mode and browse normally — scans will appear here.</div>`;
+    list.innerHTML = `<div class="p-4 text-center text-[11px] text-[var(--c-text-muted)] border border-dashed border-[var(--c-border)] rounded-lg">No scans yet. Select the Observer preset card, click Start Scan, or browse to other pages — all scans appear here.</div>`;
     return;
   }
 
