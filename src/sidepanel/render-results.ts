@@ -140,7 +140,7 @@ export function renderResultsTab(
     // Group elements by axe rule ID (collapsible)
     for (const v of axeItems) {
       const nodeCount = v.nodes.length;
-      html += `<details class="my-1 border border-red-200 rounded bg-white">`;
+      html += `<details class="my-1 border border-red-200 rounded bg-white" data-rule-id="${esc(v.id)}">`;
       html += `<summary class="py-1.5 px-2 text-[11px] cursor-pointer hover:bg-red-50">`;
       html += `<span class="font-semibold text-red-800">${esc(v.id)}</span>`;
       html += ` — ${esc(v.help)}`;
@@ -150,7 +150,7 @@ export function renderResultsTab(
 
       for (const node of v.nodes) {
         const sel = esc(node.target.join(', '));
-        html += `<div class="bg-red-50/50 border border-red-100 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
+        html += `<div class="bg-red-50/50 border border-red-100 rounded p-2 text-[10px] font-mono overflow-x-auto" data-node-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">`;
         html += `<div class="flex items-start justify-between gap-1 mb-0.5">`;
         html += `<div class="text-indigo-800 font-semibold">${sel}</div>`;
         html += `<button class="highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline underline-offset-1" data-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">Highlight</button>`;

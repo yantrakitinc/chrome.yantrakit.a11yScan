@@ -252,6 +252,15 @@ if (!(window as any).__a11yscan) {
       return true;
     }
   });
+
+  // Forward violation badge clicks from the overlay to the side panel.
+  document.addEventListener('a11yscan:violation-click', ((e: CustomEvent) => {
+    chrome.runtime.sendMessage({
+      type: 'VIOLATION_BADGE_CLICKED',
+      ruleId: e.detail?.ruleId,
+      selector: e.detail?.selector,
+    }).catch(() => {});
+  }) as EventListener);
 }
 
 /**
