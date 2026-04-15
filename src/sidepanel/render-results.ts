@@ -14,7 +14,7 @@ function esc(str: string): string {
 
 function learnMoreLink(criterion: iWcagCriterion): string {
   const slug = criterionSlug(criterion.id, criterion.name);
-  return ` <a href="${SITE_URL}/wcag/${slug}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline text-[10px] ml-1">Learn more</a>`;
+  return ` <a href="${SITE_URL}/wcag/${slug}" target="_blank" rel="noopener noreferrer" class="text-[var(--c-accent)] hover:underline text-[11px] ml-1.5 font-medium">Learn more</a>`;
 }
 
 function truncate(str: string, max: number): string {
@@ -120,44 +120,44 @@ export function renderResultsTab(
     (c) => c.automation !== 'manual' && !failedOrWarnedIds.has(c.id)
   );
 
-  let html = `<p class="mb-2 text-sm"><strong>WCAG ${version} Level ${level}</strong> — ${criteria.length} criteria</p>`;
+  let html = `<p class="mb-3 text-[13px]"><strong>WCAG ${version} Level ${level}</strong> <span class="text-[var(--c-text-muted)]">— ${criteria.length} criteria</span></p>`;
 
   // Failed
-  html += `<div class="mb-3"><h3 class="text-sm font-bold text-red-600 mb-1.5">Failed (${violated.length})</h3>`;
+  html += `<div class="mb-4"><h3 class="text-[13px] font-semibold text-[var(--c-danger)] mb-2">Failed (${violated.length})</h3>`;
   if (violated.length === 0) {
-    html += `<p class="text-xs text-zinc-500">No automated violations found.</p>`;
+    html += `<p class="text-[12px] text-[var(--c-text-muted)]">No automated violations found.</p>`;
   }
   for (const [, { criterion, axeItems }] of violated) {
     const totalNodes = axeItems.reduce((sum: number, v: any) => sum + v.nodes.length, 0);
     const impact = axeItems[0]?.impact || 'unknown';
-    html += `<details class="my-1 border-l-3 border-red-600 bg-red-50 rounded-r">`;
-    html += `<summary class="py-1.5 px-2 text-xs cursor-pointer hover:bg-red-100">`;
+    html += `<details class="my-1.5 border-l-[3px] border-[var(--c-danger)] bg-[var(--c-danger-light)] rounded-r">`;
+    html += `<summary class="py-2 px-2.5 text-[12px] cursor-pointer hover:bg-red-100 transition-colors">`;
     html += `<strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong>${learnMoreLink(criterion)}`;
-    html += `<span class="block text-zinc-500 text-[11px] ml-4">Impact: ${impact} · ${totalNodes} element(s)</span>`;
+    html += `<span class="block text-[var(--c-text-muted)] text-[11px] ml-5 mt-0.5">Impact: ${impact} · ${totalNodes} element(s)</span>`;
     html += `</summary>`;
-    html += `<div class="px-2 pb-2 space-y-1.5">`;
+    html += `<div class="px-2.5 pb-2.5 space-y-2">`;
 
     // Group elements by axe rule ID (collapsible)
     for (const v of axeItems) {
       const nodeCount = v.nodes.length;
-      html += `<details class="my-1 border border-red-200 rounded bg-white" data-rule-id="${esc(v.id)}">`;
-      html += `<summary class="py-1.5 px-2 text-[11px] cursor-pointer hover:bg-red-50">`;
+      html += `<details class="my-1 border border-red-200 rounded-md bg-[var(--c-surface)]" data-rule-id="${esc(v.id)}">`;
+      html += `<summary class="py-2 px-2.5 text-[12px] cursor-pointer hover:bg-red-50 transition-colors">`;
       html += `<span class="font-semibold text-red-800">${esc(v.id)}</span>`;
       html += ` — ${esc(v.help)}`;
-      html += ` <span class="text-zinc-500">(${nodeCount} element${nodeCount !== 1 ? 's' : ''})</span>`;
+      html += ` <span class="text-[var(--c-text-muted)]">(${nodeCount})</span>`;
       html += `</summary>`;
-      html += `<div class="px-2 pb-2 space-y-1">`;
+      html += `<div class="px-2.5 pb-2.5 space-y-1.5">`;
 
       for (const node of v.nodes) {
         const sel = esc(node.target.join(', '));
-        html += `<div class="bg-red-50/50 border border-red-100 rounded p-2 text-[10px] font-mono overflow-x-auto" data-node-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">`;
-        html += `<div class="flex items-start justify-between gap-1 mb-0.5">`;
-        html += `<div class="text-indigo-800 font-semibold">${sel}</div>`;
-        html += `<button class="highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline underline-offset-1" data-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">Highlight</button>`;
+        html += `<div class="bg-red-50/60 border border-red-100 rounded-md p-2.5 text-[11px] font-mono overflow-x-auto" data-node-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">`;
+        html += `<div class="flex items-start justify-between gap-2 mb-1">`;
+        html += `<div class="text-[var(--c-accent)] font-semibold">${sel}</div>`;
+        html += `<button class="highlight-btn shrink-0 text-[11px] font-semibold text-[var(--c-warning)] hover:text-amber-900 cursor-pointer underline underline-offset-2" data-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">Highlight</button>`;
         html += `</div>`;
-        html += `<div class="text-zinc-600 whitespace-pre-wrap break-all mb-1">${esc(truncate(node.html, 200))}</div>`;
+        html += `<div class="text-[var(--c-text-secondary)] whitespace-pre-wrap break-all mb-1">${esc(truncate(node.html, 200))}</div>`;
         if (node.failureSummary) {
-          html += `<div class="text-red-700 text-[10px] mt-1">${esc(simplifyMessage(node.failureSummary))}</div>`;
+          html += `<div class="text-red-700 text-[11px] mt-1.5">${esc(simplifyMessage(node.failureSummary))}</div>`;
         }
         html += `</div>`;
       }
@@ -170,38 +170,37 @@ export function renderResultsTab(
   html += `</div>`;
 
   // Warnings
-  html += `<div class="mb-3"><h3 class="text-sm font-bold text-amber-600 mb-1.5">Needs Review (${warnings.length})</h3>`;
+  html += `<div class="mb-4"><h3 class="text-[13px] font-semibold text-[var(--c-warning)] mb-2">Needs Review (${warnings.length})</h3>`;
   if (warnings.length === 0) {
-    html += `<p class="text-xs text-zinc-500">No items need manual verification.</p>`;
+    html += `<p class="text-[12px] text-[var(--c-text-muted)]">No items need manual verification.</p>`;
   } else {
     for (const [, { criterion, axeItems }] of warnings) {
       const totalNodes = axeItems.reduce((sum: number, v: any) => sum + v.nodes.length, 0);
-      html += `<details class="my-1 border-l-3 border-amber-500 bg-amber-50 rounded-r">`;
-      html += `<summary class="py-1.5 px-2 text-xs cursor-pointer hover:bg-amber-100">`;
+      html += `<details class="my-1.5 border-l-[3px] border-[var(--c-warning)] bg-[var(--c-warning-light)] rounded-r">`;
+      html += `<summary class="py-2 px-2.5 text-[12px] cursor-pointer hover:bg-amber-100 transition-colors">`;
       html += `<strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong>${learnMoreLink(criterion)}`;
-      html += `<span class="block text-zinc-500 text-[11px] ml-4">${totalNodes} element(s) need verification</span>`;
+      html += `<span class="block text-[var(--c-text-muted)] text-[11px] ml-5 mt-0.5">${totalNodes} element(s) need verification</span>`;
       html += `</summary>`;
-      html += `<div class="px-2 pb-2 space-y-1.5">`;
+      html += `<div class="px-2.5 pb-2.5 space-y-2">`;
 
-      // Group elements by axe rule ID (collapsible)
       for (const v of axeItems) {
         const nodeCount = v.nodes.length;
-        html += `<details class="my-1 border border-amber-200 rounded bg-white">`;
-        html += `<summary class="py-1.5 px-2 text-[11px] cursor-pointer hover:bg-amber-50">`;
+        html += `<details class="my-1 border border-amber-200 rounded-md bg-[var(--c-surface)]">`;
+        html += `<summary class="py-2 px-2.5 text-[12px] cursor-pointer hover:bg-amber-50 transition-colors">`;
         html += `<span class="font-semibold text-amber-800">${esc(v.id)}</span>`;
         html += ` — ${esc(v.help)}`;
-        html += ` <span class="text-zinc-500">(${nodeCount} element${nodeCount !== 1 ? 's' : ''})</span>`;
+        html += ` <span class="text-[var(--c-text-muted)]">(${nodeCount})</span>`;
         html += `</summary>`;
-        html += `<div class="px-2 pb-2 space-y-1">`;
+        html += `<div class="px-2.5 pb-2.5 space-y-1.5">`;
 
         for (const node of v.nodes) {
           const sel = esc(node.target.join(', '));
-          html += `<div class="bg-amber-50/50 border border-amber-100 rounded p-2 text-[10px] font-mono overflow-x-auto">`;
-          html += `<div class="flex items-start justify-between gap-1 mb-0.5">`;
-          html += `<div class="text-indigo-800 font-semibold">${sel}</div>`;
-          html += `<button class="highlight-btn shrink-0 text-[9px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer underline underline-offset-1" data-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">Highlight</button>`;
+          html += `<div class="bg-amber-50/60 border border-amber-100 rounded-md p-2.5 text-[11px] font-mono overflow-x-auto">`;
+          html += `<div class="flex items-start justify-between gap-2 mb-1">`;
+          html += `<div class="text-[var(--c-accent)] font-semibold">${sel}</div>`;
+          html += `<button class="highlight-btn shrink-0 text-[11px] font-semibold text-[var(--c-warning)] hover:text-amber-900 cursor-pointer underline underline-offset-2" data-selector="${node.target.join(', ').replace(/"/g, '&quot;')}">Highlight</button>`;
           html += `</div>`;
-          html += `<div class="text-zinc-600 whitespace-pre-wrap break-all">${esc(truncate(node.html, 200))}</div>`;
+          html += `<div class="text-[var(--c-text-secondary)] whitespace-pre-wrap break-all">${esc(truncate(node.html, 200))}</div>`;
           html += `</div>`;
         }
 
@@ -234,14 +233,14 @@ export function renderResultsTab(
   const passedWithData = Array.from(wcagPasses.entries()).sort(([a], [b]) => a.localeCompare(b));
   const passedNoData = passed.filter((c) => !wcagPasses.has(c.id));
 
-  html += `<details class="mb-3" open><summary class="text-sm font-bold text-green-600 mb-1.5 cursor-pointer">Passed (${passedWithData.length})</summary>`;
+  html += `<details class="mb-4" open><summary class="text-[13px] font-semibold text-[var(--c-success)] mb-2 cursor-pointer">Passed (${passedWithData.length})</summary>`;
   if (passedWithData.length === 0) {
-    html += `<p class="text-xs text-zinc-500">No criteria passed with verified elements.</p>`;
+    html += `<p class="text-[12px] text-[var(--c-text-muted)]">No criteria passed with verified elements.</p>`;
   }
   for (const [, { criterion, axeRules }] of passedWithData) {
-    html += `<details class="my-0.5 border-l-3 border-green-600 bg-green-50 rounded-r">`;
-    html += `<summary class="py-1 px-2 text-[11px] cursor-pointer hover:bg-green-100"><strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong>${learnMoreLink(criterion)}</summary>`;
-    html += `<div class="px-2 pb-1.5 text-[10px] text-zinc-600">`;
+    html += `<details class="my-1 border-l-[3px] border-[var(--c-success)] bg-[var(--c-success-light)] rounded-r">`;
+    html += `<summary class="py-1.5 px-2.5 text-[12px] cursor-pointer hover:bg-green-100 transition-colors"><strong>${criterion.id} ${esc(criterion.name)} (${criterion.level})</strong>${learnMoreLink(criterion)}</summary>`;
+    html += `<div class="px-2.5 pb-2 text-[11px] text-[var(--c-text-secondary)]">`;
     html += `<span>Verified by: ${axeRules.map(r => `<span class="font-semibold text-green-800">${esc(r)}</span>`).join(', ')}</span>`;
     html += `</div></details>`;
   }
@@ -250,9 +249,9 @@ export function renderResultsTab(
   // Unmapped
   const allUnmapped = [...unmappedViolations, ...unmappedWarnings];
   if (allUnmapped.length > 0) {
-    html += `<div class="mb-3"><h3 class="text-sm font-bold text-zinc-500 mb-1.5">Other axe-core Findings (${allUnmapped.length})</h3>`;
+    html += `<div class="mb-4"><h3 class="text-[13px] font-semibold text-[var(--c-text-muted)] mb-2">Other axe-core Findings (${allUnmapped.length})</h3>`;
     for (const v of allUnmapped) {
-      html += `<div class="my-0.5 py-1 px-2 text-[11px] border-l-3 border-zinc-300 bg-zinc-50 rounded-r"><strong>${esc(v.id)}</strong> (${v.impact}) — ${esc(v.help)} [${v.nodes.length}]</div>`;
+      html += `<div class="my-1 py-1.5 px-2.5 text-[12px] border-l-[3px] border-zinc-300 bg-zinc-50 rounded-r"><strong>${esc(v.id)}</strong> <span class="text-[var(--c-text-muted)]">(${v.impact})</span> — ${esc(v.help)} <span class="text-[var(--c-text-muted)]">[${v.nodes.length}]</span></div>`;
     }
     html += `</div>`;
   }

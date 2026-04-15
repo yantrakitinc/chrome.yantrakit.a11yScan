@@ -12,7 +12,7 @@ A comprehensive, free accessibility audit toolkit for Chrome. Powered by [axe-co
 6. **Full site crawl** — scans every page on your site via background tab navigation
 7. **Authenticated scanning** — uses your active browser session, no credentials stored
 8. **Auth-gated URL tagging** — declare which URLs require login so the crawler handles auth explicitly and warns on unexpected redirects
-9. **Observer Mode** — passively scans every page you visit in the background. Results collect locally in the History tab
+9. **Observer Mode** — a scan preset that auto-scans every page you navigate to and logs manual scans with timestamps in the Observer tab. Compare page states over time
 10. **Report generation** — exportable PDF, HTML, and JSON reports, all generated client-side
 11. **Remote rule updates** — fetches configuration from a public JSON endpoint
 

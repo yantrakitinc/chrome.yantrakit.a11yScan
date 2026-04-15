@@ -7,13 +7,14 @@
 </head>
 <body class="flex flex-col h-screen relative">
   <!-- Header -->
-  <header class="flex items-center justify-between px-3.5 py-2 bg-indigo-950 shrink-0">
-    <div class="flex items-center gap-2">
-      <img src="icons/icon48.png" alt="A11y Scan" width="20" height="20">
-      <span class="font-bold text-white text-sm">A11y Scan</span><span class="text-[8px] font-bold text-amber-400 uppercase tracking-wider ml-1">Beta</span>
+  <header class="flex items-center justify-between px-4 py-2.5 bg-[var(--c-primary)] shrink-0">
+    <div class="flex items-center gap-2.5">
+      <img src="icons/icon48.png" alt="A11y Scan" width="18" height="18">
+      <span class="font-semibold text-white text-[13px] tracking-[-0.01em]">A11y Scan</span>
+      <span class="text-[9px] font-bold text-indigo-300 uppercase tracking-widest border border-indigo-600 rounded px-1 py-px leading-none">Beta</span>
     </div>
-    <div class="flex items-center gap-2">
-      <select id="cvd-select" aria-label="Color blindness simulation" class="text-[10px] py-0.5 px-1 border border-indigo-700 rounded bg-indigo-900 text-indigo-200 cursor-pointer outline-none">
+    <div class="flex items-center gap-3">
+      <select id="cvd-select" aria-label="Color blindness simulation" class="text-[11px] py-1 px-1.5 border border-indigo-600/50 rounded bg-indigo-900/60 text-indigo-100 cursor-pointer outline-none hover:bg-indigo-800/60 transition-colors">
         <option value="">Normal vision</option>
         <option value="protanopia">Protanopia</option>
         <option value="deuteranopia">Deuteranopia</option>
@@ -24,7 +25,7 @@
         <option value="achromatopsia">Achromatopsia</option>
         <option value="achromatomaly">Achromatomaly</option>
       </select>
-      <button id="config-gear-btn" class="text-indigo-300 hover:text-white cursor-pointer" title="Test configuration" aria-label="Open test configuration">
+      <button id="config-gear-btn" class="text-indigo-300 hover:text-white cursor-pointer transition-colors p-1" title="Test configuration" aria-label="Open test configuration">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.07 1a1 1 0 0 0-.96.73l-.37 1.3a5.5 5.5 0 0 0-.88.51l-1.28-.43a1 1 0 0 0-1.1.42l-.93 1.6a1 1 0 0 0 .14 1.16l.91.87a5.5 5.5 0 0 0 0 1.02l-.91.87a1 1 0 0 0-.14 1.16l.93 1.6a1 1 0 0 0 1.1.42l1.28-.43c.27.2.56.37.88.51l.37 1.3a1 1 0 0 0 .96.73h1.86a1 1 0 0 0 .96-.73l.37-1.3c.32-.14.6-.31.88-.51l1.28.43a1 1 0 0 0 1.1-.42l.93-1.6a1 1 0 0 0-.14-1.16l-.91-.87a5.5 5.5 0 0 0 0-1.02l.91-.87a1 1 0 0 0 .14-1.16l-.93-1.6a1 1 0 0 0-1.1-.42l-1.28.43a5.5 5.5 0 0 0-.88-.51l-.37-1.3A1 1 0 0 0 8.93 1H7.07ZM8 5.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z"/></svg>
       </button>
     </div>
@@ -33,153 +34,153 @@
   <!-- Config backdrop -->
   <div id="config-backdrop" hidden class="fixed inset-0 bg-black/40 z-40"></div>
   <!-- Config panel (overlay dropdown) -->
-  <div id="config-panel" hidden class="absolute top-10 left-0 right-0 z-50 bg-white border-b-2 border-indigo-950 shadow-[0_8px_24px_rgba(0,0,0,0.25)]"></div>
+  <div id="config-panel" hidden class="absolute top-11 left-0 right-0 z-50 bg-[var(--c-surface)] border-b-2 border-[var(--c-primary)] shadow-[0_8px_30px_rgba(0,0,0,0.18)]"></div>
 
   <!-- Scan controls -->
-  <div class="px-3.5 py-2.5 border-b border-zinc-200 bg-zinc-50 shrink-0">
-    <div class="flex gap-1.5 mb-2">
-      <select id="wcag-version" aria-label="WCAG version" class="px-1.5 py-1 text-xs border border-zinc-300 rounded bg-white cursor-pointer">
+  <div class="px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface)] shrink-0">
+    <div class="flex gap-2 mb-2.5">
+      <select id="wcag-version" aria-label="WCAG version" class="px-2 py-1.5 text-[12px] border border-[var(--c-border)] rounded-md bg-[var(--c-surface)] cursor-pointer text-[var(--c-text)] hover:border-zinc-400 transition-colors">
         <option value="2.0">WCAG 2.0</option>
         <option value="2.1">WCAG 2.1</option>
         <option value="2.2" selected>WCAG 2.2</option>
       </select>
-      <select id="wcag-level" aria-label="Conformance level" class="px-1.5 py-1 text-xs border border-zinc-300 rounded bg-white cursor-pointer">
+      <select id="wcag-level" aria-label="Conformance level" class="px-2 py-1.5 text-[12px] border border-[var(--c-border)] rounded-md bg-[var(--c-surface)] cursor-pointer text-[var(--c-text)] hover:border-zinc-400 transition-colors">
         <option value="A">Level A</option>
         <option value="AA" selected>Level AA</option>
         <option value="AAA">Level AAA</option>
       </select>
     </div>
-    <div class="flex gap-1.5">
-      <button id="scan-btn" class="flex-1 py-2 text-sm font-bold text-white bg-indigo-950 rounded-lg hover:bg-indigo-900 disabled:opacity-50 cursor-pointer">Start Scan</button>
-      <button id="clear-btn" hidden class="py-2 px-3 text-xs font-semibold text-zinc-500 border border-zinc-300 rounded-lg hover:bg-red-50 hover:text-red-700 cursor-pointer">Clear</button>
+    <div class="flex gap-2">
+      <button id="scan-btn" class="flex-1 py-2.5 text-[13px] font-semibold text-white bg-[var(--c-primary)] rounded-lg hover:bg-[var(--c-primary-hover)] disabled:opacity-40 cursor-pointer transition-colors">Start Scan</button>
+      <button id="clear-btn" hidden class="py-2.5 px-3.5 text-[12px] font-semibold text-[var(--c-text-muted)] border border-[var(--c-border)] rounded-lg hover:bg-red-50 hover:text-[var(--c-danger)] hover:border-red-200 cursor-pointer transition-colors">Clear</button>
     </div>
   </div>
 
   <!-- Tabs (shown after scan or when observer history exists) -->
-  <div class="flex border-b border-zinc-200 px-3 bg-zinc-50 shrink-0" id="tabs" hidden>
-    <button class="tab px-3 py-1.5 text-[11px] font-bold border-b-2 border-indigo-950 text-indigo-950 cursor-pointer" data-tab="results">Results</button>
-    <button class="tab px-3 py-1.5 text-[11px] font-bold border-b-2 border-transparent text-zinc-400 hover:text-zinc-700 cursor-pointer" data-tab="manual">Manual Review <span id="manual-badge" class="text-[9px] bg-zinc-200 px-1 py-0.5 rounded-full text-zinc-600"></span></button>
-    <button class="tab px-3 py-1.5 text-[11px] font-bold border-b-2 border-transparent text-zinc-400 hover:text-zinc-700 cursor-pointer" data-tab="aria">ARIA <span id="aria-badge" class="text-[9px] bg-zinc-200 px-1 py-0.5 rounded-full text-zinc-600" hidden></span></button>
-    <button id="tab-history-btn" class="tab px-3 py-1.5 text-[11px] font-bold border-b-2 border-transparent text-zinc-400 hover:text-zinc-700 cursor-pointer" data-tab="history" role="tab">History <span id="history-badge" class="text-[9px] bg-zinc-200 px-1 py-0.5 rounded-full text-zinc-600" hidden></span></button>
+  <div class="flex border-b border-[var(--c-border)] px-1 bg-[var(--c-surface)] shrink-0" id="tabs" hidden>
+    <button class="tab px-3.5 py-2 text-[12px] font-semibold border-b-2 border-[var(--c-primary)] text-[var(--c-primary)] cursor-pointer transition-colors" data-tab="results">Results</button>
+    <button class="tab px-3.5 py-2 text-[12px] font-semibold border-b-2 border-transparent text-[var(--c-text-muted)] hover:text-[var(--c-text)] cursor-pointer transition-colors" data-tab="manual">Manual <span id="manual-badge" class="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded-full text-[var(--c-text-muted)] font-semibold ml-0.5"></span></button>
+    <button class="tab px-3.5 py-2 text-[12px] font-semibold border-b-2 border-transparent text-[var(--c-text-muted)] hover:text-[var(--c-text)] cursor-pointer transition-colors" data-tab="aria">ARIA <span id="aria-badge" class="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded-full text-[var(--c-text-muted)] font-semibold ml-0.5" hidden></span></button>
+    <button id="tab-history-btn" class="tab px-3.5 py-2 text-[12px] font-semibold border-b-2 border-transparent text-[var(--c-text-muted)] hover:text-[var(--c-text)] cursor-pointer transition-colors" data-tab="history" role="tab">Observer <span id="history-badge" class="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded-full text-[var(--c-text-muted)] font-semibold ml-0.5" hidden></span></button>
   </div>
 
   <!-- Scrollable content area -->
   <div class="flex-1 overflow-y-auto">
     <div id="empty-state"></div>
-    <div id="tab-results" class="px-3.5 py-2.5">
+    <div id="tab-results" class="px-4 py-3">
       <div id="output"></div>
     </div>
-    <div id="tab-manual" class="px-3.5 py-2.5" hidden>
+    <div id="tab-manual" class="px-4 py-3" hidden>
       <div id="manual-list"></div>
     </div>
-    <div id="tab-aria" class="p-3.5" hidden>
+    <div id="tab-aria" class="px-4 py-3" hidden>
       <div id="aria-output"></div>
     </div>
-    <div id="tab-history" class="px-3.5 py-2.5" role="tabpanel" hidden>
+    <div id="tab-history" class="px-4 py-3" role="tabpanel" hidden>
       <div id="observer-history-root"></div>
     </div>
   </div>
 
   <!-- Bottom action bar (shown after scan) -->
-  <div id="post-scan-actions" hidden class="shrink-0 border-t-2 border-zinc-200 bg-zinc-50">
-    <!-- Export group (top) -->
-    <div class="px-3 py-1.5 border-b border-zinc-200">
-      <div class="text-[8px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Export</div>
-      <div class="flex items-center gap-1">
-        <button id="export-json" class="px-1.5 py-0.5 text-[9px] font-bold text-zinc-600 border border-zinc-200 rounded hover:bg-zinc-100 cursor-pointer" title="Download JSON report">↓ JSON</button>
-        <button id="export-html" class="px-1.5 py-0.5 text-[9px] font-bold text-zinc-600 border border-zinc-200 rounded hover:bg-zinc-100 cursor-pointer" title="Download HTML report">↓ HTML</button>
-        <button id="export-pdf" class="px-1.5 py-0.5 text-[9px] font-bold text-zinc-600 border border-zinc-200 rounded hover:bg-zinc-100 cursor-pointer" title="Download PDF report">↓ PDF</button>
+  <div id="post-scan-actions" hidden class="shrink-0 border-t border-[var(--c-border)] bg-[var(--c-surface)]">
+    <!-- Export row -->
+    <div class="px-4 py-2 border-b border-[var(--c-border-subtle)]">
+      <div class="text-[10px] font-semibold text-[var(--c-text-muted)] uppercase tracking-wider mb-1">Export</div>
+      <div class="flex items-center gap-1.5">
+        <button id="export-json" class="px-2 py-1 text-[11px] font-semibold text-[var(--c-text-secondary)] border border-[var(--c-border)] rounded-md hover:bg-zinc-50 cursor-pointer transition-colors" title="Download JSON report">JSON</button>
+        <button id="export-html" class="px-2 py-1 text-[11px] font-semibold text-[var(--c-text-secondary)] border border-[var(--c-border)] rounded-md hover:bg-zinc-50 cursor-pointer transition-colors" title="Download HTML report">HTML</button>
+        <button id="export-pdf" class="px-2 py-1 text-[11px] font-semibold text-[var(--c-text-secondary)] border border-[var(--c-border)] rounded-md hover:bg-zinc-50 cursor-pointer transition-colors" title="Download PDF report">PDF</button>
       </div>
     </div>
-    <!-- Overlays group -->
-    <div class="px-3 py-1.5 border-b border-zinc-200">
-      <div class="text-[8px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Overlays</div>
-      <div class="flex items-center gap-1">
-        <button id="toggle-violations" class="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold text-red-700 border border-red-200 rounded hover:bg-red-50 cursor-pointer" title="Highlight violations on the page">
-          <span id="violation-toggle-icon">○</span> Violations
+    <!-- Overlays row -->
+    <div class="px-4 py-2 border-b border-[var(--c-border-subtle)]">
+      <div class="text-[10px] font-semibold text-[var(--c-text-muted)] uppercase tracking-wider mb-1">Overlays</div>
+      <div class="flex items-center gap-1.5">
+        <button id="toggle-violations" class="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[var(--c-danger)] border border-red-200 rounded-md hover:bg-red-50 cursor-pointer transition-colors" title="Highlight violations on the page">
+          <span id="violation-toggle-icon" class="text-[10px]">○</span> Violations
         </button>
-        <button id="toggle-tab-order" class="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold text-indigo-800 border border-indigo-200 rounded hover:bg-indigo-50 cursor-pointer" title="Show keyboard tab order on the page">
-          <span id="tab-order-toggle-icon">○</span> Tab Order
+        <button id="toggle-tab-order" class="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[var(--c-accent)] border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer transition-colors" title="Show keyboard tab order on the page">
+          <span id="tab-order-toggle-icon" class="text-[10px]">○</span> Tab Order
         </button>
-        <button id="toggle-focus-gaps" class="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 border border-amber-200 rounded hover:bg-amber-50 cursor-pointer" title="Highlight elements missing keyboard access">
-          <span id="focus-gaps-toggle-icon">○</span> Focus Gaps
+        <button id="toggle-focus-gaps" class="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[var(--c-warning)] border border-amber-200 rounded-md hover:bg-amber-50 cursor-pointer transition-colors" title="Highlight elements missing keyboard access">
+          <span id="focus-gaps-toggle-icon" class="text-[10px]">○</span> Gaps
         </button>
-        <span class="w-px h-3 bg-zinc-300 mx-0.5"></span>
-        <button id="movie-mode-btn" class="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold text-indigo-800 border border-indigo-200 rounded hover:bg-indigo-50 cursor-pointer" title="Animated tab order walkthrough">🎬 Movie</button>
+        <span class="w-px h-3.5 bg-[var(--c-border)] mx-0.5"></span>
+        <button id="movie-mode-btn" class="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[var(--c-accent)] border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer transition-colors" title="Animated tab order walkthrough">Movie</button>
       </div>
     </div>
     <!-- Movie mode controls (visible when active) -->
-    <div id="movie-bar" hidden class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50">
-      <div class="text-[8px] font-bold text-indigo-400 uppercase tracking-wider mr-1">Movie</div>
-      <button id="movie-play" class="px-1.5 py-0.5 text-[9px] font-bold bg-indigo-950 text-white rounded cursor-pointer">▶ Play</button>
-      <button id="movie-pause" hidden class="px-1.5 py-0.5 text-[9px] font-bold bg-zinc-200 text-zinc-700 rounded cursor-pointer">⏸</button>
-      <button id="movie-stop" hidden class="px-1.5 py-0.5 text-[9px] font-bold bg-zinc-200 text-zinc-700 rounded cursor-pointer">⏹</button>
-      <select id="movie-speed" class="text-[9px] py-0.5 px-0.5 border border-indigo-200 rounded bg-white cursor-pointer">
+    <div id="movie-bar" hidden class="flex items-center gap-2 px-4 py-2 bg-[var(--c-primary-light)] border-t border-indigo-100">
+      <span class="text-[10px] font-semibold text-[var(--c-accent)] uppercase tracking-wider">Movie</span>
+      <button id="movie-play" class="px-2.5 py-1 text-[11px] font-semibold bg-[var(--c-primary)] text-white rounded-md cursor-pointer hover:bg-[var(--c-primary-hover)] transition-colors">Play</button>
+      <button id="movie-pause" hidden class="px-2.5 py-1 text-[11px] font-semibold bg-zinc-200 text-[var(--c-text)] rounded-md cursor-pointer hover:bg-zinc-300 transition-colors">Pause</button>
+      <button id="movie-stop" hidden class="px-2.5 py-1 text-[11px] font-semibold bg-zinc-200 text-[var(--c-text)] rounded-md cursor-pointer hover:bg-zinc-300 transition-colors">Stop</button>
+      <select id="movie-speed" class="text-[11px] py-1 px-1.5 border border-indigo-200 rounded-md bg-white cursor-pointer">
         <option value="2000">0.5x</option>
         <option value="1000" selected>1x</option>
         <option value="500">2x</option>
       </select>
-      <span id="movie-progress" class="text-[9px] text-indigo-600 ml-auto"></span>
+      <span id="movie-progress" class="text-[11px] text-[var(--c-accent)] ml-auto font-medium"></span>
     </div>
   </div>
 
   <!-- Crawl config (shown when Site Crawl preset selected) -->
-  <div id="crawl-config" hidden class="shrink-0 px-3.5 py-2 space-y-2 border-t border-zinc-200 bg-zinc-50">
+  <div id="crawl-config" hidden class="shrink-0 px-4 py-2.5 space-y-2 border-t border-[var(--c-border)] bg-[var(--c-surface)]">
     <div class="flex gap-2 items-center">
-      <select id="crawl-mode" class="text-[11px] py-1 px-1.5 border border-zinc-300 rounded bg-white cursor-pointer">
+      <select id="crawl-mode" class="text-[12px] py-1.5 px-2 border border-[var(--c-border)] rounded-md bg-[var(--c-surface)] cursor-pointer">
         <option value="discover">Discover links</option>
         <option value="sitemap">Sitemap URL</option>
         <option value="url-list">URL List</option>
       </select>
-      <span id="crawl-page-count" class="text-[10px] text-zinc-400">All pages</span>
+      <span id="crawl-page-count" class="text-[11px] text-[var(--c-text-muted)]">All pages</span>
     </div>
-    <input id="crawl-sitemap-url" hidden type="url" placeholder="https://example.com/sitemap.xml" class="w-full text-[11px] py-1.5 px-2 border border-zinc-300 rounded bg-white">
-    <div id="crawl-url-list-info" hidden class="text-[10px] text-zinc-500 bg-white border border-zinc-200 rounded p-2 max-h-24 overflow-y-auto"></div>
-    <button id="crawl-start" class="px-3 py-1 text-[11px] font-bold text-white bg-indigo-950 rounded cursor-pointer">Start Crawl</button>
+    <input id="crawl-sitemap-url" hidden type="url" placeholder="https://example.com/sitemap.xml" class="w-full text-[12px] py-2 px-2.5 border border-[var(--c-border)] rounded-md bg-[var(--c-surface)]">
+    <div id="crawl-url-list-info" hidden class="text-[11px] text-[var(--c-text-secondary)] bg-zinc-50 border border-[var(--c-border)] rounded-md p-2.5 max-h-24 overflow-y-auto"></div>
+    <button id="crawl-start" class="px-4 py-1.5 text-[12px] font-semibold text-white bg-[var(--c-primary)] rounded-md cursor-pointer hover:bg-[var(--c-primary-hover)] transition-colors">Start Crawl</button>
   </div>
 
   <!-- Crawl active bar (visible during crawling) -->
-  <div id="crawl-active-bar" hidden class="shrink-0 px-3 py-2 border-t border-zinc-200 bg-zinc-50">
-    <div id="crawl-status" class="text-[10px] text-zinc-600 mb-1.5 truncate"></div>
-    <div class="w-full bg-zinc-200 rounded-full h-1 mb-1.5"><div id="crawl-bar" class="bg-indigo-950 h-1 rounded-full transition-all" style="width:0%"></div></div>
-    <div class="flex items-center gap-1">
-      <button id="crawl-pause" class="px-1.5 py-0.5 text-[9px] font-bold text-zinc-600 border border-zinc-300 rounded hover:bg-zinc-100 cursor-pointer">⏸ Pause</button>
-      <button id="crawl-resume" hidden class="px-1.5 py-0.5 text-[9px] font-bold text-indigo-800 border border-indigo-200 rounded hover:bg-indigo-50 cursor-pointer">▶ Resume</button>
-      <button id="crawl-rescan" hidden class="px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 border border-emerald-200 rounded hover:bg-emerald-50 cursor-pointer">🔄 Rescan Page</button>
-      <button id="crawl-cancel" class="px-1.5 py-0.5 text-[9px] font-bold text-zinc-400 hover:text-red-600 cursor-pointer">Cancel</button>
+  <div id="crawl-active-bar" hidden class="shrink-0 px-4 py-2.5 border-t border-[var(--c-border)] bg-[var(--c-surface)]">
+    <div id="crawl-status" class="text-[11px] text-[var(--c-text-secondary)] mb-2 truncate"></div>
+    <div class="w-full bg-zinc-200 rounded-full h-1.5 mb-2"><div id="crawl-bar" class="bg-[var(--c-primary)] h-1.5 rounded-full transition-all" style="width:0%"></div></div>
+    <div class="flex items-center gap-1.5">
+      <button id="crawl-pause" class="px-2.5 py-1 text-[11px] font-semibold text-[var(--c-text-secondary)] border border-[var(--c-border)] rounded-md hover:bg-zinc-50 cursor-pointer transition-colors">Pause</button>
+      <button id="crawl-resume" hidden class="px-2.5 py-1 text-[11px] font-semibold text-[var(--c-accent)] border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer transition-colors">Resume</button>
+      <button id="crawl-rescan" hidden class="px-2.5 py-1 text-[11px] font-semibold text-[var(--c-success)] border border-green-200 rounded-md hover:bg-green-50 cursor-pointer transition-colors">Rescan Page</button>
+      <button id="crawl-cancel" class="px-2.5 py-1 text-[11px] font-semibold text-[var(--c-text-muted)] hover:text-[var(--c-danger)] cursor-pointer transition-colors">Cancel</button>
     </div>
   </div>
 
   <!-- Crawl waiting for user (shown when page rule triggers) -->
-  <div id="crawl-user-wait" hidden class="shrink-0 px-3 py-2.5 border-t-2 border-amber-400 bg-amber-50">
-    <div id="crawl-wait-message" class="text-[10px] text-amber-900 font-semibold mb-1.5"></div>
-    <div id="crawl-wait-url" class="text-[9px] text-amber-700 mb-2 truncate font-mono"></div>
-    <div class="flex items-center gap-1.5">
-      <button id="crawl-continue" class="px-2 py-1 text-[9px] font-bold text-white bg-indigo-950 rounded hover:bg-indigo-900 cursor-pointer">✓ Continue Scanning</button>
-      <button id="crawl-rescan-wait" class="px-2 py-1 text-[9px] font-bold text-emerald-700 border border-emerald-200 rounded hover:bg-emerald-50 cursor-pointer">🔄 Rescan First</button>
-      <button id="crawl-cancel-wait" class="px-2 py-1 text-[9px] font-bold text-zinc-400 hover:text-red-600 cursor-pointer">Cancel</button>
+  <div id="crawl-user-wait" hidden class="shrink-0 px-4 py-3 border-t-2 border-amber-400 bg-[var(--c-warning-light)]">
+    <div id="crawl-wait-message" class="text-[12px] text-amber-900 font-semibold mb-1.5"></div>
+    <div id="crawl-wait-url" class="text-[11px] text-amber-700 mb-2.5 truncate font-mono"></div>
+    <div class="flex items-center gap-2">
+      <button id="crawl-continue" class="px-3 py-1.5 text-[11px] font-semibold text-white bg-[var(--c-primary)] rounded-md hover:bg-[var(--c-primary-hover)] cursor-pointer transition-colors">Continue Scanning</button>
+      <button id="crawl-rescan-wait" class="px-3 py-1.5 text-[11px] font-semibold text-[var(--c-success)] border border-green-200 rounded-md hover:bg-green-50 cursor-pointer transition-colors">Rescan First</button>
+      <button id="crawl-cancel-wait" class="px-3 py-1.5 text-[11px] font-semibold text-[var(--c-text-muted)] hover:text-[var(--c-danger)] cursor-pointer transition-colors">Cancel</button>
     </div>
   </div>
 
   <!-- Observer Mode privacy consent (one-time) -->
   <div id="observer-consent" hidden class="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-4 bg-black/50">
-    <div class="bg-white border-2 border-indigo-950 rounded-xl max-w-sm w-full p-4 shadow-2xl">
-      <h3 class="text-sm font-bold text-indigo-950 mb-2">Enable Observer Mode?</h3>
-      <p class="text-[11px] text-zinc-700 leading-relaxed mb-3">
+    <div class="bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl max-w-sm w-full p-5 shadow-2xl">
+      <h3 class="text-[14px] font-semibold text-[var(--c-text)] mb-2">Enable Observer Mode?</h3>
+      <p class="text-[12px] text-[var(--c-text-secondary)] leading-relaxed mb-4">
         Observer Mode scans every page you visit while it's on. Results are stored
         <strong>locally in your browser only</strong> — nothing is sent anywhere.
-        Scans of HTTPS sites are visible only to you. You can clear history at any time from the History tab.
+        You can clear history at any time from the History tab.
       </p>
       <div class="flex gap-2">
-        <button id="observer-consent-accept" class="flex-1 px-3 py-2 text-xs font-bold text-white bg-indigo-950 rounded-lg hover:bg-indigo-900 cursor-pointer">Turn On Observer Mode</button>
-        <button id="observer-consent-cancel" class="px-3 py-2 text-xs font-bold text-zinc-600 border border-zinc-300 rounded-lg hover:bg-zinc-50 cursor-pointer">Cancel</button>
+        <button id="observer-consent-accept" class="flex-1 px-4 py-2.5 text-[12px] font-semibold text-white bg-[var(--c-primary)] rounded-lg hover:bg-[var(--c-primary-hover)] cursor-pointer transition-colors">Turn On</button>
+        <button id="observer-consent-cancel" class="px-4 py-2.5 text-[12px] font-semibold text-[var(--c-text-secondary)] border border-[var(--c-border)] rounded-lg hover:bg-zinc-50 cursor-pointer transition-colors">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- Beta footer -->
-  <div class="shrink-0 px-3 py-1.5 border-t border-zinc-200 bg-zinc-50 text-center">
-    <p class="text-[9px] text-zinc-500">A11y Scan is in <strong class="text-amber-800">beta</strong>. <a href="https://a11yscan.yantrakit.com/support" target="_blank" rel="noopener" class="text-indigo-700 underline">Report a bug or request a feature</a>.</p>
+  <!-- Footer -->
+  <div class="shrink-0 px-4 py-2 border-t border-[var(--c-border)] bg-[var(--c-surface)] text-center">
+    <p class="text-[11px] text-[var(--c-text-muted)]">A11y Scan <strong class="text-amber-700">beta</strong> · <a href="https://a11yscan.yantrakit.com/support" target="_blank" rel="noopener" class="text-[var(--c-accent)] hover:underline">Feedback</a></p>
   </div>
 
   <script src="sidepanel.js"></script>

@@ -8,7 +8,7 @@ import { renderResultsTab } from './render-results';
 import { renderAriaTab } from './render-aria';
 import { initManualReview, renderManualTab } from './manual-review';
 import { exportJSON, exportHTML, exportPDF } from './reports';
-import { renderScanPresets, getSelectedPresets, clearPresets, selectPreset } from './scan-presets';
+import { renderScanPresets, getSelectedPresets, clearPresets, selectPreset, isPresetSelected } from './scan-presets';
 import { initConfigPanel, loadSavedConfig, getActiveConfig } from './config-panel';
 import { initObserverHistoryTab, onObserverScanComplete } from './observer-history';
 import { initObserverSettingsPanel, showObserverConsent } from './observer-settings';
@@ -271,6 +271,40 @@ initObserverHistoryTab({
 });
 initObserverSettingsPanel();
 
+// Sync Observer preset ↔ Observer Mode state.
+// Called every time a preset card is toggled.
+async function syncObserverPreset(): Promise<void> {
+  const selected = isPresetSelected('observer');
+  const stateResp = await chrome.runtime.sendMessage({ type: 'OBSERVER_GET_STATE' });
+  const currentlyEnabled = stateResp?.payload?.enabled ?? false;
+  const consentGiven = stateResp?.payload?.consentGiven ?? false;
+
+  if (selected && !currentlyEnabled) {
+    if (!consentGiven) {
+      showObserverConsent(async () => {
+        await chrome.runtime.sendMessage({ type: 'OBSERVER_ENABLE' });
+        tabsEl.hidden = false;
+        refreshObserverHistory?.();
+      });
+    } else {
+      await chrome.runtime.sendMessage({ type: 'OBSERVER_ENABLE' });
+      tabsEl.hidden = false;
+      refreshObserverHistory?.();
+    }
+  } else if (!selected && currentlyEnabled) {
+    await chrome.runtime.sendMessage({ type: 'OBSERVER_DISABLE' });
+    refreshObserverHistory?.();
+  }
+}
+
+// On startup, if Observer Mode was previously enabled, select the preset card.
+chrome.runtime.sendMessage({ type: 'OBSERVER_GET_STATE' }).then((resp) => {
+  if (resp?.payload?.enabled) {
+    selectPreset('observer');
+    tabsEl.hidden = false;
+  }
+});
+
 // Initialize config panel (gear icon dropdown — hidden until clicked)
 loadSavedConfig().then(() => {
   initConfigPanel(configGearBtn, configPanelEl, (_config) => {
@@ -289,7 +323,7 @@ loadSavedConfig().then(() => {
     } else {
       clearPresets();
     }
-    renderScanPresets(emptyStateEl, () => {});
+    renderScanPresets(emptyStateEl, syncObserverPreset);
   });
   const saved = getActiveConfig();
   if (saved) {
@@ -298,6 +332,37 @@ loadSavedConfig().then(() => {
     populateCrawlFromConfig();
   }
 });
+
+/**
+ * Records a manual scan result in Observer history if Observer Mode is enabled.
+ * This way clicking "Start Scan" also populates the Observer tab.
+ */
+async function recordManualScanInObserver(response: any): Promise<void> {
+  if (!isPresetSelected('observer')) return;
+  try {
+    const stateResp = await chrome.runtime.sendMessage({ type: 'OBSERVER_GET_STATE' });
+    if (!stateResp?.payload?.enabled) return;
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.url || !tab.id) return;
+    const violations = response.violations || [];
+    const passes = Array.isArray(response.passes) ? response.passes.length : response.passes || 0;
+    const incomplete = Array.isArray(response.incomplete) ? response.incomplete.length : response.incomplete || 0;
+    const entry = {
+      id: crypto.randomUUID(),
+      url: tab.url,
+      title: tab.title ?? '',
+      scannedAt: new Date().toISOString(),
+      violations,
+      passes,
+      incomplete,
+      wcagVersion: wcagVersion.value,
+      wcagLevel: wcagLevel.value,
+    };
+    // Store directly via background
+    await chrome.runtime.sendMessage({ type: 'OBSERVER_RECORD_SCAN', entry });
+    refreshObserverHistory?.();
+  } catch { /* non-critical */ }
+}
 
 /**
  * Scrolls to and expands a violation in the Results tab when the user
@@ -388,7 +453,7 @@ requestTabResults((results) => {
       updateAriaBadge();
     }
   } else {
-    renderScanPresets(emptyStateEl, () => {});
+    renderScanPresets(emptyStateEl, syncObserverPreset);
   }
 });
 
@@ -502,6 +567,7 @@ scanBtn.addEventListener('click', async () => {
     showResults(response);
     renderManualTab();
     runAriaScan();
+    recordManualScanInObserver(response);
   } else {
     output.textContent = 'Error: ' + (response.message || 'Unknown error');
   }
@@ -641,7 +707,7 @@ function hideResults(): void {
   updateAriaBadge();
   resetOverlays();
   emptyStateEl.hidden = false;
-  renderScanPresets(emptyStateEl, () => {});
+  renderScanPresets(emptyStateEl, syncObserverPreset);
   clearBtn.hidden = true;
   tabsEl.hidden = true;
   tabManualEl.hidden = true;

@@ -191,6 +191,17 @@ async function appendObserverScan(entry: iObserverScanResult, maxEntries: number
   await chrome.storage.local.set({ [OBSERVER_STORAGE_KEYS.history]: capped });
 }
 
+/**
+ * Records a manual scan result (from the user clicking "Start Scan") into
+ * Observer history. Unlike runObserverScan, this does NOT throttle — every
+ * manual scan is recorded so users can compare page states over time.
+ */
+export async function recordManualObserverScan(entry: iObserverScanResult): Promise<void> {
+  const state = await getObserverState();
+  await appendObserverScan(entry, state.settings.maxHistoryEntries);
+  chrome.runtime.sendMessage({ type: 'OBSERVER_SCAN_COMPLETE', entry }).catch(() => {});
+}
+
 /** Returns the full observer history, optionally filtered. */
 export async function getObserverHistory(
   filters?: iObserverHistoryFilters,
