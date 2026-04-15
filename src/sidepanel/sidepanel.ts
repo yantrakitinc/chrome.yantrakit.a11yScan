@@ -299,11 +299,59 @@ loadSavedConfig().then(() => {
   }
 });
 
+/**
+ * Scrolls to and expands a violation in the Results tab when the user
+ * clicks a numbered violation badge on the page overlay.
+ */
+function scrollToViolation(ruleId: string, selector: string): void {
+  // Switch to Results tab if not already active
+  tabResultsEl.hidden = false;
+  tabManualEl.hidden = true;
+  tabAriaEl.hidden = true;
+  tabHistoryEl.hidden = true;
+  tabsEl.querySelectorAll('.tab').forEach((t) => {
+    t.classList.remove('text-indigo-950', 'border-indigo-950');
+    t.classList.add('text-zinc-500', 'border-transparent');
+  });
+  const resultsTabBtn = tabsEl.querySelector('[data-tab="results"]');
+  if (resultsTabBtn) {
+    resultsTabBtn.classList.remove('text-zinc-500', 'border-transparent');
+    resultsTabBtn.classList.add('text-indigo-950', 'border-indigo-950');
+  }
+
+  // Find the rule-level <details> and open it + its parent criterion <details>
+  const ruleDetails = output.querySelector(`details[data-rule-id="${ruleId}"]`) as HTMLDetailsElement | null;
+  if (ruleDetails) {
+    // Open the parent WCAG criterion <details> first
+    const parentDetails = ruleDetails.closest('details:not([data-rule-id])') as HTMLDetailsElement | null;
+    if (parentDetails) parentDetails.open = true;
+    ruleDetails.open = true;
+
+    // If we have a specific selector, find and highlight that node
+    if (selector) {
+      const nodeEl = ruleDetails.querySelector(`[data-node-selector="${selector}"]`) as HTMLElement | null;
+      if (nodeEl) {
+        nodeEl.style.outline = '2px solid #eab308';
+        nodeEl.style.outlineOffset = '1px';
+        nodeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => { nodeEl.style.outline = ''; nodeEl.style.outlineOffset = ''; }, 3000);
+        return;
+      }
+    }
+
+    ruleDetails.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
 /** Listen for tab changes from background. */
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'OBSERVER_SCAN_COMPLETE') {
     onObserverScanComplete();
     tabsEl.hidden = false;
+    return;
+  }
+  if (message.type === 'VIOLATION_BADGE_CLICKED') {
+    scrollToViolation(message.ruleId, message.selector);
     return;
   }
   if (message.type === 'TAB_CHANGED') {
