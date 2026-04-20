@@ -1,195 +1,124 @@
 /**
- * Collects enriched context for violation nodes — DOM context, CSS styles,
- * framework hints, and file path guesses. Used for AI-agent-ready JSON export.
+ * Enriched context collection for violation nodes (F12).
+ * Gathers DOM context, CSS context, framework hints, and file path guesses.
  */
 
-import type { iEnrichedContext, iDomContext, iCssContext, iFrameworkHints, iFilePathGuess } from '@shared/types';
+import type { iEnrichedContext, iDomContext, iCssContext, iFrameworkHints, iFilePathGuess } from "@shared/types";
 
-/**
- * Collects enriched context for an element matched by selector.
- * Returns null if the element cannot be found.
- */
-export interface iEnrichmentFlags {
-  domContext?: boolean;
-  cssComputedStyles?: boolean;
-  frameworkHints?: boolean;
-  filePathGuesses?: boolean;
-}
+/** Collect enriched context for a list of CSS selectors */
+export function collectEnrichedContext(selectors: string[]): Record<string, iEnrichedContext> {
+  const result: Record<string, iEnrichedContext> = {};
 
-export function collectEnrichedContext(selector: string, flags?: iEnrichmentFlags): iEnrichedContext | null {
-  let el: Element | null = null;
-  try {
-    el = document.querySelector(selector);
-  } catch {
-    return null;
-  }
-  if (!el) return null;
-
-  return {
-    dom: flags?.domContext !== false ? collectDomContext(el) : { parentSelector: '', parentTagName: '', siblingSelectors: [], nearestLandmark: '', nearestHeading: '' },
-    css: flags?.cssComputedStyles !== false ? collectCssContext(el) : { color: '', backgroundColor: '', fontSize: '', display: '', visibility: '', position: '' },
-    framework: flags?.frameworkHints !== false ? detectFramework(el) : { detected: null, componentName: null, testId: null },
-    filePathGuesses: flags?.filePathGuesses !== false ? guessFilePaths(el) : [],
-  };
-}
-
-/**
- * Collects enriched context for multiple selectors in one call.
- */
-export function collectBatchEnrichedContext(selectors: string[], flags?: iEnrichmentFlags): Record<string, iEnrichedContext | null> {
-  const result: Record<string, iEnrichedContext | null> = {};
   for (const selector of selectors) {
-    result[selector] = collectEnrichedContext(selector, flags);
+    const el = document.querySelector(selector);
+    if (!el) continue;
+
+    result[selector] = {
+      dom: getDomContext(el),
+      css: getCssContext(el),
+      framework: getFrameworkHints(el),
+      filePathGuesses: getFilePathGuesses(el),
+    };
   }
+
   return result;
 }
 
-function collectDomContext(el: Element): iDomContext {
+function getDomContext(el: Element): iDomContext {
   const parent = el.parentElement;
+  const siblings = parent
+    ? Array.from(parent.children).slice(0, 5).map((s) => getSelector(s))
+    : [];
 
-  const siblingSelectors: string[] = [];
-  if (parent) {
-    for (const child of Array.from(parent.children)) {
-      if (child !== el) {
-        siblingSelectors.push(buildSimpleSelector(child));
-        if (siblingSelectors.length >= 5) break;
-      }
+  // Find nearest landmark
+  let nearestLandmark = "";
+  const landmarks = ["main", "nav", "header", "footer", "aside", "section", "article"];
+  let cursor: Element | null = el;
+  while (cursor) {
+    if (landmarks.includes(cursor.tagName.toLowerCase()) || cursor.getAttribute("role")) {
+      nearestLandmark = cursor.getAttribute("role") || cursor.tagName.toLowerCase();
+      break;
     }
+    cursor = cursor.parentElement;
   }
 
-  let nearestLandmark = '';
-  let current: Element | null = el.parentElement;
-  while (current) {
-    const role = current.getAttribute('role');
-    if (role && ['banner', 'navigation', 'main', 'complementary', 'contentinfo', 'search', 'form', 'region'].includes(role)) {
-      nearestLandmark = `[role="${role}"]`;
-      break;
-    }
-    const tag = current.tagName.toLowerCase();
-    if (['header', 'nav', 'main', 'aside', 'footer'].includes(tag)) {
-      nearestLandmark = tag;
-      break;
-    }
-    current = current.parentElement;
-  }
-
-  let nearestHeading = '';
-  current = el;
-  while (current) {
-    const prev = current.previousElementSibling;
-    if (prev && /^H[1-6]$/.test(prev.tagName)) {
-      nearestHeading = `${prev.tagName.toLowerCase()}: ${(prev.textContent || '').trim().slice(0, 80)}`;
-      break;
-    }
-    current = current.parentElement;
-    if (current && /^H[1-6]$/.test(current.tagName)) {
-      nearestHeading = `${current.tagName.toLowerCase()}: ${(current.textContent || '').trim().slice(0, 80)}`;
-      break;
-    }
-  }
+  // Find nearest heading
+  let nearestHeading = "";
+  const headingEl = el.closest("section, article, main, div")?.querySelector("h1, h2, h3, h4, h5, h6");
+  if (headingEl) nearestHeading = headingEl.textContent?.trim().substring(0, 100) || "";
 
   return {
-    parentSelector: parent ? buildSimpleSelector(parent) : '',
-    parentTagName: parent ? parent.tagName.toLowerCase() : '',
-    siblingSelectors,
+    parentSelector: parent ? getSelector(parent) : "",
+    parentTagName: parent?.tagName.toLowerCase() || "",
+    siblingSelectors: siblings,
     nearestLandmark,
     nearestHeading,
   };
 }
 
-function collectCssContext(el: Element): iCssContext {
-  const computed = window.getComputedStyle(el);
+function getCssContext(el: Element): iCssContext {
+  const style = getComputedStyle(el);
   return {
-    color: computed.color,
-    backgroundColor: computed.backgroundColor,
-    fontSize: computed.fontSize,
-    display: computed.display,
-    visibility: computed.visibility,
-    position: computed.position,
+    color: style.color,
+    backgroundColor: style.backgroundColor,
+    fontSize: style.fontSize,
+    display: style.display,
+    visibility: style.visibility,
+    position: style.position,
   };
 }
 
-function detectFramework(el: Element): iFrameworkHints {
-  const reactFiberKey = Object.keys(el).find((k) => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
-  const isReact = !!reactFiberKey || document.querySelector('[data-reactroot], [id="__next"]') !== null;
-  const isVue = !!(el as any).__vue__ || !!(el as any).__vue_app__ || document.querySelector('[data-v-]') !== null;
-  const isAngular = !!document.querySelector('[ng-version], [_nghost]') || Object.keys(el).some((k) => k.startsWith('__ng'));
+function getFrameworkHints(el: Element): iFrameworkHints {
+  // React
+  const reactFiber = Object.keys(el).find((k) => k.startsWith("__reactFiber$") || k.startsWith("__reactInternalInstance$"));
+  // Vue
+  const vue = (el as unknown as Record<string, unknown>).__vue__;
+  // Angular
+  const ngAttr = Array.from(el.attributes).find((a) => a.name.startsWith("_ng") || a.name.startsWith("ng-"));
 
-  let detected: string | null = null;
-  if (isReact) detected = 'react';
-  else if (isVue) detected = 'vue';
-  else if (isAngular) detected = 'angular';
+  const detected = reactFiber ? "React" : vue ? "Vue" : ngAttr ? "Angular" : null;
 
+  // Component name
   let componentName: string | null = null;
-  if (reactFiberKey) {
-    try {
-      let fiber = (el as any)[reactFiberKey];
-      while (fiber) {
-        if (fiber.type && typeof fiber.type === 'function') {
-          componentName = fiber.type.displayName || fiber.type.name || null;
-          if (componentName) break;
-        }
-        fiber = fiber.return;
-      }
-    } catch { /* access denied */ }
+  if (reactFiber) {
+    const fiber = (el as unknown as Record<string, unknown>)[reactFiber] as Record<string, unknown> | undefined;
+    if (fiber?.type && typeof fiber.type === "function") {
+      componentName = (fiber.type as { name?: string }).name || null;
+    }
   }
 
-  const testId = el.getAttribute('data-testid')
-    || el.getAttribute('data-test-id')
-    || el.getAttribute('data-cy')
-    || el.getAttribute('data-test')
-    || null;
+  // Test ID
+  const testId = el.getAttribute("data-testid") || el.getAttribute("data-test-id") || el.getAttribute("data-cy") || null;
 
   return { detected, componentName, testId };
 }
 
-function guessFilePaths(el: Element): iFilePathGuess[] {
+function getFilePathGuesses(el: Element): iFilePathGuess[] {
   const guesses: iFilePathGuess[] = [];
 
+  // Class-based guess
   const classes = Array.from(el.classList);
   for (const cls of classes) {
-    const bemMatch = cls.match(/^([A-Z][a-zA-Z]+)(?:__|--)/);
-    if (bemMatch) {
-      guesses.push({
-        source: `class="${cls}"`,
-        guess: `components/${bemMatch[1]}/${bemMatch[1]}.{tsx,jsx,vue}`,
-      });
-    }
-    const moduleMatch = cls.match(/^([A-Z][a-zA-Z]+)_\w+__\w+/);
-    if (moduleMatch) {
-      guesses.push({
-        source: `class="${cls}"`,
-        guess: `components/${moduleMatch[1]}/${moduleMatch[1]}.module.{css,scss}`,
-      });
+    if (cls.includes("__") || cls.includes("--")) {
+      // BEM pattern → component name
+      const component = cls.split("__")[0].split("--")[0];
+      guesses.push({ source: `class: ${cls}`, guess: `components/${component}` });
+      break;
     }
   }
 
-  const dataComponent = el.getAttribute('data-component');
+  // data-component
+  const dataComponent = el.getAttribute("data-component");
   if (dataComponent) {
-    guesses.push({
-      source: `data-component="${dataComponent}"`,
-      guess: `components/${dataComponent}/${dataComponent}.{tsx,jsx,vue}`,
-    });
+    guesses.push({ source: `data-component: ${dataComponent}`, guess: `components/${dataComponent}` });
   }
 
-  const id = el.id;
-  if (id) {
-    const idPascal = id.replace(/(^|[-_])(\w)/g, (_, __, c) => c.toUpperCase());
-    if (/^[A-Z]/.test(idPascal)) {
-      guesses.push({
-        source: `id="${id}"`,
-        guess: `components/${idPascal}/${idPascal}.{tsx,jsx,vue}`,
-      });
-    }
-  }
-
-  return guesses.slice(0, 5);
+  return guesses;
 }
 
-function buildSimpleSelector(el: Element): string {
+function getSelector(el: Element): string {
+  if (el.id) return `#${el.id}`;
   const tag = el.tagName.toLowerCase();
-  if (el.id) return `${tag}#${el.id}`;
-  const cls = Array.from(el.classList).slice(0, 2).join('.');
-  if (cls) return `${tag}.${cls}`;
-  return tag;
+  const classes = Array.from(el.classList).filter(c => !/[[\]:@!]/.test(c)).slice(0, 2).map(c => CSS.escape(c)).join(".");
+  return classes ? `${tag}.${classes}` : tag;
 }

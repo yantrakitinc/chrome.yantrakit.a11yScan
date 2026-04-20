@@ -1,112 +1,114 @@
 /**
- * Multi-viewport scanning: resize window to 3 widths, run axe-core at each, diff results.
+ * Multi-Viewport scanning (F02).
+ * Resizes browser to each viewport width and scans at each.
  */
 
-export interface iViewportResult {
-  width: number;
-  label: string;
-  violations: any[];
-  passes: any[];
-  incomplete: any[];
-}
+import type { iScanResult, iMultiViewportResult, iViolation, iViewportViolation } from "@shared/types";
+import { getConfig } from "@shared/config";
 
-export interface iMultiViewportResult {
-  viewports: iViewportResult[];
-  allViewports: any[];
-  viewportSpecific: { width: number; label: string; violations: any[] }[];
-}
-
-const DEFAULT_VIEWPORTS = [
-  { width: 375, label: 'Mobile' },
-  { width: 768, label: 'Tablet' },
-  { width: 1280, label: 'Desktop' },
-];
-
-function violationKey(v: any, node: any): string {
-  return `${v.id}|||${(node.target || []).join(',')}`;
-}
-
-function diffResults(viewports: iViewportResult[]): { allViewports: any[]; viewportSpecific: { width: number; label: string; violations: any[] }[] } {
-  const violationsByViewport = viewports.map((vp) => {
-    const keys = new Set<string>();
-    for (const v of vp.violations) {
-      for (const node of v.nodes) {
-        keys.add(violationKey(v, node));
-      }
-    }
-    return { ...vp, keys };
-  });
-
-  const allKeys = violationsByViewport[0]?.keys ?? new Set();
-  const commonKeys = new Set<string>();
-  for (const key of allKeys) {
-    if (violationsByViewport.every((vp) => vp.keys.has(key))) {
-      commonKeys.add(key);
-    }
-  }
-
-  const allViewports: any[] = [];
-  const seen = new Set<string>();
-  for (const vp of viewports) {
-    for (const v of vp.violations) {
-      for (const node of v.nodes) {
-        const key = violationKey(v, node);
-        if (commonKeys.has(key) && !seen.has(key)) {
-          seen.add(key);
-          allViewports.push({ ...v, nodes: [node] });
-        }
-      }
-    }
-  }
-
-  const viewportSpecific = violationsByViewport.map((vp) => {
-    const uniqueViolations: any[] = [];
-    for (const v of vp.violations) {
-      const uniqueNodes = v.nodes.filter((node: any) => {
-        const key = violationKey(v, node);
-        return !commonKeys.has(key);
-      });
-      if (uniqueNodes.length > 0) {
-        uniqueViolations.push({ ...v, nodes: uniqueNodes });
-      }
-    }
-    return { width: vp.width, label: vp.label, violations: uniqueViolations };
-  });
-
-  return { allViewports, viewportSpecific };
-}
-
-export async function runMultiViewportScan(customViewports?: { label: string; width: number }[], scanTimeout?: number, wcagTags?: string[], rulesMode?: string, ruleIds?: string[]): Promise<iMultiViewportResult> {
+/** Run multi-viewport scan at specified widths */
+export async function multiViewportScan(
+  viewports: number[],
+  sendResponse: (response: unknown) => void
+): Promise<void> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id || !tab.windowId) throw new Error('No active tab');
-
-  const win = await chrome.windows.get(tab.windowId);
-  const originalWidth = win.width!;
-  const originalHeight = win.height!;
-
-  const viewportResults: iViewportResult[] = [];
-  const viewports = customViewports && customViewports.length > 0 ? customViewports : DEFAULT_VIEWPORTS;
-
-  for (const vp of viewports) {
-    await chrome.windows.update(tab.windowId, { width: vp.width, height: originalHeight });
-    await new Promise((r) => setTimeout(r, 600));
-
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-
-    const response = await chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: scanTimeout || 0, wcagTags, rulesMode, ruleIds });
-
-    viewportResults.push({
-      width: vp.width,
-      label: vp.label,
-      violations: response?.violations || [],
-      passes: response?.passes || [],
-      incomplete: response?.incomplete || [],
-    });
+  if (!tab?.id || !tab.windowId) {
+    sendResponse({ type: "SCAN_ERROR", payload: { message: "No active tab" } });
+    return;
   }
 
-  await chrome.windows.update(tab.windowId, { width: originalWidth, height: originalHeight });
+  // Save original window size
+  const win = await chrome.windows.get(tab.windowId);
+  const originalWidth = win.width || 1280;
 
-  const { allViewports, viewportSpecific } = diffResults(viewportResults);
+  const config = await getConfig();
+  const perViewport: Record<number, iScanResult> = {};
+  const sorted = [...viewports].sort((a, b) => a - b);
 
-  return { viewports: viewportResults, allViewports, viewportSpecific };
+  for (let i = 0; i < sorted.length; i++) {
+    const width = sorted[i];
+
+    // Report progress
+    chrome.runtime.sendMessage({
+      type: "MULTI_VIEWPORT_PROGRESS",
+      payload: { currentViewport: i + 1, totalViewports: sorted.length },
+    });
+
+    // Resize
+    await chrome.windows.update(tab.windowId, { width });
+    await sleep(500); // Wait for reflow
+
+    // Inject and scan
+    try {
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+      const result = await chrome.tabs.sendMessage(tab.id, { type: "RUN_SCAN", payload: { config } });
+      if (result?.type === "SCAN_RESULT") {
+        perViewport[width] = result.payload as iScanResult;
+      }
+    } catch (err) {
+      // Log error but continue
+      console.error(`MV scan failed at ${width}px:`, err);
+    }
+  }
+
+  // Restore original width
+  await chrome.windows.update(tab.windowId, { width: originalWidth });
+
+  // Diff results
+  const { shared, viewportSpecific } = diffResults(perViewport, sorted);
+
+  const mvResult: iMultiViewportResult = {
+    viewports: sorted,
+    perViewport,
+    shared,
+    viewportSpecific,
+  };
+
+  sendResponse({ type: "MULTI_VIEWPORT_RESULT", payload: mvResult });
+}
+
+/** Diff violations across viewports into shared vs viewport-specific */
+function diffResults(
+  perViewport: Record<number, iScanResult>,
+  viewports: number[]
+): { shared: iViolation[]; viewportSpecific: iViewportViolation[] } {
+  // Collect all unique violation rule IDs
+  const allRuleIds = new Set<string>();
+  for (const result of Object.values(perViewport)) {
+    for (const v of result.violations) {
+      allRuleIds.add(v.id);
+    }
+  }
+
+  const shared: iViolation[] = [];
+  const viewportSpecific: iViewportViolation[] = [];
+
+  for (const ruleId of allRuleIds) {
+    const presentIn: number[] = [];
+    let firstViolation: iViolation | null = null;
+
+    for (const width of viewports) {
+      const result = perViewport[width];
+      if (!result) continue;
+      const match = result.violations.find((v) => v.id === ruleId);
+      if (match) {
+        presentIn.push(width);
+        if (!firstViolation) firstViolation = match;
+      }
+    }
+
+    if (!firstViolation) continue;
+
+    if (presentIn.length === viewports.length) {
+      shared.push(firstViolation);
+    } else {
+      viewportSpecific.push({ ...firstViolation, viewports: presentIn });
+    }
+  }
+
+  return { shared, viewportSpecific };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

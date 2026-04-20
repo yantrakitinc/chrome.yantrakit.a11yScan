@@ -1,531 +1,281 @@
 /**
- * Site crawl: depth-first traversal with backtracking.
- *
- * Algorithm:
- * 1. Start on current page, collect all same-origin links (skip nofollow)
- * 2. Visit first unvisited link, scan it, collect its links
- * 3. Keep going deeper — first unvisited link from current page
- * 4. When a page has no unvisited links, backtrack to parent
- * 5. Continue until every reachable page is visited
- *
- * Resilience:
- * - Pages that fail to load (403, redirect, timeout) are skipped
- * - Redirects are detected (final URL != requested URL) and logged
- * - Auth-gated pages that redirect logged-in users are handled gracefully
+ * Site Crawl — depth-first traversal scanning (F03).
  */
 
-import type { iPageRule, iPageRuleWaitType, iMockEndpoint, iAuthConfig, iGatedUrlsConfig } from '@shared/test-config';
+import type { iMessage } from "@shared/messages";
+import type { iCrawlOptions, iCrawlState, iScanResult } from "@shared/types";
+import { getConfig } from "@shared/config";
+import { isScannableUrl } from "@shared/utils";
+import { setCrawlActive } from "./observer";
 
-export interface iCrawlOptions {
-  mode: 'discover' | 'sitemap' | 'url-list';
-  maxPages: number;
-  sitemapUrl?: string;
-  urls?: string[];
-  autoDiscover?: boolean;
-  pageRules?: iPageRule[];
-  mocks?: iMockEndpoint[];
-  pageLoadTimeout?: number;
-  scanTimeout?: number;
-  delayBetweenPages?: number;
-  crawlScope?: string;
-  wcagTags?: string[];
-  rulesMode?: string;
-  ruleIds?: string[];
-  auth?: iAuthConfig | null;
-}
-
-export interface iCrawlPageResult {
-  url: string;
-  status: 'scanned' | 'failed' | 'skipped' | 'redirected';
-  violations: any[];
-  passes: number;
-  incomplete: number;
-  error?: string;
-  redirectedTo?: string;
-  depth: number;
-  /** Warning flag when auth behavior was unexpected. */
-  authWarning?: 'unexpected-login-redirect';
-}
-
-export interface iCrawlState {
-  status: 'idle' | 'crawling' | 'paused' | 'complete';
-  origin: string;
-  visited: string[];
-  completed: string[];
-  failed: string[];
-  results: iCrawlPageResult[];
-  maxPages: number;
-  startedAt: string;
-  current?: string;
-  depth: number;
-  totalDiscovered: number;
-}
+const CRAWL_STORAGE_KEY = "crawlState";
 
 let crawlState: iCrawlState = {
-  status: 'idle', origin: '', visited: [], completed: [], failed: [],
-  results: [], maxPages: 0, startedAt: '', depth: 0, totalDiscovered: 0,
+  status: "idle",
+  startedAt: "",
+  pagesVisited: 0,
+  pagesTotal: 0,
+  currentUrl: "",
+  results: {},
+  failed: {},
+  queue: [],
+  visited: [],
 };
 
-let crawlTabId: number | null = null;
-let crawlCancelled = false;
-let crawlPaused = false;
-let crawlResolveResume: (() => void) | null = null;
-let crawlPageRules: iPageRule[] = [];
-let crawlMocks: iMockEndpoint[] = [];
-let crawlPageLoadTimeout = 15000;
-let crawlScanTimeout = 0;
-let crawlDelayBetweenPages = 300;
-let crawlScope = '';
-let crawlMode: 'discover' | 'sitemap' | 'url-list' = 'discover';
-let crawlAutoDiscover = true;
-let crawlWcagTags: string[] = [];
-let crawlRulesMode = 'all';
-let crawlRuleIds: string[] = [];
-let waitingForUser = false;
-let resolveUserContinue: (() => void) | null = null;
-/** Recorded page rules during crawl (for smart config generation). */
-let recordedPageRules: iPageRule[] = [];
-let crawlAuth: iAuthConfig | null = null;
-let crawlGatedUrls: iGatedUrlsConfig = { mode: 'none', patterns: [] };
+let crawlOptions: iCrawlOptions | null = null;
+let shouldPause = false;
+let shouldCancel = false;
 
-/** Waits if the crawl is paused. Resolves when resumed or cancelled. */
-async function waitIfPaused(): Promise<void> {
-  if (!crawlPaused) return;
-  await new Promise<void>((resolve) => {
-    crawlResolveResume = resolve;
-  });
-  crawlResolveResume = null;
-}
+/* ═══════════════════════════════════════════════════════════════════
+   Message Handler
+   ═══════════════════════════════════════════════════════════════════ */
 
-/**
- * Returns true when the given URL is declared "behind the login wall"
- * by the supplied gated-URLs config. Bad regexes are logged and treated
- * as non-matching so a typo can't break the whole crawl.
- */
-export function isGated(url: string, cfg: iGatedUrlsConfig | undefined): boolean {
-  if (!cfg || cfg.mode === 'none' || !cfg.patterns.length) return false;
-  if (cfg.mode === 'list') return cfg.patterns.includes(url);
-  if (cfg.mode === 'prefix') return cfg.patterns.some((p) => p.length > 0 && url.startsWith(p));
-  if (cfg.mode === 'regex') {
-    for (const p of cfg.patterns) {
-      try {
-        if (new RegExp(p).test(url)) return true;
-      } catch (err) {
-        console.warn('[crawl] invalid gatedUrls regex', p, err);
-      }
-    }
-    return false;
-  }
-  return false;
-}
+export async function handleCrawlMessage(
+  msg: iMessage,
+  sendResponse: (response?: unknown) => void
+): Promise<void> {
+  switch (msg.type) {
+    case "START_CRAWL":
+      crawlOptions = (msg as { payload: iCrawlOptions }).payload;
+      shouldPause = false;
+      shouldCancel = false;
+      startCrawl(crawlOptions);
+      sendResponse({ success: true });
+      break;
 
-/** Returns true if the final URL looks like it resolved to the configured login URL. */
-export function looksLikeLoginRedirect(finalUrl: string, auth: iAuthConfig | null): boolean {
-  if (!auth || !auth.loginUrl) return false;
-  try {
-    const final = new URL(finalUrl);
-    const login = new URL(auth.loginUrl);
-    return final.origin === login.origin && final.pathname === login.pathname;
-  } catch {
-    return finalUrl.startsWith(auth.loginUrl);
-  }
-}
+    case "PAUSE_CRAWL":
+      shouldPause = true;
+      crawlState.status = "paused";
+      setCrawlActive(false);
+      broadcastState();
+      sendResponse({ success: true });
+      break;
 
-/** Checks if a URL matches any page rule. Returns the matching rule or null. */
-function matchPageRule(url: string): iPageRule | null {
-  for (const rule of crawlPageRules) {
-    try {
-      if (url.includes(rule.urlPattern) || new RegExp(rule.urlPattern).test(url)) {
-        return rule;
-      }
-    } catch {
-      if (url.includes(rule.urlPattern)) return rule;
-    }
-  }
-  return null;
-}
+    case "RESUME_CRAWL":
+      shouldPause = false;
+      crawlState.status = "crawling";
+      setCrawlActive(true);
+      broadcastState();
+      resumeCrawl();
+      sendResponse({ success: true });
+      break;
 
-/** Pauses the crawl and waits for the user to click Continue. */
-async function waitForUserContinue(url: string, waitType: iPageRuleWaitType, description?: string): Promise<void> {
-  waitingForUser = true;
-  chrome.runtime.sendMessage({
-    type: 'CRAWL_WAITING_FOR_USER',
-    waitType,
-    url,
-    description,
-  }).catch(() => {});
+    case "CANCEL_CRAWL":
+      shouldCancel = true;
+      crawlState.status = "idle";
+      setCrawlActive(false);
+      broadcastState();
+      await chrome.storage.local.remove(CRAWL_STORAGE_KEY);
+      sendResponse({ success: true });
+      break;
 
-  await new Promise<void>((resolve) => {
-    resolveUserContinue = resolve;
-  });
-  resolveUserContinue = null;
-  waitingForUser = false;
-}
+    case "GET_CRAWL_STATE":
+      sendResponse({ type: "CRAWL_PROGRESS", payload: crawlState });
+      break;
 
-/** Called when user clicks Continue in the side panel. */
-export function userContinue(): void {
-  if (resolveUserContinue) resolveUserContinue();
-}
+    case "USER_CONTINUE":
+      shouldPause = false;
+      crawlState.status = "crawling";
+      broadcastState();
+      resumeCrawl();
+      sendResponse({ success: true });
+      break;
 
-/** Records a manual pause as a page rule for smart config generation. */
-export function recordManualPause(url: string, waitType: iPageRuleWaitType, description?: string): void {
-  recordedPageRules.push({ urlPattern: new URL(url).pathname, waitType, description });
-}
-
-/** Returns recorded page rules for config generation. */
-export function getRecordedPageRules(): iPageRule[] {
-  return [...recordedPageRules];
-}
-
-function sendProgress() {
-  chrome.runtime.sendMessage({
-    type: 'CRAWL_PROGRESS',
-    state: { ...crawlState },
-  }).catch(() => {});
-}
-
-async function fetchSitemapUrls(sitemapUrl: string): Promise<string[]> {
-  try {
-    const res = await fetch(sitemapUrl);
-    const text = await res.text();
-    const urls: string[] = [];
-    const locRegex = /<loc>(.*?)<\/loc>/g;
-    let match;
-    while ((match = locRegex.exec(text)) !== null) {
-      urls.push(match[1]);
-    }
-    const sitemapRegex = /<sitemap>.*?<loc>(.*?)<\/loc>.*?<\/sitemap>/gs;
-    while ((match = sitemapRegex.exec(text)) !== null) {
-      const childUrls = await fetchSitemapUrls(match[1]);
-      urls.push(...childUrls);
-    }
-    return urls;
-  } catch {
-    return [];
+    default:
+      sendResponse({ error: "Unknown crawl message" });
   }
 }
 
-/** Performs login authentication before crawling. */
-async function performAuth(tabId: number, auth: iAuthConfig): Promise<void> {
-  await navigateAndWait(tabId, auth.loginUrl, crawlPageLoadTimeout);
-  await chrome.scripting.executeScript({
-    target: { tabId },
-    func: (usr, pwd, usrSel, pwdSel, submitSel) => {
-      const usrEl = document.querySelector(usrSel) as HTMLInputElement | null;
-      const pwdEl = document.querySelector(pwdSel) as HTMLInputElement | null;
-      if (usrEl) { usrEl.value = usr; usrEl.dispatchEvent(new Event('input', { bubbles: true })); }
-      if (pwdEl) { pwdEl.value = pwd; pwdEl.dispatchEvent(new Event('input', { bubbles: true })); }
-      const submitEl = document.querySelector(submitSel) as HTMLElement | null;
-      if (submitEl) submitEl.click();
-    },
-    args: [auth.username, auth.password, auth.usernameSelector, auth.passwordSelector, auth.submitSelector],
-  });
-  // Wait for login redirect to complete
-  await new Promise<void>((resolve) => {
-    const listener = (tid: number, info: { status?: string }) => {
-      if (tid === tabId && info.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    };
-    chrome.tabs.onUpdated.addListener(listener);
-    setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, crawlPageLoadTimeout);
-  });
+/* ═══════════════════════════════════════════════════════════════════
+   Crawl Engine
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function startCrawl(options: iCrawlOptions): Promise<void> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.url) return;
+
+  const startUrl = tab.url;
+
+  crawlState = {
+    status: "crawling",
+    startedAt: new Date().toISOString(),
+    pagesVisited: 0,
+    pagesTotal: options.mode === "urllist" ? options.urlList.length : options.maxPages,
+    currentUrl: startUrl,
+    results: {},
+    failed: {},
+    queue: options.mode === "urllist" ? [...options.urlList] : [startUrl],
+    visited: [],
+  };
+
+  setCrawlActive(true);
+  broadcastState();
+  await saveCrawlState();
+
+  await processCrawlQueue();
 }
 
-/** Navigates a tab and waits for load. Returns the final URL (may differ if redirected). */
-async function navigateAndWait(tabId: number, url: string, timeout = 15000): Promise<string> {
-  await chrome.tabs.update(tabId, { url });
-  return new Promise<string>((resolve) => {
-    let resolved = false;
-    const listener = (tid: number, info: { status?: string }, tab: chrome.tabs.Tab) => {
-      if (tid === tabId && info.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        if (!resolved) {
-          resolved = true;
-          resolve(tab.url || url);
+async function resumeCrawl(): Promise<void> {
+  setCrawlActive(true);
+  await processCrawlQueue();
+}
+
+async function processCrawlQueue(): Promise<void> {
+  while (crawlState.queue.length > 0 && crawlState.pagesVisited < (crawlOptions?.maxPages || 50)) {
+    if (shouldCancel) return;
+
+    if (shouldPause) {
+      crawlState.status = "paused";
+      setCrawlActive(false);
+      broadcastState();
+      return;
+    }
+
+    const url = crawlState.queue.pop()! // depth-first: LIFO stack;
+    if (crawlState.visited.includes(url)) continue;
+
+    // Check page rules
+    if (crawlOptions?.pageRules) {
+      const matchedRule = crawlOptions.pageRules.find((rule) => {
+        try {
+          return new RegExp(rule.pattern).test(url) || url.includes(rule.pattern);
+        } catch {
+          return url.includes(rule.pattern);
         }
+      });
+
+      if (matchedRule) {
+        crawlState.currentUrl = url;
+        crawlState.status = "wait";
+        broadcastState();
+        chrome.runtime.sendMessage({
+          type: "CRAWL_WAITING_FOR_USER",
+          payload: { url, waitType: matchedRule.waitType, description: matchedRule.description },
+        });
+        shouldPause = true;
+        return; // wait for USER_CONTINUE
       }
-    };
-    chrome.tabs.onUpdated.addListener(listener);
-    setTimeout(() => {
+    }
+
+    // Navigate and scan
+    crawlState.currentUrl = url;
+    crawlState.status = "crawling";
+    broadcastState();
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) continue;
+
+      await chrome.tabs.update(tab.id, { url });
+      await waitForPageLoad(tab.id, crawlOptions?.timeout || 30000);
+
+      // Inject and scan
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+      const config = await getConfig();
+      const result = await chrome.tabs.sendMessage(tab.id, { type: "RUN_SCAN", payload: { config, isCrawl: true } });
+
+      if (result?.type === "SCAN_RESULT") {
+        crawlState.results[url] = result.payload as iScanResult;
+        crawlState.visited.push(url);
+        crawlState.pagesVisited++;
+
+        // In Follow mode, collect links from the page
+        if (crawlOptions?.mode === "follow") {
+          const links = await collectLinks(tab.id, crawlOptions.scope || new URL(url).origin);
+          // Push in reverse so first links are popped first (depth-first natural order)
+          for (const link of links.reverse()) {
+            if (!crawlState.visited.includes(link) && !crawlState.queue.includes(link)) {
+              crawlState.queue.push(link);
+            }
+          }
+        }
+      } else {
+        crawlState.failed[url] = result?.payload?.message || "Scan failed";
+        crawlState.visited.push(url);
+        crawlState.pagesVisited++;
+      }
+
+      broadcastState();
+      await saveCrawlState();
+
+      // Movie mode delay between pages (F06-AC9)
+      const movieStorage = await chrome.storage.local.get(["movie_enabled"]);
+      if (movieStorage.movie_enabled && tab?.id) {
+        await chrome.tabs.sendMessage(tab.id, { type: "START_MOVIE_MODE" });
+        await sleep(5000);
+        await chrome.tabs.sendMessage(tab.id, { type: "STOP_MOVIE_MODE" });
+      }
+
+      // Delay between pages
+      if (crawlOptions?.delay) {
+        await sleep(crawlOptions.delay);
+      }
+    } catch (err) {
+      crawlState.failed[url] = String(err);
+      crawlState.visited.push(url);
+      crawlState.pagesVisited++;
+      broadcastState();
+    }
+  }
+
+  // Crawl complete
+  crawlState.status = "complete";
+  setCrawlActive(false);
+  broadcastState();
+  await saveCrawlState();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Helpers
+   ═══════════════════════════════════════════════════════════════════ */
+
+function broadcastState(): void {
+  chrome.runtime.sendMessage({ type: "CRAWL_PROGRESS", payload: crawlState });
+}
+
+async function saveCrawlState(): Promise<void> {
+  await chrome.storage.local.set({ [CRAWL_STORAGE_KEY]: crawlState });
+}
+
+function waitForPageLoad(tabId: number, timeout: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(listener);
-      if (!resolved) {
-        resolved = true;
-        resolve(url);
-      }
+      reject(new Error("Page load timeout"));
     }, timeout);
+
+    function listener(id: number, info: { status?: string }): void {
+      if (id === tabId && info.status === "complete") {
+        clearTimeout(timer);
+        chrome.tabs.onUpdated.removeListener(listener);
+        setTimeout(resolve, 500); // Wait for DOM settling
+      }
+    }
+    chrome.tabs.onUpdated.addListener(listener);
   });
 }
 
-/** Discovers links on a page, filtering by crawlScope (or origin). Skips nofollow. */
-async function discoverLinks(tabId: number, origin: string): Promise<string[]> {
-  // Use crawlScope if set, otherwise fall back to origin.
-  // Ensure the scope prefix ends with '/' to prevent /creator matching /creators.
-  let scopePrefix = crawlScope || origin;
-  if (scopePrefix && !scopePrefix.endsWith('/')) {
-    scopePrefix += '/';
-  }
+async function collectLinks(tabId: number, scope: string): Promise<string[]> {
   try {
     const [result] = await chrome.scripting.executeScript({
       target: { tabId },
-      func: (prefix: string) => {
-        return Array.from(document.querySelectorAll('a[href]'))
-          .filter((a) => {
-            const rel = a.getAttribute('rel') || '';
-            return !rel.includes('nofollow');
-          })
-          .map((a) => {
-            try {
-              const href = (a as HTMLAnchorElement).href;
-              const parsed = new URL(href);
-              parsed.hash = '';
-              return parsed.href;
-            } catch { return ''; }
-          })
-          .filter((href) => href !== '' && (href.startsWith(prefix) || href === prefix.replace(/\/$/, '')));
+      func: (scopeUrl: string) => {
+        return Array.from(document.querySelectorAll("a[href]"))
+          .map((a) => (a as HTMLAnchorElement).href)
+          .filter((href) => href.startsWith(scopeUrl))
+          .filter((href) => {
+            const link = document.querySelector(`a[href="${href}"]`);
+            return !link?.getAttribute("rel")?.includes("nofollow");
+          });
       },
-      args: [scopePrefix],
+      args: [scope],
     });
-    return [...new Set(result?.result || [])];
+    return result?.result || [];
   } catch {
     return [];
   }
 }
 
-/** Scans a single page. Handles failures, redirects, and page rules. */
-async function scanPage(tabId: number, url: string, origin: string, depth: number): Promise<{ result: iCrawlPageResult; links: string[] }> {
-  try {
-    const finalUrl = await navigateAndWait(tabId, url, crawlPageLoadTimeout);
-
-    const redirected = finalUrl !== url && !finalUrl.startsWith(url + '#');
-    if (redirected && !finalUrl.startsWith(origin)) {
-      return {
-        result: { url, status: 'redirected', violations: [], passes: 0, incomplete: 0, redirectedTo: finalUrl, depth },
-        links: [],
-      };
-    }
-
-    // Auth warning: a page we did not flag as gated has been redirected to the login page.
-    // This usually means the user forgot to include it in `auth.gatedUrls` or their session expired.
-    let authWarning: iCrawlPageResult['authWarning'];
-    if (redirected && !isGated(url, crawlGatedUrls) && looksLikeLoginRedirect(finalUrl, crawlAuth)) {
-      authWarning = 'unexpected-login-redirect';
-    }
-
-    // Check page rules — pause if URL matches a rule
-    const rule = matchPageRule(finalUrl);
-    if (rule) {
-      await waitForUserContinue(finalUrl, rule.waitType, rule.description);
-    }
-
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
-
-    // Inject mocks before scanning if configured
-    if (crawlMocks.length > 0) {
-      await chrome.tabs.sendMessage(tabId, { type: 'ACTIVATE_MOCKS', mocks: crawlMocks });
-      await new Promise((r) => setTimeout(r, 500)); // Wait for mocked data to load
-    } else {
-      await new Promise((r) => setTimeout(r, crawlDelayBetweenPages));
-    }
-
-    const response = await chrome.tabs.sendMessage(tabId, {
-      type: 'RUN_SCAN',
-      scanTimeout: crawlScanTimeout,
-      wcagTags: crawlWcagTags.length > 0 ? crawlWcagTags : undefined,
-      rulesMode: crawlRulesMode !== 'all' ? crawlRulesMode : undefined,
-      ruleIds: crawlRuleIds.length > 0 ? crawlRuleIds : undefined,
-    });
-    // Only discover links in discover mode with autoDiscover enabled
-    const shouldDiscover = crawlMode === 'discover' && crawlAutoDiscover;
-    const links = shouldDiscover ? await discoverLinks(tabId, origin) : [];
-
-    return {
-      result: {
-        url: redirected ? finalUrl : url,
-        status: 'scanned',
-        violations: response?.violations || [],
-        passes: (response?.passes || []).length,
-        incomplete: (response?.incomplete || []).length,
-        redirectedTo: redirected ? finalUrl : undefined,
-        depth,
-        authWarning,
-      },
-      links,
-    };
-  } catch (err) {
-    return {
-      result: { url, status: 'failed', violations: [], passes: 0, incomplete: 0, error: String(err), depth },
-      links: [],
-    };
-  }
-}
-
-async function depthFirstCrawl(tabId: number, startUrls: string[], origin: string, maxPages: number): Promise<void> {
-  const visited = new Set<string>();
-  const unlimited = maxPages === 0;
-  const stack: { url: string; children: string[] }[] = [];
-
-  for (const url of startUrls) {
-    if (crawlCancelled) return;
-    await waitIfPaused();
-    if (crawlCancelled) return;
-    if (visited.has(url)) continue;
-    if (!unlimited && visited.size >= maxPages) break;
-
-    visited.add(url);
-    crawlState.current = url;
-    crawlState.depth = stack.length;
-    sendProgress();
-
-    const { result, links } = await scanPage(tabId, url, origin, stack.length);
-    crawlState.results.push(result);
-
-    if (result.status === 'scanned') {
-      crawlState.completed.push(url);
-    } else {
-      crawlState.failed.push(url);
-    }
-    crawlState.visited = Array.from(visited);
-
-    const unvisited = links.filter((l) => !visited.has(l));
-    crawlState.totalDiscovered += unvisited.length;
-    sendProgress();
-
-    if (unvisited.length > 0) {
-      stack.push({ url, children: unvisited });
-
-      while (stack.length > 0 && !crawlCancelled) {
-        const top = stack[stack.length - 1];
-
-        if (top.children.length === 0) {
-          stack.pop();
-          continue;
-        }
-
-        await waitIfPaused();
-        if (crawlCancelled) break;
-
-        const nextUrl = top.children.shift()!;
-        if (visited.has(nextUrl)) continue;
-        if (!unlimited && visited.size >= maxPages) break;
-
-        visited.add(nextUrl);
-        crawlState.current = nextUrl;
-        crawlState.depth = stack.length;
-        sendProgress();
-
-        const childResult = await scanPage(tabId, nextUrl, origin, stack.length);
-        crawlState.results.push(childResult.result);
-
-        if (childResult.result.status === 'scanned') {
-          crawlState.completed.push(nextUrl);
-        } else {
-          crawlState.failed.push(nextUrl);
-        }
-        crawlState.visited = Array.from(visited);
-
-        const childUnvisited = childResult.links.filter((l) => !visited.has(l));
-        crawlState.totalDiscovered += childUnvisited.length;
-        sendProgress();
-
-        if (childUnvisited.length > 0) {
-          stack.push({ url: nextUrl, children: childUnvisited });
-        }
-      }
-    }
-  }
-}
-
-export async function startCrawl(options: iCrawlOptions): Promise<iCrawlState> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.url || !tab.id) throw new Error('No active tab');
-
-  crawlTabId = tab.id;
-  crawlCancelled = false;
-  crawlPaused = false;
-  crawlPageRules = options.pageRules || [];
-  crawlMocks = options.mocks || [];
-  crawlPageLoadTimeout = options.pageLoadTimeout || 15000;
-  crawlScanTimeout = options.scanTimeout || 0;
-  crawlDelayBetweenPages = options.delayBetweenPages || 300;
-  crawlScope = options.crawlScope || '';
-  crawlMode = options.mode;
-  crawlAutoDiscover = options.autoDiscover ?? true;
-  crawlWcagTags = options.wcagTags || [];
-  crawlRulesMode = options.rulesMode || 'all';
-  crawlRuleIds = options.ruleIds || [];
-  recordedPageRules = [];
-  crawlAuth = options.auth ?? null;
-  crawlGatedUrls = options.auth?.gatedUrls ?? { mode: 'none', patterns: [] };
-  const origin = new URL(tab.url).origin;
-
-  // Perform auth before crawling if configured
-  if (options.auth) {
-    await performAuth(crawlTabId, options.auth);
-  }
-
-  let startUrls: string[];
-  if (options.mode === 'url-list' && options.urls?.length) {
-    startUrls = options.urls;
-  } else if (options.mode === 'sitemap' && options.sitemapUrl) {
-    startUrls = await fetchSitemapUrls(options.sitemapUrl);
-  } else {
-    startUrls = [tab.url];
-  }
-
-  crawlState = {
-    status: 'crawling', origin, visited: [], completed: [], failed: [],
-    results: [], maxPages: options.maxPages || 0,
-    startedAt: new Date().toISOString(), depth: 0, totalDiscovered: 0,
-  };
-  sendProgress();
-
-  await depthFirstCrawl(crawlTabId, [...new Set(startUrls)], origin, crawlState.maxPages);
-
-  crawlState.status = crawlCancelled ? 'idle' : 'complete';
-  crawlState.current = undefined;
-  await chrome.storage.local.set({ crawlState });
-
-  // Navigate back to the starting page after crawl completes
-  if (!crawlCancelled && crawlTabId && tab.url) {
-    try {
-      await chrome.tabs.update(crawlTabId, { url: tab.url });
-    } catch { /* tab may have been closed */ }
-  }
-  sendProgress();
-
-  return crawlState;
-}
-
-export function pauseCrawl() {
-  crawlPaused = true;
-  crawlState.status = 'paused';
-  sendProgress();
-}
-
-export async function resumeCrawl(): Promise<iCrawlState> {
-  crawlPaused = false;
-  crawlState.status = 'crawling';
-  sendProgress();
-  if (crawlResolveResume) crawlResolveResume();
-  return crawlState;
-}
-
-export function cancelCrawl() {
-  crawlCancelled = true;
-  crawlPaused = false;
-  if (crawlResolveResume) crawlResolveResume();
-  crawlState = {
-    status: 'idle', origin: '', visited: [], completed: [], failed: [],
-    results: [], maxPages: 0, startedAt: '', depth: 0, totalDiscovered: 0,
-  };
-  chrome.storage.local.remove('crawlState');
-  sendProgress();
-}
-
-export async function getCrawlState(): Promise<iCrawlState> {
-  if (crawlState.status !== 'idle') return crawlState;
-  const stored = await chrome.storage.local.get('crawlState');
-  return (stored.crawlState as iCrawlState) || crawlState;
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

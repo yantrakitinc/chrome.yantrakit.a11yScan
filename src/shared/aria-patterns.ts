@@ -1,517 +1,225 @@
 /**
- * WAI-ARIA widget pattern definitions and validation checks.
- * Each rule defines expected ARIA structure for a specific widget role.
+ * WAI-ARIA widget pattern definitions for validation (F10).
+ * Each pattern defines how to detect the widget and what to validate.
  */
 
-export interface iAriaCheckResult {
-  pass: boolean;
-  message: string;
+export interface iAriaPatternCheck {
+  name: string;
+  validate: (el: Element) => { pass: boolean; message: string };
 }
 
-export interface iAriaCheck {
-  id: string;
-  description: string;
-  check: (el: Element) => iAriaCheckResult;
-}
-
-export interface iAriaPatternRule {
+export interface iAriaPattern {
   role: string;
-  label: string;
-  description: string;
-  checks: iAriaCheck[];
-}
-
-export interface iAriaWidgetResult {
-  role: string;
-  label: string;
   selector: string;
-  html: string;
-  checks: { id: string; description: string; pass: boolean; message: string }[];
-  passCount: number;
-  failCount: number;
+  label: string;
+  checks: iAriaPatternCheck[];
 }
 
-/**
- * Checks whether an element has at least one focusable descendant.
- */
-function hasFocusableChild(el: Element): boolean {
-  const focusableSelector =
-    'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
-  return el.querySelector(focusableSelector) !== null;
+/** Check if element has attribute */
+function hasAttr(el: Element, attr: string): boolean {
+  return el.hasAttribute(attr);
 }
 
-/**
- * Checks whether an element itself is keyboard-accessible via tabindex.
- */
-function hasTabindex(el: Element): boolean {
-  return el.hasAttribute('tabindex');
+/** Check if element has child matching selector */
+function hasChild(el: Element, sel: string): boolean {
+  return el.querySelector(sel) !== null;
 }
 
-/**
- * Checks whether an element has an accessible name via aria-label or aria-labelledby.
- */
-function hasAccessibleName(el: Element): boolean {
-  return (
-    (el.getAttribute('aria-label') ?? '').trim().length > 0 ||
-    (el.getAttribute('aria-labelledby') ?? '').trim().length > 0
-  );
+/** Count children matching selector */
+function countChildren(el: Element, sel: string): number {
+  return el.querySelectorAll(sel).length;
 }
 
-export const ARIA_PATTERN_RULES: iAriaPatternRule[] = [
-  // ── tablist ──────────────────────────────────────────────
+export const ARIA_PATTERNS: iAriaPattern[] = [
   {
-    role: 'tablist',
-    label: 'Tab List',
-    description: 'A set of tab elements and their associated tab panels.',
+    role: "tablist",
+    selector: '[role="tablist"]',
+    label: "Tab list",
     checks: [
-      {
-        id: 'tablist-has-tabs',
-        description: 'Has role="tab" children',
-        check: (el) => {
-          const tabs = el.querySelectorAll('[role="tab"]');
-          return tabs.length > 0
-            ? { pass: true, message: `Found ${tabs.length} tab(s).` }
-            : { pass: false, message: 'No role="tab" children found.' };
-        },
-      },
-      {
-        id: 'tab-has-aria-selected',
-        description: 'Each tab has aria-selected',
-        check: (el) => {
-          const tabs = el.querySelectorAll('[role="tab"]');
-          if (tabs.length === 0) return { pass: false, message: 'No tabs to check.' };
-          const missing = Array.from(tabs).filter((t) => !t.hasAttribute('aria-selected'));
-          return missing.length === 0
-            ? { pass: true, message: 'All tabs have aria-selected.' }
-            : { pass: false, message: `${missing.length} tab(s) missing aria-selected.` };
-        },
-      },
-      {
-        id: 'tab-has-aria-controls',
-        description: 'Each tab has aria-controls pointing to a tabpanel',
-        check: (el) => {
-          const tabs = el.querySelectorAll('[role="tab"]');
-          if (tabs.length === 0) return { pass: false, message: 'No tabs to check.' };
-          const broken: string[] = [];
-          tabs.forEach((t) => {
-            const controls = t.getAttribute('aria-controls');
-            if (!controls) {
-              broken.push('missing aria-controls');
-            } else {
-              const panel = document.getElementById(controls);
-              if (!panel || panel.getAttribute('role') !== 'tabpanel') {
-                broken.push(`aria-controls="${controls}" does not point to a tabpanel`);
-              }
-            }
-          });
-          return broken.length === 0
-            ? { pass: true, message: 'All tabs have valid aria-controls.' }
-            : { pass: false, message: broken.join('; ') };
-        },
-      },
-      {
-        id: 'tabpanel-exists',
-        description: 'Tabpanel exists with role="tabpanel"',
-        check: () => {
-          const panels = document.querySelectorAll('[role="tabpanel"]');
-          return panels.length > 0
-            ? { pass: true, message: `Found ${panels.length} tabpanel(s).` }
-            : { pass: false, message: 'No role="tabpanel" elements found on the page.' };
-        },
-      },
-    ],
-  },
-
-  // ── menu / menubar ───────────────────────────────────────
-  {
-    role: 'menu',
-    label: 'Menu',
-    description: 'A widget offering a list of choices (actions or functions).',
-    checks: [
-      {
-        id: 'menu-has-menuitems',
-        description: 'Has menuitem / menuitemcheckbox / menuitemradio children',
-        check: (el) => {
-          const items = el.querySelectorAll(
-            '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]',
-          );
-          return items.length > 0
-            ? { pass: true, message: `Found ${items.length} menu item(s).` }
-            : { pass: false, message: 'No menuitem children found.' };
-        },
-      },
-      {
-        id: 'menu-has-orientation',
-        description: 'Has aria-orientation or inherits default orientation',
-        check: (el) => {
-          const orientation = el.getAttribute('aria-orientation');
-          const role = el.getAttribute('role');
-          if (orientation) {
-            return { pass: true, message: `aria-orientation="${orientation}".` };
-          }
-          // menubar defaults to horizontal, menu defaults to vertical
-          return {
-            pass: true,
-            message: `No explicit aria-orientation; defaults to ${role === 'menubar' ? 'horizontal' : 'vertical'}.`,
-          };
-        },
-      },
+      { name: "has-tab-children", validate: (el) => {
+        const count = countChildren(el, '[role="tab"]');
+        return { pass: count > 0, message: count > 0 ? `Found ${count} tabs` : "No role=\"tab\" children found" };
+      }},
+      { name: "tabs-have-selected", validate: (el) => {
+        const tabs = el.querySelectorAll('[role="tab"]');
+        const hasSelected = Array.from(tabs).some(t => hasAttr(t, "aria-selected"));
+        return { pass: hasSelected, message: hasSelected ? "At least one tab has aria-selected" : "No tab has aria-selected attribute" };
+      }},
+      { name: "tabs-have-controls", validate: (el) => {
+        const tabs = el.querySelectorAll('[role="tab"]');
+        const missing = Array.from(tabs).filter(t => !hasAttr(t, "aria-controls"));
+        return { pass: missing.length === 0, message: missing.length === 0 ? "All tabs have aria-controls" : `${missing.length} tabs missing aria-controls` };
+      }},
     ],
   },
   {
-    role: 'menubar',
-    label: 'Menu Bar',
-    description: 'A horizontal menu bar, typically containing menu items.',
+    role: "menu",
+    selector: '[role="menu"]',
+    label: "Menu",
     checks: [
-      {
-        id: 'menubar-has-menuitems',
-        description: 'Has menuitem / menuitemcheckbox / menuitemradio children',
-        check: (el) => {
-          const items = el.querySelectorAll(
-            '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]',
-          );
-          return items.length > 0
-            ? { pass: true, message: `Found ${items.length} menu item(s).` }
-            : { pass: false, message: 'No menuitem children found.' };
-        },
-      },
-      {
-        id: 'menubar-has-orientation',
-        description: 'Has aria-orientation or inherits default orientation',
-        check: (el) => {
-          const orientation = el.getAttribute('aria-orientation');
-          if (orientation) {
-            return { pass: true, message: `aria-orientation="${orientation}".` };
-          }
-          return { pass: true, message: 'No explicit aria-orientation; defaults to horizontal.' };
-        },
-      },
-    ],
-  },
-
-  // ── dialog / alertdialog ─────────────────────────────────
-  {
-    role: 'dialog',
-    label: 'Dialog',
-    description: 'A dialog box or window separated from the rest of the page.',
-    checks: [
-      {
-        id: 'dialog-has-aria-modal',
-        description: 'Has aria-modal="true" or aria-modal attribute',
-        check: (el) => {
-          const modal = el.getAttribute('aria-modal');
-          return modal !== null
-            ? { pass: true, message: `aria-modal="${modal}".` }
-            : { pass: false, message: 'Missing aria-modal attribute.' };
-        },
-      },
-      {
-        id: 'dialog-has-label',
-        description: 'Has aria-label or aria-labelledby',
-        check: (el) => {
-          return hasAccessibleName(el)
-            ? { pass: true, message: 'Dialog has an accessible name.' }
-            : { pass: false, message: 'Dialog is missing aria-label or aria-labelledby.' };
-        },
-      },
-      {
-        id: 'dialog-has-focusable',
-        description: 'Has at least one focusable element inside',
-        check: (el) => {
-          return hasFocusableChild(el)
-            ? { pass: true, message: 'Dialog contains focusable element(s).' }
-            : { pass: false, message: 'Dialog has no focusable elements inside.' };
-        },
-      },
+      { name: "has-menuitem-children", validate: (el) => {
+        const count = countChildren(el, '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]');
+        return { pass: count > 0, message: count > 0 ? `Found ${count} menu items` : "No menuitem children found" };
+      }},
+      { name: "has-orientation", validate: (el) => {
+        const has = hasAttr(el, "aria-orientation");
+        return { pass: has, message: has ? "Has aria-orientation" : "Missing aria-orientation" };
+      }},
     ],
   },
   {
-    role: 'alertdialog',
-    label: 'Alert Dialog',
-    description: 'A dialog that interrupts the user with important information.',
+    role: "menubar",
+    selector: '[role="menubar"]',
+    label: "Menu bar",
     checks: [
-      {
-        id: 'alertdialog-has-aria-modal',
-        description: 'Has aria-modal="true" or aria-modal attribute',
-        check: (el) => {
-          const modal = el.getAttribute('aria-modal');
-          return modal !== null
-            ? { pass: true, message: `aria-modal="${modal}".` }
-            : { pass: false, message: 'Missing aria-modal attribute.' };
-        },
-      },
-      {
-        id: 'alertdialog-has-label',
-        description: 'Has aria-label or aria-labelledby',
-        check: (el) => {
-          return hasAccessibleName(el)
-            ? { pass: true, message: 'Alert dialog has an accessible name.' }
-            : { pass: false, message: 'Alert dialog is missing aria-label or aria-labelledby.' };
-        },
-      },
-      {
-        id: 'alertdialog-has-focusable',
-        description: 'Has at least one focusable element inside',
-        check: (el) => {
-          return hasFocusableChild(el)
-            ? { pass: true, message: 'Alert dialog contains focusable element(s).' }
-            : { pass: false, message: 'Alert dialog has no focusable elements inside.' };
-        },
-      },
+      { name: "has-menuitem-children", validate: (el) => {
+        const count = countChildren(el, '[role="menuitem"]');
+        return { pass: count > 0, message: count > 0 ? `Found ${count} menu items` : "No menuitem children found" };
+      }},
     ],
   },
-
-  // ── combobox ─────────────────────────────────────────────
   {
-    role: 'combobox',
-    label: 'Combobox',
-    description: 'An input widget with an associated popup for selecting a value.',
+    role: "dialog",
+    selector: '[role="dialog"], dialog',
+    label: "Dialog",
     checks: [
-      {
-        id: 'combobox-has-expanded',
-        description: 'Has aria-expanded attribute',
-        check: (el) => {
-          return el.hasAttribute('aria-expanded')
-            ? { pass: true, message: `aria-expanded="${el.getAttribute('aria-expanded')}".` }
-            : { pass: false, message: 'Missing aria-expanded attribute.' };
-        },
-      },
-      {
-        id: 'combobox-has-controls',
-        description: 'Has aria-controls pointing to a listbox',
-        check: (el) => {
-          const controls = el.getAttribute('aria-controls');
-          if (!controls) return { pass: false, message: 'Missing aria-controls attribute.' };
-          const target = document.getElementById(controls);
-          if (!target) return { pass: false, message: `aria-controls="${controls}" target not found.` };
-          const targetRole = target.getAttribute('role');
-          if (targetRole === 'listbox' || targetRole === 'tree' || targetRole === 'dialog' || targetRole === 'grid') {
-            return { pass: true, message: `aria-controls points to role="${targetRole}".` };
-          }
-          return { pass: false, message: `aria-controls target has role="${targetRole}", expected listbox/tree/dialog/grid.` };
-        },
-      },
-      {
-        id: 'combobox-has-input',
-        description: 'Contains an input element or is an input itself',
-        check: (el) => {
-          const isInput = el.tagName.toLowerCase() === 'input';
-          const hasInput = el.querySelector('input') !== null;
-          return isInput || hasInput
-            ? { pass: true, message: isInput ? 'Element is an input.' : 'Contains an input element.' }
-            : { pass: false, message: 'No input element found inside combobox.' };
-        },
-      },
+      { name: "has-aria-modal", validate: (el) => {
+        const has = hasAttr(el, "aria-modal") || el.tagName === "DIALOG";
+        return { pass: has, message: has ? "Has aria-modal or is <dialog>" : "Missing aria-modal attribute" };
+      }},
+      { name: "has-label", validate: (el) => {
+        const has = hasAttr(el, "aria-label") || hasAttr(el, "aria-labelledby");
+        return { pass: has, message: has ? "Has accessible label" : "Missing aria-label or aria-labelledby" };
+      }},
+      { name: "has-focusable-child", validate: (el) => {
+        const has = hasChild(el, 'a[href], button, input, select, textarea, [tabindex]');
+        return { pass: has, message: has ? "Has focusable child" : "No focusable child element inside dialog" };
+      }},
     ],
   },
-
-  // ── checkbox (custom) ────────────────────────────────────
   {
-    role: 'checkbox',
-    label: 'Checkbox (Custom)',
-    description: 'A custom checkbox widget (not a native input[type="checkbox"]).',
+    role: "alertdialog",
+    selector: '[role="alertdialog"]',
+    label: "Alert dialog",
     checks: [
-      {
-        id: 'checkbox-has-aria-checked',
-        description: 'Has aria-checked attribute',
-        check: (el) => {
-          return el.hasAttribute('aria-checked')
-            ? { pass: true, message: `aria-checked="${el.getAttribute('aria-checked')}".` }
-            : { pass: false, message: 'Missing aria-checked attribute.' };
-        },
-      },
-      {
-        id: 'checkbox-has-tabindex',
-        description: 'Has tabindex for keyboard access',
-        check: (el) => {
-          const isNativelyFocusable = ['button', 'input'].includes(el.tagName.toLowerCase());
-          return isNativelyFocusable || hasTabindex(el)
-            ? { pass: true, message: 'Element is keyboard-accessible.' }
-            : { pass: false, message: 'Missing tabindex; not keyboard-accessible.' };
-        },
-      },
+      { name: "has-aria-modal", validate: (el) => {
+        const has = hasAttr(el, "aria-modal");
+        return { pass: has, message: has ? "Has aria-modal" : "Missing aria-modal attribute" };
+      }},
+      { name: "has-describedby", validate: (el) => {
+        const has = hasAttr(el, "aria-describedby");
+        return { pass: has, message: has ? "Has aria-describedby" : "Missing aria-describedby" };
+      }},
     ],
   },
-
-  // ── radiogroup ───────────────────────────────────────────
   {
-    role: 'radiogroup',
-    label: 'Radio Group',
-    description: 'A group of radio buttons.',
+    role: "combobox",
+    selector: '[role="combobox"]',
+    label: "Combobox",
     checks: [
-      {
-        id: 'radiogroup-has-radios',
-        description: 'Has role="radio" children',
-        check: (el) => {
-          const radios = el.querySelectorAll('[role="radio"]');
-          return radios.length > 0
-            ? { pass: true, message: `Found ${radios.length} radio(s).` }
-            : { pass: false, message: 'No role="radio" children found.' };
-        },
-      },
-      {
-        id: 'radio-has-aria-checked',
-        description: 'Each radio has aria-checked',
-        check: (el) => {
-          const radios = el.querySelectorAll('[role="radio"]');
-          if (radios.length === 0) return { pass: false, message: 'No radios to check.' };
-          const missing = Array.from(radios).filter((r) => !r.hasAttribute('aria-checked'));
-          return missing.length === 0
-            ? { pass: true, message: 'All radios have aria-checked.' }
-            : { pass: false, message: `${missing.length} radio(s) missing aria-checked.` };
-        },
-      },
+      { name: "has-controls", validate: (el) => {
+        const has = hasAttr(el, "aria-controls") || hasAttr(el, "aria-owns");
+        return { pass: has, message: has ? "Has aria-controls/aria-owns" : "Missing aria-controls pointing to listbox" };
+      }},
+      { name: "has-expanded", validate: (el) => {
+        const has = hasAttr(el, "aria-expanded");
+        return { pass: has, message: has ? "Has aria-expanded" : "Missing aria-expanded" };
+      }},
     ],
   },
-
-  // ── slider ───────────────────────────────────────────────
   {
-    role: 'slider',
-    label: 'Slider',
-    description: 'An input where the user selects a value from within a range.',
+    role: "slider",
+    selector: '[role="slider"]',
+    label: "Slider",
     checks: [
-      {
-        id: 'slider-has-valuenow',
-        description: 'Has aria-valuenow',
-        check: (el) => {
-          return el.hasAttribute('aria-valuenow')
-            ? { pass: true, message: `aria-valuenow="${el.getAttribute('aria-valuenow')}".` }
-            : { pass: false, message: 'Missing aria-valuenow.' };
-        },
-      },
-      {
-        id: 'slider-has-valuemin',
-        description: 'Has aria-valuemin',
-        check: (el) => {
-          return el.hasAttribute('aria-valuemin')
-            ? { pass: true, message: `aria-valuemin="${el.getAttribute('aria-valuemin')}".` }
-            : { pass: false, message: 'Missing aria-valuemin.' };
-        },
-      },
-      {
-        id: 'slider-has-valuemax',
-        description: 'Has aria-valuemax',
-        check: (el) => {
-          return el.hasAttribute('aria-valuemax')
-            ? { pass: true, message: `aria-valuemax="${el.getAttribute('aria-valuemax')}".` }
-            : { pass: false, message: 'Missing aria-valuemax.' };
-        },
-      },
-      {
-        id: 'slider-has-tabindex',
-        description: 'Has tabindex for keyboard access',
-        check: (el) => {
-          const isNativelyFocusable = ['input'].includes(el.tagName.toLowerCase());
-          return isNativelyFocusable || hasTabindex(el)
-            ? { pass: true, message: 'Slider is keyboard-accessible.' }
-            : { pass: false, message: 'Missing tabindex; not keyboard-accessible.' };
-        },
-      },
+      { name: "has-valuenow", validate: (el) => {
+        const has = hasAttr(el, "aria-valuenow");
+        return { pass: has, message: has ? "Has aria-valuenow" : "Missing aria-valuenow" };
+      }},
+      { name: "has-valuemin-max", validate: (el) => {
+        const hasMin = hasAttr(el, "aria-valuemin");
+        const hasMax = hasAttr(el, "aria-valuemax");
+        return { pass: hasMin && hasMax, message: hasMin && hasMax ? "Has value range" : "Missing aria-valuemin or aria-valuemax" };
+      }},
     ],
   },
-
-  // ── tree ─────────────────────────────────────────────────
   {
-    role: 'tree',
-    label: 'Tree View',
-    description: 'A hierarchical list of items that can be expanded and collapsed.',
+    role: "tree",
+    selector: '[role="tree"]',
+    label: "Tree",
     checks: [
-      {
-        id: 'tree-has-treeitems',
-        description: 'Has role="treeitem" children',
-        check: (el) => {
-          const items = el.querySelectorAll('[role="treeitem"]');
-          return items.length > 0
-            ? { pass: true, message: `Found ${items.length} treeitem(s).` }
-            : { pass: false, message: 'No role="treeitem" children found.' };
-        },
-      },
-      {
-        id: 'treeitem-expandable-has-expanded',
-        description: 'Expandable treeitems have aria-expanded',
-        check: (el) => {
-          const items = el.querySelectorAll('[role="treeitem"]');
-          if (items.length === 0) return { pass: false, message: 'No treeitems to check.' };
-          // Items with child groups are expandable
-          const expandable = Array.from(items).filter(
-            (item) => item.querySelector('[role="group"], [role="tree"]') !== null,
-          );
-          if (expandable.length === 0) {
-            return { pass: true, message: 'No expandable treeitems detected.' };
-          }
-          const missing = expandable.filter((item) => !item.hasAttribute('aria-expanded'));
-          return missing.length === 0
-            ? { pass: true, message: 'All expandable treeitems have aria-expanded.' }
-            : { pass: false, message: `${missing.length} expandable treeitem(s) missing aria-expanded.` };
-        },
-      },
+      { name: "has-treeitem-children", validate: (el) => {
+        const count = countChildren(el, '[role="treeitem"]');
+        return { pass: count > 0, message: count > 0 ? `Found ${count} tree items` : "No treeitem children found" };
+      }},
+      { name: "treeitems-have-expanded", validate: (el) => {
+        const items = el.querySelectorAll('[role="treeitem"]');
+        const withExpanded = Array.from(items).filter(i => hasAttr(i, "aria-expanded"));
+        if (items.length === 0) return { pass: true, message: "No tree items to check" };
+        return { pass: withExpanded.length > 0, message: withExpanded.length > 0 ? `${withExpanded.length} of ${items.length} treeitems have aria-expanded` : "No treeitems have aria-expanded attribute" };
+      }},
     ],
   },
-
-  // ── switch ───────────────────────────────────────────────
   {
-    role: 'switch',
-    label: 'Switch',
-    description: 'A toggle switch representing on/off values.',
+    role: "radiogroup",
+    selector: '[role="radiogroup"]',
+    label: "Radio group",
     checks: [
-      {
-        id: 'switch-has-aria-checked',
-        description: 'Has aria-checked',
-        check: (el) => {
-          return el.hasAttribute('aria-checked')
-            ? { pass: true, message: `aria-checked="${el.getAttribute('aria-checked')}".` }
-            : { pass: false, message: 'Missing aria-checked attribute.' };
-        },
-      },
-      {
-        id: 'switch-has-tabindex',
-        description: 'Has tabindex for keyboard access',
-        check: (el) => {
-          const isNativelyFocusable = ['button', 'input'].includes(el.tagName.toLowerCase());
-          return isNativelyFocusable || hasTabindex(el)
-            ? { pass: true, message: 'Switch is keyboard-accessible.' }
-            : { pass: false, message: 'Missing tabindex; not keyboard-accessible.' };
-        },
-      },
+      { name: "has-radio-children", validate: (el) => {
+        const count = countChildren(el, '[role="radio"]');
+        return { pass: count > 0, message: count > 0 ? `Found ${count} radio buttons` : "No radio children found" };
+      }},
+      { name: "has-checked-radio", validate: (el) => {
+        const has = hasChild(el, '[role="radio"][aria-checked="true"]');
+        return { pass: has, message: has ? "Has checked radio" : "No radio has aria-checked=\"true\"" };
+      }},
     ],
   },
-
-  // ── accordion ────────────────────────────────────────────
   {
-    role: 'accordion',
-    label: 'Accordion',
-    description: 'A set of disclosure buttons that show/hide associated content panels.',
+    role: "checkbox",
+    selector: '[role="checkbox"]',
+    label: "Checkbox",
     checks: [
-      {
-        id: 'accordion-buttons-have-expanded',
-        description: 'Disclosure buttons have aria-expanded',
-        check: (el) => {
-          const buttons = el.querySelectorAll('button[aria-expanded], [role="button"][aria-expanded]');
-          return buttons.length >= 2
-            ? { pass: true, message: `Found ${buttons.length} disclosure button(s) with aria-expanded.` }
-            : { pass: false, message: `Only ${buttons.length} button(s) with aria-expanded found; expected at least 2.` };
-        },
-      },
-      {
-        id: 'accordion-buttons-have-controls',
-        description: 'Disclosure buttons have aria-controls pointing to content panels',
-        check: (el) => {
-          const buttons = el.querySelectorAll('button[aria-expanded], [role="button"][aria-expanded]');
-          if (buttons.length === 0) return { pass: false, message: 'No disclosure buttons found.' };
-          const broken: string[] = [];
-          buttons.forEach((btn) => {
-            const controls = btn.getAttribute('aria-controls');
-            if (!controls) {
-              broken.push('button missing aria-controls');
-            } else if (!document.getElementById(controls)) {
-              broken.push(`aria-controls="${controls}" target not found`);
-            }
-          });
-          return broken.length === 0
-            ? { pass: true, message: 'All disclosure buttons have valid aria-controls.' }
-            : { pass: false, message: broken.join('; ') };
-        },
-      },
+      { name: "has-checked", validate: (el) => {
+        const has = hasAttr(el, "aria-checked");
+        return { pass: has, message: has ? "Has aria-checked" : "Missing aria-checked attribute" };
+      }},
+      { name: "has-name", validate: (el) => {
+        const has = hasAttr(el, "aria-label") || hasAttr(el, "aria-labelledby") || (el.textContent?.trim().length ?? 0) > 0;
+        return { pass: has, message: has ? "Has accessible name" : "No accessible name" };
+      }},
+    ],
+  },
+  {
+    role: "switch",
+    selector: '[role="switch"]',
+    label: "Switch",
+    checks: [
+      { name: "has-checked", validate: (el) => {
+        const has = hasAttr(el, "aria-checked");
+        return { pass: has, message: has ? "Has aria-checked" : "Missing aria-checked" };
+      }},
+      { name: "has-name", validate: (el) => {
+        const has = hasAttr(el, "aria-label") || hasAttr(el, "aria-labelledby") || (el.textContent?.trim().length ?? 0) > 0;
+        return { pass: has, message: has ? "Has accessible name" : "No accessible name" };
+      }},
+    ],
+  },
+  {
+    role: "accordion",
+    selector: "button[aria-expanded], [role='button'][aria-expanded]",
+    label: "Accordion (heuristic)",
+    checks: [
+      { name: "parent-has-multiple-expanded-buttons", validate: (el) => {
+        const parent = el.parentElement;
+        if (!parent) return { pass: false, message: "No parent element found" };
+        const siblings = parent.querySelectorAll("button[aria-expanded], [role='button'][aria-expanded]");
+        return { pass: siblings.length >= 2, message: siblings.length >= 2 ? `Parent has ${siblings.length} expandable buttons (accordion pattern)` : "Parent has fewer than 2 expandable buttons — not an accordion" };
+      }},
+      { name: "buttons-have-controls", validate: (el) => {
+        const has = hasAttr(el, "aria-controls");
+        return { pass: has, message: has ? "Has aria-controls" : "Missing aria-controls" };
+      }},
     ],
   },
 ];

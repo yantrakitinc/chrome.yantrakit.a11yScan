@@ -1,5 +1,6 @@
 /**
- * Options page — placeholder for Phase 0.
- * Remote config controls and history management will be added in later phases.
+ * Options page — minimal for now.
  */
-console.log('A11y Scan options loaded');
+document.addEventListener("DOMContentLoaded", () => {
+  document.body.innerHTML = "<h1>A11y Scan Options</h1><p>Options page coming soon.</p>";
+});

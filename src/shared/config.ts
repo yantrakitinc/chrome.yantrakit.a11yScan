@@ -1,111 +1,99 @@
-import type { iRemoteConfig } from './types';
-
 /**
- * Site URL for the A11y Scan website.
- * Update this when migrating to a new domain.
+ * Remote configuration management.
+ * Fetches and caches scan config from a GitHub Gist.
  */
-export const SITE_URL = 'https://a11yscan.yantrakit.com';
+
+import type { iRemoteConfig } from "./types";
+
+const CACHE_KEY = "a11yscan_config";
+const CACHE_TIMESTAMP_KEY = "a11yscan_config_timestamp";
+const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+export const SITE_URL = "https://a11yscan.yantrakit.com";
 
 const GIST_URL =
-  'https://gist.githubusercontent.com/yantrakitinc/1cde179b72bdedc56daf217bdb32017b/raw/a11yscan-config.json';
-
-const CACHE_KEY = 'a11yscan_config';
-const CACHE_TIMESTAMP_KEY = 'a11yscan_config_timestamp';
-const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+  "https://gist.githubusercontent.com/yantrakitinc/1cde179b72bdedc56daf217bdb32017b/raw/a11yscan-config.json";
 
 const DEFAULT_CONFIG: iRemoteConfig = {
-  version: '0.0.0',
-  wcagVersion: '2.2',
-  wcagLevel: 'AA',
+  version: "0.0.0",
+  wcagVersion: "2.2",
+  wcagLevel: "AA",
   rules: {},
   scanOptions: {
-    resultTypes: ['violations', 'passes', 'incomplete', 'inapplicable'],
+    resultTypes: ["violations", "passes", "incomplete", "inapplicable"],
   },
 };
 
-/**
- * Fetches config from the remote Gist URL.
- * Returns null if the fetch fails.
- */
-async function fetchRemoteConfig(): Promise<iRemoteConfig | null> {
-  try {
-    const response = await fetch(GIST_URL);
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data as iRemoteConfig;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Reads cached config from chrome.storage.local.
- * Returns null if no cache exists.
- */
-async function getCachedConfig(): Promise<iRemoteConfig | null> {
-  const result = await chrome.storage.local.get([CACHE_KEY, CACHE_TIMESTAMP_KEY]);
-  if (result[CACHE_KEY]) {
-    return result[CACHE_KEY] as iRemoteConfig;
-  }
-  return null;
-}
-
-/**
- * Checks if the cached config is still fresh (less than 24 hours old).
- */
-async function isCacheFresh(): Promise<boolean> {
-  const result = await chrome.storage.local.get(CACHE_TIMESTAMP_KEY);
-  const timestamp = result[CACHE_TIMESTAMP_KEY] as number | undefined;
-  if (!timestamp) return false;
-  return Date.now() - timestamp < CACHE_MAX_AGE_MS;
-}
-
-/**
- * Saves config to chrome.storage.local with a timestamp.
- */
-async function cacheConfig(config: iRemoteConfig): Promise<void> {
-  await chrome.storage.local.set({
-    [CACHE_KEY]: config,
-    [CACHE_TIMESTAMP_KEY]: Date.now(),
-  });
-}
-
-/**
- * Gets the current config, fetching from remote if cache is stale.
- * Falls back to cached config, then to built-in defaults.
- */
+/** Get cached config or fetch fresh, always merged with defaults */
 export async function getConfig(): Promise<iRemoteConfig> {
-  const fresh = await isCacheFresh();
-
-  if (fresh) {
-    const cached = await getCachedConfig();
-    if (cached) return cached;
-  }
-
-  const remote = await fetchRemoteConfig();
-  if (remote) {
-    await cacheConfig(remote);
-    return remote;
-  }
-
   const cached = await getCachedConfig();
-  if (cached) return cached;
-
-  return DEFAULT_CONFIG;
+  if (cached) {
+    // Re-merge with defaults in case cached version is missing new fields
+    return {
+      ...DEFAULT_CONFIG,
+      ...cached,
+      scanOptions: { ...DEFAULT_CONFIG.scanOptions, ...(cached.scanOptions || {}) },
+    };
+  }
+  return fetchAndCacheConfig();
 }
 
-/**
- * Forces an immediate re-fetch of the remote config, bypassing cache age check.
- */
+/** Force re-fetch config regardless of cache */
 export async function forceUpdateConfig(): Promise<iRemoteConfig> {
-  const remote = await fetchRemoteConfig();
-  if (remote) {
-    await cacheConfig(remote);
-    return remote;
+  return fetchAndCacheConfig();
+}
+
+async function getCachedConfig(): Promise<iRemoteConfig | null> {
+  const data = await chrome.storage.local.get([CACHE_KEY, CACHE_TIMESTAMP_KEY]);
+  const config = data[CACHE_KEY] as iRemoteConfig | undefined;
+  const timestamp = data[CACHE_TIMESTAMP_KEY] as number | undefined;
+  if (!config || !timestamp) return null;
+  if (Date.now() - timestamp > CACHE_MAX_AGE_MS) return null;
+  return config;
+}
+
+async function fetchAndCacheConfig(): Promise<iRemoteConfig> {
+  try {
+    const res = await fetch(GIST_URL);
+    if (!res.ok) return DEFAULT_CONFIG;
+    const remote = (await res.json()) as Partial<iRemoteConfig>;
+    // Merge with defaults — remote values override, missing fields use defaults
+    const config: iRemoteConfig = {
+      ...DEFAULT_CONFIG,
+      ...remote,
+      scanOptions: {
+        ...DEFAULT_CONFIG.scanOptions,
+        ...(remote.scanOptions || {}),
+      },
+    };
+    await chrome.storage.local.set({
+      [CACHE_KEY]: config,
+      [CACHE_TIMESTAMP_KEY]: Date.now(),
+    });
+    return config;
+  } catch {
+    return DEFAULT_CONFIG;
   }
+}
 
-  const cached = await getCachedConfig();
-  if (cached) return cached;
+/** Build axe-core WCAG tags from version + level.
+ * axe-core tag format: wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22a, wcag22aa
+ * Note: WCAG 2.0 uses "wcag2" prefix (NOT "wcag20") */
+export function buildWcagTags(version: string, level: string): string[] {
+  const tags: string[] = [];
+  // axe-core tag prefixes — "2.0" maps to "2", not "20"
+  const versionMap: Record<string, string> = { "2.0": "2", "2.1": "21", "2.2": "22" };
+  const versions = ["2.0", "2.1", "2.2"];
+  const levels = ["A", "AA", "AAA"];
+  const levelIdx = levels.indexOf(level);
+  const versionIdx = versions.indexOf(version);
 
-  return DEFAULT_CONFIG;
+  for (let v = 0; v <= versionIdx; v++) {
+    for (let l = 0; l <= levelIdx; l++) {
+      const ver = versionMap[versions[v]];
+      const lev = levels[l].toLowerCase();
+      tags.push(`wcag${ver}${lev}`);
+    }
+  }
+  return tags;
 }

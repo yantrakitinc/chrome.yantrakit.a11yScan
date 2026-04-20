@@ -1,146 +1,150 @@
 /**
- * Tab Order Movie Mode: animated walkthrough auto-advancing through tabbable elements.
+ * Movie Mode — animated tab order walkthrough (F06).
+ * Steps through each focusable element, scrolls to it, highlights it.
  */
 
-import { computeTabOrder } from './tab-order';
-import { createOverlayContainer, destroyOverlay } from './overlay';
-import type { iTabOrderEntry } from './overlay';
+type iMovieState = "idle" | "playing" | "paused" | "complete";
 
-export interface iMovieState {
-  status: 'idle' | 'playing' | 'paused' | 'complete';
-  currentIndex: number;
-  totalElements: number;
-  speed: number;
-}
+const MOVIE_HOST_ID = "a11y-movie-overlay-host";
 
-let state: iMovieState = { status: 'idle', currentIndex: 0, totalElements: 0, speed: 1000 };
-let entries: iTabOrderEntry[] = [];
+let state: iMovieState = "idle";
+let currentIndex = 0;
+let elements: HTMLElement[] = [];
+let speed = 1000; // ms per element (1× = 1000ms)
 let timer: ReturnType<typeof setTimeout> | null = null;
 let highlightEl: HTMLElement | null = null;
 
-function sendProgress() {
-  chrome.runtime.sendMessage({ type: 'MOVIE_PROGRESS', state: { ...state } }).catch(() => {});
-}
-
-function clearHighlight() {
-  if (highlightEl) {
-    highlightEl.remove();
-    highlightEl = null;
+function getMovieShadowRoot(): ShadowRoot {
+  let host = document.getElementById(MOVIE_HOST_ID);
+  if (!host) {
+    host = document.createElement("div");
+    host.id = MOVIE_HOST_ID;
+    host.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;z-index:2147483647;";
+    document.body.appendChild(host);
+    host.attachShadow({ mode: "open" });
   }
+  return host.shadowRoot!;
 }
 
-function highlightElement(entry: iTabOrderEntry) {
-  clearHighlight();
-  const el = entry.element;
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+export function startMovie(): void {
+  elements = Array.from(document.querySelectorAll(FOCUSABLE)).filter((el) => {
+    const s = getComputedStyle(el);
+    return s.display !== "none" && s.visibility !== "hidden";
+  }) as HTMLElement[];
+
+  if (elements.length === 0) return;
+
+  state = "playing";
+  currentIndex = 0;
+  highlightCurrent();
+  scheduleNext();
+}
+
+export function pauseMovie(): void {
+  if (state !== "playing") return;
+  state = "paused";
+  if (timer) clearTimeout(timer);
+}
+
+export function resumeMovie(): void {
+  if (state !== "paused") return;
+  state = "playing";
+  scheduleNext();
+}
+
+export function stopMovie(): void {
+  state = "idle";
+  currentIndex = 0;
+  if (timer) clearTimeout(timer);
+  removeHighlight();
+}
+
+export function setSpeed(multiplier: number): void {
+  speed = 1000 / multiplier;
+}
+
+function scheduleNext(): void {
+  timer = setTimeout(() => {
+    if (state !== "playing") return;
+    currentIndex++;
+    if (currentIndex >= elements.length) {
+      state = "complete";
+      removeHighlight();
+      return;
+    }
+    highlightCurrent();
+    scheduleNext();
+  }, speed);
+}
+
+function highlightCurrent(): void {
+  removeHighlight();
+  const el = elements[currentIndex];
   if (!el) return;
 
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  highlightEl = document.createElement("div");
   const rect = el.getBoundingClientRect();
-  const scrollX = window.scrollX;
-  const scrollY = window.scrollY;
-
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-  const ring = document.createElement('div');
-  ring.id = '__a11yscan-movie-ring';
-  ring.style.cssText = `
-    position: absolute;
-    left: ${rect.left + scrollX - 4}px;
-    top: ${rect.top + scrollY - 4}px;
+  highlightEl.style.cssText = `
+    position: fixed;
+    top: ${rect.top - 4}px;
+    left: ${rect.left - 4}px;
     width: ${rect.width + 8}px;
     height: ${rect.height + 8}px;
     border: 3px solid #f59e0b;
     border-radius: 4px;
-    box-shadow: 0 0 0 4px rgba(245,158,11,0.3), 0 0 12px rgba(245,158,11,0.4);
-    z-index: 2147483647;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
     pointer-events: none;
-    animation: __a11yscan-pulse 1s ease-in-out infinite;
+    z-index: 2147483647;
+    animation: a11y-pulse 0.8s ease-in-out infinite alternate;
   `;
-  document.body.appendChild(ring);
-  highlightEl = ring;
+  // Index badge (F06-AC6)
+  const badge = document.createElement("span");
+  badge.textContent = `${currentIndex + 1}/${elements.length}`;
+  badge.style.cssText = `
+    position: absolute;
+    top: -12px;
+    left: -4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: #f59e0b;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+  `;
+  highlightEl.appendChild(badge);
 
-  if (!document.getElementById('__a11yscan-movie-style')) {
-    const style = document.createElement('style');
-    style.id = '__a11yscan-movie-style';
-    style.textContent = `
-      @keyframes __a11yscan-pulse {
-        0%, 100% { box-shadow: 0 0 0 4px rgba(245,158,11,0.3), 0 0 12px rgba(245,158,11,0.4); }
-        50% { box-shadow: 0 0 0 8px rgba(245,158,11,0.15), 0 0 20px rgba(245,158,11,0.25); }
-      }
-    `;
-    document.head.appendChild(style);
+  const shadow = getMovieShadowRoot();
+
+  // Add animation keyframes if not present in shadow root
+  if (!shadow.getElementById("a11y-movie-styles")) {
+    const style = document.createElement("style");
+    style.id = "a11y-movie-styles";
+    style.textContent = `@keyframes a11y-pulse { from { box-shadow: 0 0 8px rgba(245,158,11,0.3); } to { box-shadow: 0 0 20px rgba(245,158,11,0.7); } }`;
+    shadow.appendChild(style);
+  }
+
+  shadow.appendChild(highlightEl);
+}
+
+function removeHighlight(): void {
+  if (highlightEl) {
+    highlightEl.remove();
+    highlightEl = null;
+  }
+  // Clean up host when fully stopped
+  if (state === "idle" || state === "complete") {
+    document.getElementById(MOVIE_HOST_ID)?.remove();
   }
 }
 
-function advanceToNext() {
-  if (state.status !== 'playing') return;
-
-  if (state.currentIndex >= state.totalElements) {
-    state.status = 'complete';
-    clearHighlight();
-    sendProgress();
-    return;
-  }
-
-  const entry = entries[state.currentIndex];
-  if (entry) highlightElement(entry);
-  state.currentIndex++;
-  sendProgress();
-
-  timer = setTimeout(advanceToNext, state.speed);
-}
-
-export function startMovieMode(speed: number): void {
-  const computed = computeTabOrder();
-  entries = computed.filter((e) => e.index > 0);
-  if (entries.length === 0) return;
-
-  createOverlayContainer();
-
-  state = {
-    status: 'playing',
-    currentIndex: 0,
-    totalElements: entries.length,
-    speed: speed || 1000,
-  };
-
-  advanceToNext();
-}
-
-export function pauseMovieMode(): void {
-  if (state.status !== 'playing') return;
-  state.status = 'paused';
-  if (timer) { clearTimeout(timer); timer = null; }
-  sendProgress();
-}
-
-export function resumeMovieMode(): void {
-  if (state.status !== 'paused') return;
-  state.status = 'playing';
-  advanceToNext();
-}
-
-export function stopMovieMode(): void {
-  state.status = 'idle';
-  state.currentIndex = 0;
-  if (timer) { clearTimeout(timer); timer = null; }
-  clearHighlight();
-  destroyOverlay();
-  const style = document.getElementById('__a11yscan-movie-style');
-  if (style) style.remove();
-  sendProgress();
-}
-
-export function setMovieSpeed(speed: number): void {
-  state.speed = speed;
-}
-
-export function getMovieState(): iMovieState {
-  return { ...state };
-}
-
-// Escape key stops movie mode
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && (state.status === 'playing' || state.status === 'paused')) {
-    stopMovieMode();
+// Escape key stops movie
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && state !== "idle") {
+    stopMovie();
   }
 });

@@ -1,48 +1,82 @@
-import { describe, it, expect } from 'vitest';
-import { criterionSlug } from '../utils';
+import { describe, it, expect } from "vitest";
+import { isScannableUrl, matchesDomain, extractDomain, getViewportBucket } from "../utils";
 
-describe('criterionSlug', () => {
-  it('converts "1.1.1" + "Non-text Content" to "1-1-1-non-text-content"', () => {
-    expect(criterionSlug('1.1.1', 'Non-text Content')).toBe('1-1-1-non-text-content');
+describe("isScannableUrl", () => {
+  it("allows http URLs", () => {
+    expect(isScannableUrl("http://example.com")).toBe(true);
   });
-
-  it('converts "1.4.3" + "Contrast (Minimum)" to "1-4-3-contrast-minimum"', () => {
-    expect(criterionSlug('1.4.3', 'Contrast (Minimum)')).toBe('1-4-3-contrast-minimum');
+  it("allows https URLs", () => {
+    expect(isScannableUrl("https://example.com/page")).toBe(true);
   });
-
-  it('converts "2.4.4" + "Link Purpose (In Context)" to "2-4-4-link-purpose-in-context"', () => {
-    expect(criterionSlug('2.4.4', 'Link Purpose (In Context)')).toBe('2-4-4-link-purpose-in-context');
+  it("rejects chrome:// URLs", () => {
+    expect(isScannableUrl("chrome://extensions")).toBe(false);
   });
-
-  it('converts "4.1.2" + "Name, Role, Value" to "4-1-2-name-role-value"', () => {
-    expect(criterionSlug('4.1.2', 'Name, Role, Value')).toBe('4-1-2-name-role-value');
+  it("rejects chrome-extension:// URLs", () => {
+    expect(isScannableUrl("chrome-extension://abc/popup.html")).toBe(false);
   });
-
-  it('handles empty name by returning just the ID part', () => {
-    expect(criterionSlug('1.1.1', '')).toBe('1-1-1-');
+  it("rejects file:// URLs", () => {
+    expect(isScannableUrl("file:///home/user/index.html")).toBe(false);
   });
-
-  it('strips special characters from name', () => {
-    expect(criterionSlug('3.3.8', 'Accessible Authentication (Minimum)')).toBe(
-      '3-3-8-accessible-authentication-minimum'
-    );
+  it("rejects data: URLs", () => {
+    expect(isScannableUrl("data:text/html,<h1>hi</h1>")).toBe(false);
   });
-
-  it('collapses consecutive special characters into a single hyphen', () => {
-    expect(criterionSlug('1.2.3', 'Audio Description or Media Alternative (Prerecorded)')).toBe(
-      '1-2-3-audio-description-or-media-alternative-prerecorded'
-    );
+  it("rejects empty string", () => {
+    expect(isScannableUrl("")).toBe(false);
   });
-
-  it('strips leading and trailing hyphens from name portion', () => {
-    expect(criterionSlug('2.5.8', '(Target Size)')).toBe('2-5-8-target-size');
+  it("rejects about: URLs", () => {
+    expect(isScannableUrl("about:blank")).toBe(false);
   });
+});
 
-  it('handles name with numbers', () => {
-    expect(criterionSlug('2.2.1', 'Timing 2x Adjustable')).toBe('2-2-1-timing-2x-adjustable');
+describe("matchesDomain", () => {
+  it("matches exact domain", () => {
+    expect(matchesDomain("https://example.com/page", ["example.com"])).toBe(true);
   });
+  it("does not match different domain", () => {
+    expect(matchesDomain("https://other.com", ["example.com"])).toBe(false);
+  });
+  it("matches wildcard *", () => {
+    expect(matchesDomain("https://anything.com", ["*"])).toBe(true);
+  });
+  it("matches wildcard subdomain *.example.com", () => {
+    expect(matchesDomain("https://sub.example.com", ["*.example.com"])).toBe(true);
+  });
+  it("wildcard *.example.com matches bare domain", () => {
+    expect(matchesDomain("https://example.com", ["*.example.com"])).toBe(true);
+  });
+  it("returns false for empty patterns", () => {
+    expect(matchesDomain("https://example.com", [])).toBe(false);
+  });
+  it("handles invalid URLs gracefully", () => {
+    expect(matchesDomain("not-a-url", ["example.com"])).toBe(false);
+  });
+});
 
-  it('handles ID with two-digit sub-parts', () => {
-    expect(criterionSlug('1.4.12', 'Text Spacing')).toBe('1-4-12-text-spacing');
+describe("extractDomain", () => {
+  it("extracts domain from URL", () => {
+    expect(extractDomain("https://www.example.com/path")).toBe("www.example.com");
+  });
+  it("returns input for invalid URL", () => {
+    expect(extractDomain("not-a-url")).toBe("not-a-url");
+  });
+});
+
+describe("getViewportBucket", () => {
+  const breakpoints = [375, 768, 1280];
+
+  it("returns ≤375px for width 320", () => {
+    expect(getViewportBucket(320, breakpoints)).toBe("≤375px");
+  });
+  it("returns ≤375px for width 375", () => {
+    expect(getViewportBucket(375, breakpoints)).toBe("≤375px");
+  });
+  it("returns 376–768px for width 500", () => {
+    expect(getViewportBucket(500, breakpoints)).toBe("376–768px");
+  });
+  it("returns 769–1280px for width 1024", () => {
+    expect(getViewportBucket(1024, breakpoints)).toBe("769–1280px");
+  });
+  it("returns ≥1281px for width 1440", () => {
+    expect(getViewportBucket(1440, breakpoints)).toBe("≥1281px");
   });
 });

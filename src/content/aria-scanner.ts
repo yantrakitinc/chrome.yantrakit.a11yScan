@@ -1,142 +1,58 @@
 /**
- * Scans the current page for WAI-ARIA widget patterns and validates
- * their structure against expected ARIA authoring practices.
+ * ARIA widget pattern validation (F10).
+ * Detects ARIA widgets and validates against WAI-ARIA spec.
  */
 
-import {
-  ARIA_PATTERN_RULES,
-  type iAriaPatternRule,
-  type iAriaWidgetResult,
-} from '../shared/aria-patterns';
+import { ARIA_PATTERNS } from "@shared/aria-patterns";
+import type { iAriaWidget } from "@shared/types";
 
-/**
- * Builds a CSS-selector-like string for an element (tag + id + first class).
- */
-function buildSelector(el: Element): string {
-  let sel = el.tagName.toLowerCase();
-  if (el.id) {
-    sel += `#${el.id}`;
-  } else {
-    const role = el.getAttribute('role');
-    if (role) {
-      sel += `[role="${role}"]`;
-    } else if (el.className && typeof el.className === 'string') {
-      const firstClass = el.className.trim().split(/\s+/)[0];
-      if (firstClass) sel += `.${firstClass}`;
+/** Scan the DOM for ARIA widgets and validate each */
+export function scanAriaPatterns(): iAriaWidget[] {
+  const widgets: iAriaWidget[] = [];
+
+  for (const pattern of ARIA_PATTERNS) {
+    const elements = document.querySelectorAll(pattern.selector);
+
+    for (const el of Array.from(elements)) {
+      const checks = pattern.checks.map((check) => {
+        const result = check.validate(el);
+        return { name: check.name, pass: result.pass, message: result.message };
+      });
+
+      const passCount = checks.filter((c) => c.pass).length;
+      const failCount = checks.filter((c) => !c.pass).length;
+
+      widgets.push({
+        role: pattern.role,
+        selector: getSelector(el),
+        label: getLabel(el),
+        html: el.outerHTML.substring(0, 200),
+        checks,
+        passCount,
+        failCount,
+      });
     }
   }
-  return sel;
+
+  return widgets;
 }
 
-/**
- * Truncates an HTML string to the given max length.
- */
-function truncateHtml(el: Element, maxLen = 200): string {
-  const html = el.outerHTML;
-  return html.length > maxLen ? html.slice(0, maxLen) + '...' : html;
+function getSelector(el: Element): string {
+  if (el.id) return `#${el.id}`;
+  const tag = el.tagName.toLowerCase();
+  const role = el.getAttribute("role");
+  if (role) return `${tag}[role="${role}"]`;
+  const classes = Array.from(el.classList).filter(c => !/[[\]:@!]/.test(c)).slice(0, 2).map(c => CSS.escape(c)).join(".");
+  return classes ? `${tag}.${classes}` : tag;
 }
 
-/**
- * Runs checks from a pattern rule against a DOM element and returns a result.
- */
-function runPatternChecks(el: Element, rule: iAriaPatternRule): iAriaWidgetResult {
-  const checks = rule.checks.map((c) => {
-    const result = c.check(el);
-    return {
-      id: c.id,
-      description: c.description,
-      pass: result.pass,
-      message: result.message,
-    };
-  });
-
-  return {
-    role: rule.role,
-    label: rule.label,
-    selector: buildSelector(el),
-    html: truncateHtml(el),
-    checks,
-    passCount: checks.filter((c) => c.pass).length,
-    failCount: checks.filter((c) => !c.pass).length,
-  };
-}
-
-/**
- * Detects accordion-like containers: parent elements that contain
- * two or more sibling disclosure buttons with aria-expanded.
- */
-function detectAccordions(): Element[] {
-  const expandedButtons = document.querySelectorAll(
-    'button[aria-expanded], [role="button"][aria-expanded]',
-  );
-
-  const parentCounts = new Map<Element, number>();
-  expandedButtons.forEach((btn) => {
-    const parent = btn.parentElement;
-    if (parent) {
-      parentCounts.set(parent, (parentCounts.get(parent) ?? 0) + 1);
-    }
-  });
-
-  const accordions: Element[] = [];
-  parentCounts.forEach((count, parent) => {
-    if (count >= 2) {
-      accordions.push(parent);
-    }
-  });
-
-  return accordions;
-}
-
-/** Map of role attribute value to its pattern rule. */
-const rulesByRole = new Map<string, iAriaPatternRule>();
-for (const rule of ARIA_PATTERN_RULES) {
-  if (rule.role !== 'accordion') {
-    rulesByRole.set(rule.role, rule);
+function getLabel(el: Element): string {
+  const ariaLabel = el.getAttribute("aria-label");
+  if (ariaLabel) return ariaLabel;
+  const labelledBy = el.getAttribute("aria-labelledby");
+  if (labelledBy) {
+    const ref = document.getElementById(labelledBy);
+    if (ref) return ref.textContent?.trim() || "";
   }
-}
-
-const accordionRule = ARIA_PATTERN_RULES.find((r) => r.role === 'accordion')!;
-
-/**
- * Scans the DOM for WAI-ARIA widget patterns and validates each one.
- * Returns an array of results, one per detected widget instance.
- */
-export function scanAriaPatterns(): iAriaWidgetResult[] {
-  const results: iAriaWidgetResult[] = [];
-
-  // Query for all explicit role-based widgets
-  const roleSelector = [
-    '[role="tablist"]',
-    '[role="menu"]',
-    '[role="menubar"]',
-    '[role="dialog"]',
-    '[role="alertdialog"]',
-    '[role="combobox"]',
-    '[role="slider"]',
-    '[role="tree"]',
-    '[role="radiogroup"]',
-    '[role="checkbox"]',
-    '[role="switch"]',
-  ].join(', ');
-
-  const elements = document.querySelectorAll(roleSelector);
-
-  elements.forEach((el) => {
-    const role = el.getAttribute('role');
-    if (!role) return;
-
-    const rule = rulesByRole.get(role);
-    if (!rule) return;
-
-    results.push(runPatternChecks(el, rule));
-  });
-
-  // Detect accordion patterns (not role-based, heuristic-based)
-  const accordions = detectAccordions();
-  for (const el of accordions) {
-    results.push(runPatternChecks(el, accordionRule));
-  }
-
-  return results;
+  return el.textContent?.trim().substring(0, 50) || "";
 }

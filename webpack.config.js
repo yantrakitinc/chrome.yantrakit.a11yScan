@@ -8,6 +8,8 @@ module.exports = {
     content: './src/content/index.ts',
     sidepanel: './src/sidepanel/sidepanel.ts',
     options: './src/options/options.ts',
+    devtools: './src/devtools/devtools.ts',
+    panel: './src/devtools/panel.ts',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -43,6 +45,8 @@ module.exports = {
         { from: 'src/sidepanel/sidepanel.html', to: 'sidepanel.html' },
         { from: 'src/options/options.html', to: 'options.html' },
         { from: 'src/icons', to: 'icons' },
+        { from: 'src/devtools/devtools.html', to: 'devtools.html' },
+        { from: 'src/devtools/panel.html', to: 'panel.html' },
       ],
     }),
   ],

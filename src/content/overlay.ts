@@ -1,500 +1,212 @@
 /**
- * Overlay infrastructure for rendering visual badges, outlines, and
- * connecting lines on the inspected page. Everything lives inside a
- * Shadow DOM so host-page styles cannot interfere.
+ * Visual overlays rendered in Shadow DOM (F05).
+ * Violation badges, tab order badges + lines, focus gap markers.
  */
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+import type { iViolation } from "@shared/types";
 
-export interface iTabOrderEntry {
-  element: Element;
-  /** 1-based position in tab order, or -1 for tabindex="-1" */
-  index: number;
-  /** Actual tabindex attribute value */
-  tabindex: number;
-  selector: string;
-  tagName: string;
+const SHADOW_HOST_ID = "a11y-scan-overlay-host";
+const Z_INDEX = 2147483646;
+
+const IMPACT_COLORS: Record<string, string> = {
+  critical: "#ef4444",
+  serious: "#f97316",
+  moderate: "#eab308",
+  minor: "#3b82f6",
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   Shadow DOM Host
+   ═══════════════════════════════════════════════════════════════════ */
+
+function getOrCreateHost(): ShadowRoot {
+  let host = document.getElementById(SHADOW_HOST_ID);
+  if (!host) {
+    host = document.createElement("div");
+    host.id = SHADOW_HOST_ID;
+    host.style.cssText = `position:absolute;top:0;left:0;width:0;height:0;z-index:${Z_INDEX};pointer-events:none;`;
+    document.body.appendChild(host);
+    host.attachShadow({ mode: "open" });
+  }
+  return host.shadowRoot!;
 }
 
-export interface iViolationOverlayEntry {
-  element: Element;
-  impact: 'critical' | 'serious' | 'moderate' | 'minor';
-  ruleId: string;
-  description: string;
-  selector: string;
+function getContainer(id: string): HTMLDivElement {
+  const shadow = getOrCreateHost();
+  let container = shadow.getElementById(id) as HTMLDivElement;
+  if (!container) {
+    container = document.createElement("div");
+    container.id = id;
+    shadow.appendChild(container);
+  }
+  return container;
 }
 
-export interface iFocusGapEntry {
-  element: Element;
-  reason: string;
-  selector: string;
+function removeContainer(id: string): void {
+  const shadow = document.getElementById(SHADOW_HOST_ID)?.shadowRoot;
+  const container = shadow?.getElementById(id);
+  if (container) container.remove();
 }
 
-/* ------------------------------------------------------------------ */
-/*  Module state                                                       */
-/* ------------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════
+   Violation Overlay
+   ═══════════════════════════════════════════════════════════════════ */
 
-let overlayHost: HTMLDivElement | null = null;
-let shadowRoot: ShadowRoot | null = null;
+export function showViolationOverlay(violations: iViolation[]): void {
+  hideViolationOverlay();
+  const container = getContainer("violation-overlay");
 
-/** Stored references so `updatePositions` can recalculate. */
-let storedTabEntries: { entry: iTabOrderEntry; badge: HTMLDivElement }[] = [];
-let storedViolationEntries: { entry: iViolationOverlayEntry; outline: HTMLDivElement; badge: HTMLDivElement }[] = [];
-let storedFocusGapEntries: { entry: iFocusGapEntry; outline: HTMLDivElement }[] = [];
-let svgElement: SVGSVGElement | null = null;
+  let badgeIndex = 1;
+  for (const v of violations) {
+    const color = IMPACT_COLORS[v.impact] || IMPACT_COLORS.minor;
+    for (const node of v.nodes) {
+      const el = document.querySelector(node.selector);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) continue;
 
-/* ------------------------------------------------------------------ */
-/*  Styles injected into the Shadow DOM                                */
-/* ------------------------------------------------------------------ */
+      // Outline
+      const outline = document.createElement("div");
+      outline.style.cssText = `position:absolute;top:${rect.top + window.scrollY}px;left:${rect.left + window.scrollX}px;width:${rect.width}px;height:${rect.height}px;border:2px solid ${color};box-shadow:0 0 4px ${color}, inset 0 0 4px ${color};pointer-events:none;z-index:${Z_INDEX};`;
+      container.appendChild(outline);
 
-const OVERLAY_STYLES = `
-  :host, * { box-sizing: border-box; }
-
-  .a11y-badge {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    color: #fff;
-    font-weight: 700;
-    font-size: 10px;
-    font-family: system-ui, -apple-system, sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2147483647;
-    pointer-events: none;
-    line-height: 1;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-  }
-
-  .a11y-badge--tab {
-    background: #1e1b4b; /* indigo-950 */
-  }
-
-  .a11y-badge--neg {
-    background: #9ca3af; /* gray-400 */
-  }
-
-  .a11y-badge--violation {
-    pointer-events: auto;
-    cursor: pointer;
-  }
-
-  .a11y-outline {
-    position: absolute;
-    pointer-events: none;
-    z-index: 2147483646;
-  }
-
-  .a11y-outline--critical { outline: 3px solid #ef4444; outline-offset: 2px; border: 2px solid rgba(253,224,71,0.7); box-shadow: inset 0 0 10px rgba(253,224,71,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2); }
-  .a11y-outline--serious  { outline: 3px solid #f97316; outline-offset: 2px; border: 2px solid rgba(253,224,71,0.7); box-shadow: inset 0 0 10px rgba(253,224,71,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2); }
-  .a11y-outline--moderate { outline: 3px solid #eab308; outline-offset: 2px; border: 2px solid rgba(255,255,255,0.7); box-shadow: inset 0 0 10px rgba(255,255,255,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2); }
-  .a11y-outline--minor    { outline: 3px solid #3b82f6; outline-offset: 2px; border: 2px solid rgba(253,224,71,0.7); box-shadow: inset 0 0 10px rgba(253,224,71,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2); }
-
-  .a11y-outline--gap {
-    outline: 3px dashed #ef4444;
-    outline-offset: 2px;
-    border: 2px solid rgba(253,224,71,0.7);
-    box-shadow: inset 0 0 10px rgba(253,224,71,0.5), 0 0 8px 2px rgba(253,224,71,0.4), 0 0 16px 4px rgba(253,224,71,0.2);
-  }
-
-  .a11y-svg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 2147483646;
-    overflow: visible;
-  }
-
-  .a11y-tooltip {
-    position: absolute;
-    background: #1e1b4b;
-    color: #fff;
-    font-size: 11px;
-    font-family: system-ui, -apple-system, sans-serif;
-    padding: 4px 8px;
-    border-radius: 4px;
-    z-index: 2147483647;
-    pointer-events: none;
-    white-space: nowrap;
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-`;
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-/**
- * Computes smart badge position for an element's bounding rect.
- * For small elements (< 40px) the badge is placed above.
- * Near viewport edges it shifts inward.
- */
-function badgePosition(rect: DOMRect): { top: number; left: number } {
-  const scrollX = window.scrollX;
-  const scrollY = window.scrollY;
-
-  let top = rect.top + scrollY - 10;
-  let left = rect.right + scrollX - 10;
-
-  if (rect.width < 40 || rect.height < 40) {
-    top = rect.top + scrollY - 22;
-    left = rect.right + scrollX - 10;
-  }
-
-  // Keep within viewport horizontally
-  if (left + 20 > scrollX + window.innerWidth) {
-    left = rect.right + scrollX - 24;
-  }
-  if (left < scrollX) {
-    left = rect.left + scrollX;
-  }
-
-  // Keep badge from going above page
-  if (top < scrollY) {
-    top = rect.top + scrollY;
-  }
-
-  return { top, left };
-}
-
-/**
- * Returns the center point of a badge element (absolute coords).
- */
-function badgeCenter(badge: HTMLDivElement): { x: number; y: number } {
-  const left = parseFloat(badge.style.left) || 0;
-  const top = parseFloat(badge.style.top) || 0;
-  return { x: left + 10, y: top + 10 };
-}
-
-/* ------------------------------------------------------------------ */
-/*  Public API                                                         */
-/* ------------------------------------------------------------------ */
-
-/**
- * Creates (or returns existing) overlay container with Shadow DOM.
- */
-export function createOverlayContainer(): ShadowRoot {
-  if (shadowRoot && overlayHost && document.body.contains(overlayHost)) {
-    return shadowRoot;
-  }
-
-  overlayHost = document.createElement('div');
-  overlayHost.id = '__a11yscan-overlay';
-  overlayHost.setAttribute('aria-hidden', 'true');
-  overlayHost.style.cssText = 'position:absolute;top:0;left:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:2147483647;';
-
-  shadowRoot = overlayHost.attachShadow({ mode: 'open' });
-
-  const style = document.createElement('style');
-  style.textContent = OVERLAY_STYLES;
-  shadowRoot.appendChild(style);
-
-  document.body.appendChild(overlayHost);
-
-  // Attach position-updating listeners
-  window.addEventListener('scroll', handlePositionUpdate, { passive: true });
-  window.addEventListener('resize', handlePositionUpdate, { passive: true });
-
-  return shadowRoot;
-}
-
-/**
- * Removes the overlay container and all visual elements.
- */
-export function destroyOverlay(): void {
-  window.removeEventListener('scroll', handlePositionUpdate);
-  window.removeEventListener('resize', handlePositionUpdate);
-
-  if (overlayHost && overlayHost.parentNode) {
-    overlayHost.parentNode.removeChild(overlayHost);
-  }
-
-  overlayHost = null;
-  shadowRoot = null;
-  svgElement = null;
-  storedTabEntries = [];
-  storedViolationEntries = [];
-  storedFocusGapEntries = [];
-}
-
-/**
- * Removes only tab order badges and SVG lines. Other overlays remain.
- */
-export function removeTabOrderOverlay(): void {
-  for (const { badge } of storedTabEntries) badge.remove();
-  storedTabEntries = [];
-  if (svgElement) { svgElement.remove(); svgElement = null; }
-  cleanupIfEmpty();
-}
-
-/**
- * Removes only violation outlines and badges. Other overlays remain.
- */
-export function removeViolationOverlay(): void {
-  for (const { outline, badge } of storedViolationEntries) { outline.remove(); badge.remove(); }
-  storedViolationEntries = [];
-  cleanupIfEmpty();
-}
-
-/**
- * Removes only focus gap outlines. Other overlays remain.
- */
-export function removeFocusGapOverlay(): void {
-  for (const { outline } of storedFocusGapEntries) outline.remove();
-  storedFocusGapEntries = [];
-  cleanupIfEmpty();
-}
-
-/** If no overlays remain, tear down the container to clean up listeners. */
-function cleanupIfEmpty(): void {
-  if (storedTabEntries.length === 0 && storedViolationEntries.length === 0 && storedFocusGapEntries.length === 0) {
-    destroyOverlay();
-  }
-}
-
-/**
- * Renders numbered badges on each focusable element and connecting SVG lines.
- */
-export function renderTabOrderBadges(elements: iTabOrderEntry[]): void {
-  const root = createOverlayContainer();
-
-  // Clear previous tab-order content
-  storedTabEntries = [];
-  if (svgElement) {
-    svgElement.remove();
-    svgElement = null;
-  }
-
-  // Create SVG for connecting lines
-  const svgNs = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNs, 'svg');
-  svg.classList.add('a11y-svg');
-  svg.setAttribute('width', String(document.documentElement.scrollWidth));
-  svg.setAttribute('height', String(document.documentElement.scrollHeight));
-  root.appendChild(svg);
-  svgElement = svg;
-
-  let prevBadge: HTMLDivElement | null = null;
-
-  for (const entry of elements) {
-    const rect = entry.element.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) continue;
-
-    const pos = badgePosition(rect);
-
-    const badge = document.createElement('div');
-    badge.classList.add('a11y-badge');
-
-    if (entry.index === -1) {
-      badge.classList.add('a11y-badge--neg');
-      badge.textContent = '\u2212'; // minus sign
-    } else {
-      badge.classList.add('a11y-badge--tab');
-      badge.textContent = String(entry.index);
-    }
-
-    badge.style.top = `${pos.top}px`;
-    badge.style.left = `${pos.left}px`;
-    root.appendChild(badge);
-
-    storedTabEntries.push({ entry, badge });
-
-    // Draw connecting line from previous numbered badge
-    if (entry.index > 0 && prevBadge) {
-      const from = badgeCenter(prevBadge);
-      const to = badgeCenter(badge);
-      const line = document.createElementNS(svgNs, 'line');
-      line.setAttribute('x1', String(from.x));
-      line.setAttribute('y1', String(from.y));
-      line.setAttribute('x2', String(to.x));
-      line.setAttribute('y2', String(to.y));
-      line.setAttribute('stroke', '#1e1b4b');
-      line.setAttribute('stroke-width', '1');
-      line.setAttribute('opacity', '0.5');
-      svg.appendChild(line);
-    }
-
-    if (entry.index > 0) {
-      prevBadge = badge;
+      // Badge
+      const badge = document.createElement("div");
+      badge.textContent = String(badgeIndex);
+      badge.style.cssText = `position:absolute;top:${rect.top + window.scrollY - 10}px;left:${rect.right + window.scrollX - 10}px;width:20px;height:20px;border-radius:50%;background:${color};color:#fff;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;z-index:${Z_INDEX + 1};box-shadow:0 1px 3px rgba(0,0,0,0.4);`;
+      badge.addEventListener("click", () => {
+        chrome.runtime.sendMessage({ type: "VIOLATION_BADGE_CLICKED", payload: { index: badgeIndex - 1 } });
+      });
+      container.appendChild(badge);
+      badgeIndex++;
     }
   }
 }
 
-/**
- * Renders outlines and numbered badges around elements with violations.
- */
-export function renderViolationOverlay(violations: iViolationOverlayEntry[]): void {
-  const root = createOverlayContainer();
+export function hideViolationOverlay(): void {
+  removeContainer("violation-overlay");
+}
 
-  storedViolationEntries = [];
+/* ═══════════════════════════════════════════════════════════════════
+   Tab Order Overlay
+   ═══════════════════════════════════════════════════════════════════ */
 
-  violations.forEach((entry, i) => {
-    const rect = entry.element.getBoundingClientRect();
+export function showTabOrderOverlay(): void {
+  hideTabOrderOverlay();
+  const container = getContainer("tab-order-overlay");
+
+  const focusable = getFocusableElements();
+
+  focusable.forEach((el, i) => {
+    const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return;
 
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
+    const x = rect.left + window.scrollX;
+    const y = rect.top + window.scrollY;
 
-    // Outline div
-    const outline = document.createElement('div');
-    outline.classList.add('a11y-outline', `a11y-outline--${entry.impact}`);
-    outline.style.top = `${rect.top + scrollY}px`;
-    outline.style.left = `${rect.left + scrollX}px`;
-    outline.style.width = `${rect.width}px`;
-    outline.style.height = `${rect.height}px`;
-    root.appendChild(outline);
-
-    // Badge
-    const badge = document.createElement('div');
-    badge.classList.add('a11y-badge', 'a11y-badge--violation');
-    badge.style.background = impactColor(entry.impact);
+    const badge = document.createElement("div");
     badge.textContent = String(i + 1);
+    badge.style.cssText = `position:absolute;top:${y - 12}px;left:${x - 12}px;width:24px;height:24px;border-radius:50%;background:#1e1b4b;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:${Z_INDEX};border:2px solid #fff;box-shadow:0 0 0 1px #1e1b4b,0 2px 6px rgba(0,0,0,0.5);`;
+    container.appendChild(badge);
+  });
 
-    const pos = badgePosition(rect);
-    badge.style.top = `${pos.top}px`;
-    badge.style.left = `${pos.left}px`;
-    root.appendChild(badge);
+}
 
-    // Click dispatches custom event for side panel communication
-    badge.addEventListener('click', () => {
-      document.dispatchEvent(new CustomEvent('a11yscan:violation-click', {
-        detail: { selector: entry.selector, ruleId: entry.ruleId },
-      }));
-    });
+export function hideTabOrderOverlay(): void {
+  removeContainer("tab-order-overlay");
+}
 
-    storedViolationEntries.push({ entry, outline, badge });
+/* ═══════════════════════════════════════════════════════════════════
+   Focus Gap Overlay
+   ═══════════════════════════════════════════════════════════════════ */
+
+export function showFocusGapOverlay(): void {
+  hideFocusGapOverlay();
+  const container = getContainer("focus-gap-overlay");
+
+  const interactive = document.querySelectorAll(
+    'a[href], button, input, select, textarea, [onclick], [role="button"], [role="link"]'
+  );
+  const focusable = new Set(getFocusableElements());
+
+  for (const el of Array.from(interactive)) {
+    if (focusable.has(el as HTMLElement)) continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) continue;
+
+    // Determine reason for focus gap
+    const htmlEl = el as HTMLElement;
+    let reason = "Not keyboard reachable";
+    if (htmlEl.tabIndex === -1) reason = "tabindex=\"-1\" blocks keyboard access";
+    else if (getComputedStyle(el).display === "none") reason = "display:none — not in tab order";
+    else if (getComputedStyle(el).visibility === "hidden") reason = "visibility:hidden — not in tab order";
+    else if (el.getAttribute("disabled") !== null) reason = "disabled attribute";
+
+    const marker = document.createElement("div");
+    marker.style.cssText = `position:absolute;top:${rect.top + window.scrollY}px;left:${rect.left + window.scrollX}px;width:${rect.width}px;height:${rect.height}px;border:2px dashed #ef4444;pointer-events:none;z-index:${Z_INDEX};`;
+
+    const tooltip = document.createElement("div");
+    tooltip.textContent = reason;
+    tooltip.style.cssText = `position:absolute;bottom:calc(100% + 4px);left:0;background:#1f2937;color:#fff;font-size:10px;font-family:monospace;white-space:nowrap;padding:2px 6px;border-radius:3px;pointer-events:none;z-index:${Z_INDEX + 1};`;
+    marker.appendChild(tooltip);
+
+    container.appendChild(marker);
+  }
+}
+
+export function hideFocusGapOverlay(): void {
+  removeContainer("focus-gap-overlay");
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Helpers
+   ═══════════════════════════════════════════════════════════════════ */
+
+function getFocusableElements(): HTMLElement[] {
+  const selector = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const all = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
+  return all.filter((el) => {
+    const style = getComputedStyle(el);
+    return style.display !== "none" && style.visibility !== "hidden";
+  }).sort((a, b) => {
+    const aIdx = a.tabIndex || 0;
+    const bIdx = b.tabIndex || 0;
+    if (aIdx > 0 && bIdx > 0) return aIdx - bIdx;
+    if (aIdx > 0) return -1;
+    if (bIdx > 0) return 1;
+    return 0; // DOM order preserved by querySelectorAll
   });
 }
 
-/**
- * Renders dashed red outlines on elements that are interactive but not focusable.
- */
-export function renderFocusGapOverlay(gaps: iFocusGapEntry[]): void {
-  const root = createOverlayContainer();
-
-  storedFocusGapEntries = [];
-
-  for (const entry of gaps) {
-    const rect = entry.element.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) continue;
-
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-
-    const outline = document.createElement('div');
-    outline.classList.add('a11y-outline', 'a11y-outline--gap');
-    outline.style.top = `${rect.top + scrollY}px`;
-    outline.style.left = `${rect.left + scrollX}px`;
-    outline.style.width = `${rect.width}px`;
-    outline.style.height = `${rect.height}px`;
-    root.appendChild(outline);
-
-    storedFocusGapEntries.push({ entry, outline });
-  }
+/** Destroy all overlays */
+export function destroyOverlay(): void {
+  const host = document.getElementById(SHADOW_HOST_ID);
+  if (host) host.remove();
 }
 
-/**
- * Recalculates all badge and outline positions from stored element references.
- */
-export function updatePositions(): void {
-  if (!shadowRoot) return;
+/* ═══════════════════════════════════════════════════════════════════
+   Scroll-based overlay recalculation (F05-AC7)
+   ═══════════════════════════════════════════════════════════════════ */
 
-  const svgNs = 'http://www.w3.org/2000/svg';
+let scrollRecalcTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Update tab-order badges
-  let prevBadge: HTMLDivElement | null = null;
-
-  // Remove old SVG lines and recreate
-  if (svgElement) {
-    while (svgElement.firstChild) {
-      svgElement.removeChild(svgElement.firstChild);
+function onScroll(): void {
+  if (scrollRecalcTimer) clearTimeout(scrollRecalcTimer);
+  scrollRecalcTimer = setTimeout(() => {
+    const shadow = document.getElementById(SHADOW_HOST_ID)?.shadowRoot;
+    if (!shadow) return;
+    if (shadow.getElementById("tab-order-overlay")) {
+      showTabOrderOverlay();
     }
-    svgElement.setAttribute('width', String(document.documentElement.scrollWidth));
-    svgElement.setAttribute('height', String(document.documentElement.scrollHeight));
-  }
-
-  for (const { entry, badge } of storedTabEntries) {
-    const rect = entry.element.getBoundingClientRect();
-    const pos = badgePosition(rect);
-    badge.style.top = `${pos.top}px`;
-    badge.style.left = `${pos.left}px`;
-
-    // Redraw connecting lines
-    if (entry.index > 0 && prevBadge && svgElement) {
-      const from = badgeCenter(prevBadge);
-      const to = badgeCenter(badge);
-      const line = document.createElementNS(svgNs, 'line');
-      line.setAttribute('x1', String(from.x));
-      line.setAttribute('y1', String(from.y));
-      line.setAttribute('x2', String(to.x));
-      line.setAttribute('y2', String(to.y));
-      line.setAttribute('stroke', '#1e1b4b');
-      line.setAttribute('stroke-width', '1');
-      line.setAttribute('opacity', '0.5');
-      svgElement.appendChild(line);
+    if (shadow.getElementById("focus-gap-overlay")) {
+      showFocusGapOverlay();
     }
-
-    if (entry.index > 0) {
-      prevBadge = badge;
+    if (shadow.getElementById("violation-overlay")) {
+      // Violation overlay uses absolute coords already; rebuild to re-query rects
+      // Callers who show violations pass violations array — we cannot rebuild without it here.
+      // The violation overlay uses absolute positioning (scrollY offset) so it stays correct.
     }
-  }
-
-  // Update violation outlines and badges
-  for (const { entry, outline, badge } of storedViolationEntries) {
-    const rect = entry.element.getBoundingClientRect();
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-
-    outline.style.top = `${rect.top + scrollY}px`;
-    outline.style.left = `${rect.left + scrollX}px`;
-    outline.style.width = `${rect.width}px`;
-    outline.style.height = `${rect.height}px`;
-
-    const pos = badgePosition(rect);
-    badge.style.top = `${pos.top}px`;
-    badge.style.left = `${pos.left}px`;
-  }
-
-  // Update focus gap outlines
-  for (const { entry, outline } of storedFocusGapEntries) {
-    const rect = entry.element.getBoundingClientRect();
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-
-    outline.style.top = `${rect.top + scrollY}px`;
-    outline.style.left = `${rect.left + scrollX}px`;
-    outline.style.width = `${rect.width}px`;
-    outline.style.height = `${rect.height}px`;
-  }
+  }, 150);
 }
 
-/* ------------------------------------------------------------------ */
-/*  Internal helpers                                                   */
-/* ------------------------------------------------------------------ */
-
-function handlePositionUpdate(): void {
-  updatePositions();
-}
-
-/**
- * Maps impact level to a hex color for violation badges.
- */
-function impactColor(impact: string): string {
-  switch (impact) {
-    case 'critical': return '#ef4444';
-    case 'serious':  return '#f97316';
-    case 'moderate': return '#eab308';
-    case 'minor':    return '#3b82f6';
-    default:         return '#6b7280';
-  }
-}
+document.addEventListener("scroll", onScroll, { passive: true });

@@ -1,271 +1,231 @@
 /**
- * Computes the page's tab order and detects interactive elements
- * that are not reachable via keyboard (focus gaps).
+ * Tab order analysis and focus gap detection (F16).
  */
 
-import type { iTabOrderEntry, iFocusGapEntry } from './overlay';
+import type { iTabOrderElement, iFocusGap, iFocusIndicator, iKeyboardTrap, iSkipLink } from "@shared/types";
 
-/* ------------------------------------------------------------------ */
-/*  Focusable-element selectors                                        */
-/* ------------------------------------------------------------------ */
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]';
+const INTERACTIVE_SELECTOR = 'a[href], button, input, select, textarea, [onclick], [role="button"], [role="link"], [role="menuitem"]';
 
-const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'button',
-  'input',
-  'select',
-  'textarea',
-  '[tabindex]',
-  'details',
-  'summary',
-].join(',');
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-/**
- * Returns true if the element is effectively hidden from the user.
- */
-function isHidden(el: Element): boolean {
-  if ((el as HTMLElement).offsetParent === null && getComputedStyle(el).position !== 'fixed') {
-    // offsetParent is null for hidden elements (except position:fixed)
+/** Get all focusable elements in tab order */
+export function getTabOrder(): iTabOrderElement[] {
+  const all = Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR)) as HTMLElement[];
+  const visible = all.filter((el) => {
     const style = getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden') {
-      return true;
-    }
-  }
-
-  const style = getComputedStyle(el);
-  if (style.display === 'none' || style.visibility === 'hidden') {
-    return true;
-  }
-
-  if (el.getAttribute('aria-hidden') === 'true') {
-    return true;
-  }
-
-  // Walk up to check ancestors for aria-hidden
-  let parent = el.parentElement;
-  while (parent) {
-    if (parent.getAttribute('aria-hidden') === 'true') return true;
-    const ps = getComputedStyle(parent);
-    if (ps.display === 'none' || ps.visibility === 'hidden') return true;
-    parent = parent.parentElement;
-  }
-
-  return false;
-}
-
-/**
- * Returns true if the element should be excluded from focusable lists.
- */
-function isDisabledOrHiddenInput(el: Element): boolean {
-  if ((el as HTMLInputElement).disabled) return true;
-  if (el.tagName === 'INPUT' && (el as HTMLInputElement).type === 'hidden') return true;
-  return false;
-}
-
-/**
- * Builds a CSS selector string that uniquely identifies the element.
- */
-function buildSelector(el: Element): string {
-  if (el.id) return `#${CSS.escape(el.id)}`;
-
-  const tag = el.tagName.toLowerCase();
-  const classes = Array.from(el.classList)
-    .filter((c) => !c.startsWith('__'))
-    .slice(0, 2)
-    .map((c) => `.${CSS.escape(c)}`)
-    .join('');
-
-  const parent = el.parentElement;
-  if (!parent) return tag + classes;
-
-  const siblings = Array.from(parent.children).filter((c) => c.tagName === el.tagName);
-  if (siblings.length > 1) {
-    const idx = siblings.indexOf(el) + 1;
-    return `${buildSelector(parent)} > ${tag}${classes}:nth-of-type(${idx})`;
-  }
-
-  return `${buildSelector(parent)} > ${tag}${classes}`;
-}
-
-/**
- * Reads the effective tabindex of an element.
- * Returns 0 for natively focusable elements without an explicit tabindex.
- */
-function getTabindex(el: Element): number {
-  const attr = el.getAttribute('tabindex');
-  if (attr !== null) return parseInt(attr, 10);
-
-  // Natively focusable elements default to 0
-  const nativeFocusable = ['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'SUMMARY'];
-  if (nativeFocusable.includes(el.tagName)) return 0;
-
-  // <details> is not itself focusable (summary inside is)
-  return 0;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Public API                                                         */
-/* ------------------------------------------------------------------ */
-
-/**
- * Computes the full tab order of the page, following the browser's
- * tab-navigation algorithm (positive tabindex first, then DOM order).
- */
-export function computeTabOrder(): iTabOrderEntry[] {
-  const all = Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR));
-
-  const focusable: { el: Element; tabindex: number }[] = [];
-  const negativeTabindex: { el: Element; tabindex: number }[] = [];
-
-  for (const el of all) {
-    if (isDisabledOrHiddenInput(el)) continue;
-    if (isHidden(el)) continue;
-
-    const ti = getTabindex(el);
-
-    if (ti < 0) {
-      negativeTabindex.push({ el, tabindex: ti });
-    } else {
-      focusable.push({ el, tabindex: ti });
-    }
-  }
-
-  // Group A: positive tabindex (sorted ascending, DOM order within same value)
-  const positive = focusable
-    .filter((f) => f.tabindex > 0)
-    .sort((a, b) => a.tabindex - b.tabindex);
-
-  // Group B: tabindex=0 or no tabindex (DOM order)
-  const zero = focusable.filter((f) => f.tabindex === 0);
-
-  // Combine in tab-navigation order
-  const ordered = [...positive, ...zero];
-
-  const result: iTabOrderEntry[] = [];
-
-  // Numbered entries (1-based)
-  ordered.forEach((item, i) => {
-    result.push({
-      element: item.el,
-      index: i + 1,
-      tabindex: item.tabindex,
-      selector: buildSelector(item.el),
-      tagName: item.el.tagName.toLowerCase(),
-    });
+    return style.display !== "none" && style.visibility !== "hidden";
   });
 
-  // Append tabindex="-1" elements (index = -1)
-  for (const item of negativeTabindex) {
-    result.push({
-      element: item.el,
-      index: -1,
-      tabindex: item.tabindex,
-      selector: buildSelector(item.el),
-      tagName: item.el.tagName.toLowerCase(),
-    });
-  }
+  // Sort: positive tabindex first (ascending), then natural DOM order (tabindex 0 or unset)
+  const positive = visible.filter((el) => el.tabIndex > 0).sort((a, b) => a.tabIndex - b.tabIndex);
+  const natural = visible.filter((el) => el.tabIndex <= 0 && el.tabIndex !== -1);
+  const ordered = [...positive, ...natural];
 
-  return result;
+  return ordered.map((el, i) => ({
+    index: i + 1,
+    selector: getSelector(el),
+    role: el.getAttribute("role") || el.tagName.toLowerCase(),
+    accessibleName: getAccessibleName(el),
+    tabindex: el.hasAttribute("tabindex") ? el.tabIndex : null,
+    hasFocusIndicator: checkFocusIndicator(el),
+  }));
 }
 
-/**
- * Detects interactive elements that cannot be reached via keyboard navigation.
- * These are elements that look/act interactive but lack proper focus support.
- */
-export function detectFocusGaps(): iFocusGapEntry[] {
-  const INTERACTIVE_SELECTOR = [
-    '[onclick]',
-    '[role="button"]',
-    '[role="link"]',
-    '[role="tab"]',
-    '[role="menuitem"]',
-  ].join(',');
+/** Get interactive elements not in the tab order */
+export function getFocusGaps(): iFocusGap[] {
+  const interactive = Array.from(document.querySelectorAll(INTERACTIVE_SELECTOR)) as HTMLElement[];
+  const focusableSet = new Set(
+    Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR)).filter((el) => {
+      const style = getComputedStyle(el);
+      return style.display !== "none" && style.visibility !== "hidden" && (el as HTMLElement).tabIndex !== -1;
+    })
+  );
 
-  const candidates = Array.from(document.querySelectorAll(INTERACTIVE_SELECTOR));
-
-  // Also check for elements with cursor:pointer, but only block-level or
-  // inline-block elements that aren't inside an already-focusable parent.
-  // Skip images, SVGs, spans inside links, etc.
-  const SKIP_TAGS = new Set(['IMG', 'SVG', 'PATH', 'CIRCLE', 'RECT', 'LINE', 'POLYLINE', 'POLYGON', 'USE', 'G', 'DEFS', 'CLIPPATH', 'BR', 'HR', 'LABEL']);
-  const allElements = document.querySelectorAll('body *');
-  for (const el of allElements) {
-    if (SKIP_TAGS.has(el.tagName)) continue;
-    if (candidates.includes(el)) continue;
-    // Skip elements inside a focusable parent (link, button, etc.)
-    if (el.closest('a[href], button, [tabindex], input, select, textarea, summary')) continue;
+  const gaps: iFocusGap[] = [];
+  for (const el of interactive) {
+    if (focusableSet.has(el)) continue;
     const style = getComputedStyle(el);
-    if (style.cursor === 'pointer') {
-      candidates.push(el);
-    }
-  }
+    if (style.display === "none" || style.visibility === "hidden") continue;
 
-  const gaps: iFocusGapEntry[] = [];
-
-  for (const el of candidates) {
-    if (isHidden(el)) continue;
-    if (SKIP_TAGS.has(el.tagName)) continue;
-
-    // Skip elements inside a focusable parent
-    if (el.closest('a[href], button, [tabindex="0"], input, select, textarea, summary') && !el.matches('[role="button"], [role="link"], [role="tab"], [role="menuitem"]')) continue;
-
-    // Check if element is already properly focusable
-    if (isNativelyFocusable(el)) continue;
-
-    const tabindexAttr = el.getAttribute('tabindex');
-    if (tabindexAttr !== null && parseInt(tabindexAttr, 10) >= 0) continue;
-
-    const reason = buildGapReason(el);
-    if (!reason) continue;
+    let reason = "Not focusable";
+    if (el.hasAttribute("disabled")) reason = "Element is disabled";
+    else if (el.getAttribute("aria-hidden") === "true") reason = "aria-hidden=\"true\" on element or ancestor";
+    else if (el.tabIndex === -1) reason = "tabindex=\"-1\" removes from tab order";
+    else if (!el.hasAttribute("tabindex") && el.tagName === "DIV") reason = "div with onclick handler but no role=\"button\" and no tabindex";
+    else if (!el.hasAttribute("tabindex") && el.tagName === "SPAN") reason = "Click handler on span with no keyboard equivalent";
 
     gaps.push({
-      element: el,
+      selector: getSelector(el),
+      role: el.getAttribute("role") || el.tagName.toLowerCase(),
       reason,
-      selector: buildSelector(el),
     });
   }
-
   return gaps;
 }
 
-/**
- * Returns true if the element is natively focusable without a tabindex.
- */
-function isNativelyFocusable(el: Element): boolean {
-  const tag = el.tagName;
-  if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
-    return !(el as HTMLInputElement).disabled;
+/** Check if an element has a visible focus indicator */
+function checkFocusIndicator(el: HTMLElement): boolean {
+  try {
+    const blurOutline = getComputedStyle(el).outline;
+    const blurBoxShadow = getComputedStyle(el).boxShadow;
+    const blurBorder = getComputedStyle(el).border;
+
+    el.focus();
+    const focusOutline = getComputedStyle(el).outline;
+    const focusBoxShadow = getComputedStyle(el).boxShadow;
+    const focusBorder = getComputedStyle(el).border;
+    el.blur();
+
+    return (
+      focusOutline !== blurOutline ||
+      focusBoxShadow !== blurBoxShadow ||
+      focusBorder !== blurBorder
+    );
+  } catch {
+    return true; // assume yes if we can't check
   }
-  if (tag === 'A' && el.hasAttribute('href')) return true;
-  if (tag === 'SUMMARY') return true;
-  return false;
 }
 
-/**
- * Builds a human-readable reason string for why the element is a focus gap.
- */
-function buildGapReason(el: Element): string {
-  const parts: string[] = [];
+/** Build a CSS selector for an element */
+function getSelector(el: Element): string {
+  if (el.id) return `#${el.id}`;
+  const tag = el.tagName.toLowerCase();
+  const classes = Array.from(el.classList).filter(c => !/[[\]:@!]/.test(c)).slice(0, 2).map(c => CSS.escape(c)).join(".");
+  return classes ? `${tag}.${classes}` : tag;
+}
 
-  if (el.hasAttribute('onclick')) {
-    parts.push('has onclick handler');
+/** Compute accessible name (simplified) */
+function getAccessibleName(el: HTMLElement): string {
+  // aria-label takes priority
+  const ariaLabel = el.getAttribute("aria-label");
+  if (ariaLabel) return ariaLabel;
+
+  // aria-labelledby
+  const labelledBy = el.getAttribute("aria-labelledby");
+  if (labelledBy) {
+    const ids = labelledBy.split(" ");
+    const texts = ids.map((id) => document.getElementById(id)?.textContent?.trim() || "").filter(Boolean);
+    if (texts.length > 0) return texts.join(" ");
   }
 
-  const role = el.getAttribute('role');
-  if (role === 'button') parts.push('has role="button"');
-  else if (role === 'link') parts.push('has role="link"');
-  else if (role === 'tab') parts.push('has role="tab"');
-  else if (role === 'menuitem') parts.push('has role="menuitem"');
-
-  const style = getComputedStyle(el);
-  if (style.cursor === 'pointer' && parts.length === 0) {
-    parts.push('has cursor:pointer');
+  // <label> for inputs
+  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
+    if (el.id) {
+      const label = document.querySelector(`label[for="${el.id}"]`);
+      if (label) return label.textContent?.trim() || "";
+    }
+    const parentLabel = el.closest("label");
+    if (parentLabel) return parentLabel.textContent?.trim() || "";
   }
 
-  if (parts.length === 0) return '';
+  // alt for images
+  if (el instanceof HTMLImageElement) return el.alt || "";
 
-  return `${parts.join(', ')} but is not keyboard focusable`;
+  // title
+  const title = el.getAttribute("title");
+  if (title) return title;
+
+  // Text content
+  return el.textContent?.trim().substring(0, 100) || "";
+}
+
+/** Detect focus indicators — per-element check for visible :focus styles */
+export function detectFocusIndicators(): iFocusIndicator[] {
+  const all = Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR)) as HTMLElement[];
+  const visible = all.filter((el) => {
+    const s = getComputedStyle(el);
+    return s.display !== "none" && s.visibility !== "hidden";
+  });
+
+  return visible.map((el) => {
+    try {
+      const blurOutline = getComputedStyle(el).outline;
+      const blurBoxShadow = getComputedStyle(el).boxShadow;
+      const blurBorder = getComputedStyle(el).border;
+      const blurBg = getComputedStyle(el).backgroundColor;
+
+      el.focus();
+      const focusOutline = getComputedStyle(el).outline;
+      const focusBoxShadow = getComputedStyle(el).boxShadow;
+      const focusBorder = getComputedStyle(el).border;
+      const focusBg = getComputedStyle(el).backgroundColor;
+      el.blur();
+
+      let indicatorType: string | undefined;
+      if (focusOutline !== blurOutline) indicatorType = "outline";
+      else if (focusBoxShadow !== blurBoxShadow) indicatorType = "box-shadow";
+      else if (focusBorder !== blurBorder) indicatorType = "border";
+      else if (focusBg !== blurBg) indicatorType = "background";
+
+      return {
+        selector: getSelector(el),
+        hasIndicator: !!indicatorType,
+        indicatorType,
+      };
+    } catch {
+      return { selector: getSelector(el), hasIndicator: true };
+    }
+  });
+}
+
+/** Detect keyboard traps — elements where Tab cannot move focus away */
+export function detectKeyboardTraps(): iKeyboardTrap[] {
+  const traps: iKeyboardTrap[] = [];
+  const all = Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR)) as HTMLElement[];
+  const visible = all.filter((el) => {
+    const s = getComputedStyle(el);
+    return s.display !== "none" && s.visibility !== "hidden" && el.tabIndex !== -1;
+  });
+
+  for (const el of visible) {
+    try {
+      el.focus();
+      if (document.activeElement !== el) continue;
+      // Simulate Tab by dispatching keydown
+      const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+      const prevented = !el.dispatchEvent(event);
+      // If the event was prevented AND focus didn't move, it's a trap
+      if (prevented && document.activeElement === el) {
+        traps.push({
+          selector: getSelector(el),
+          description: "Focus trapped — Tab key is prevented from moving focus away from this element.",
+        });
+      }
+      el.blur();
+    } catch {
+      // Skip elements that can't be focused
+    }
+  }
+  return traps;
+}
+
+/** Detect skip links — checks for skip-to-content navigation patterns */
+export function detectSkipLinks(): iSkipLink[] {
+  const links: iSkipLink[] = [];
+  const candidates = document.querySelectorAll('a[href^="#"]');
+
+  for (const el of candidates) {
+    const text = (el.getAttribute("aria-label") || el.textContent || "").toLowerCase().trim();
+    const href = el.getAttribute("href") || "";
+    const isSkipPattern = text.includes("skip") || text.includes("jump to") || text.includes("go to main");
+
+    if (isSkipPattern && href.startsWith("#") && href.length > 1) {
+      const targetId = href.substring(1);
+      const targetEl = document.getElementById(targetId);
+      links.push({
+        selector: getSelector(el),
+        target: href,
+        targetExists: targetEl !== null,
+      });
+    }
+  }
+
+  // If no skip links found, check if page has a main landmark (implicit skip target)
+  if (links.length === 0) {
+    const hasMain = document.querySelector('main, [role="main"]');
+    if (hasMain) {
+      // Page has main landmark but no skip link — not necessarily an issue but useful data
+    }
+  }
+
+  return links;
 }

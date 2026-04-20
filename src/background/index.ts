@@ -1,345 +1,217 @@
-import { runMultiViewportScan } from './multi-viewport';
-import { startCrawl, pauseCrawl, resumeCrawl, cancelCrawl, getCrawlState, userContinue, recordManualPause, getRecordedPageRules } from './crawl';
-import {
-  getObserverState,
-  enableObserver,
-  disableObserver,
-  updateObserverSettings,
-  getObserverHistory,
-  clearObserverHistory,
-  exportObserverHistory,
-  runObserverScan,
-  recordManualObserverScan,
-  isScannableUrl,
-  shouldObserveUrl,
-} from './observer';
-
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-
-/** Per-tab scan results stored in memory. */
-const tabResults = new Map<number, unknown>();
-
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === 'SCAN_REQUEST') {
-    handleScan(sendResponse, message.scanTimeout, message.wcagTags, message.rulesMode, message.ruleIds);
-    return true;
-  }
-  if (message.type === 'GET_TAB_RESULTS') {
-    handleGetTabResults(sendResponse);
-    return true;
-  }
-  if (message.type === 'CLEAR_TAB_RESULTS') {
-    handleClearTabResults(sendResponse);
-    return true;
-  }
-  if (message.type === 'SAVE_MANUAL_STATE') {
-    handleSaveManualState(message.payload);
-    return false;
-  }
-  if (message.type === 'RUN_ARIA_SCAN') {
-    handleAriaScan(sendResponse);
-    return true;
-  }
-  if (message.type === 'APPLY_CVD_FILTER') {
-    handleCvdFilter(message.matrix, sendResponse);
-    return true;
-  }
-  if (message.type === 'HIGHLIGHT_ELEMENT') {
-    handleHighlight(message.selector, sendResponse);
-    return true;
-  }
-  if (message.type === 'SHOW_VIOLATION_OVERLAY') {
-    forwardToContentScript({ type: 'SHOW_VIOLATION_OVERLAY', violations: message.violations }, sendResponse);
-    return true;
-  }
-  if (message.type === 'HIDE_VIOLATION_OVERLAY') {
-    forwardToContentScript({ type: 'HIDE_VIOLATION_OVERLAY' }, sendResponse);
-    return true;
-  }
-  if (message.type === 'SHOW_TAB_ORDER') {
-    forwardToContentScript({ type: 'SHOW_TAB_ORDER' }, sendResponse);
-    return true;
-  }
-  if (message.type === 'HIDE_TAB_ORDER') {
-    forwardToContentScript({ type: 'HIDE_TAB_ORDER' }, sendResponse);
-    return true;
-  }
-  if (message.type === 'SHOW_FOCUS_GAPS') {
-    forwardToContentScript({ type: 'SHOW_FOCUS_GAPS' }, sendResponse);
-    return true;
-  }
-  if (message.type === 'HIDE_FOCUS_GAPS') {
-    forwardToContentScript({ type: 'HIDE_FOCUS_GAPS' }, sendResponse);
-    return true;
-  }
-  if (message.type === 'GET_TAB_ORDER') {
-    forwardToContentScript({ type: 'GET_TAB_ORDER' }, sendResponse);
-    return true;
-  }
-  if (message.type === 'GET_FOCUS_GAPS') {
-    forwardToContentScript({ type: 'GET_FOCUS_GAPS' }, sendResponse);
-    return true;
-  }
-  if (message.type === 'COLLECT_ENRICHED_CONTEXT') {
-    forwardToContentScript({ type: 'COLLECT_ENRICHED_CONTEXT', selectors: message.selectors }, sendResponse);
-    return true;
-  }
-  if (message.type === 'MULTI_VIEWPORT_SCAN') {
-    runMultiViewportScan(message.viewports, message.scanTimeout, message.wcagTags, message.rulesMode, message.ruleIds).then((result) => {
-      sendResponse({ type: 'MULTI_VIEWPORT_RESULT', ...result });
-    }).catch((err) => {
-      sendResponse({ type: 'MULTI_VIEWPORT_ERROR', message: String(err) });
-    });
-    return true;
-  }
-  if (message.type === 'START_CRAWL') {
-    startCrawl(message.options).then((result) => {
-      sendResponse(result);
-    }).catch((err) => {
-      sendResponse({ type: 'CRAWL_ERROR', message: String(err) });
-    });
-    return true;
-  }
-  if (message.type === 'PAUSE_CRAWL') {
-    pauseCrawl(); sendResponse({ ok: true }); return false;
-  }
-  if (message.type === 'RESUME_CRAWL') {
-    resumeCrawl().then((r) => sendResponse(r)).catch(() => sendResponse({ ok: false }));
-    return true;
-  }
-  if (message.type === 'CANCEL_CRAWL') {
-    cancelCrawl(); sendResponse({ ok: true }); return false;
-  }
-  if (message.type === 'USER_CONTINUE') {
-    userContinue(); sendResponse({ ok: true }); return false;
-  }
-  if (message.type === 'RECORD_MANUAL_PAUSE') {
-    recordManualPause(message.url, message.waitType, message.description);
-    sendResponse({ ok: true }); return false;
-  }
-  if (message.type === 'GET_RECORDED_PAGE_RULES') {
-    sendResponse({ rules: getRecordedPageRules() }); return false;
-  }
-  if (message.type === 'GET_CRAWL_STATE') {
-    getCrawlState().then((s) => sendResponse(s)).catch(() => sendResponse(null));
-    return true;
-  }
-  // Movie mode messages
-  if (['START_MOVIE_MODE', 'PAUSE_MOVIE_MODE', 'RESUME_MOVIE_MODE', 'STOP_MOVIE_MODE', 'SET_MOVIE_SPEED'].includes(message.type)) {
-    forwardToContentScript(message, sendResponse);
-    return true;
-  }
-
-  // Observer mode messages
-  if (message.type === 'OBSERVER_GET_STATE') {
-    getObserverState().then((state) => sendResponse({ type: 'OBSERVER_STATE', payload: state }));
-    return true;
-  }
-  if (message.type === 'OBSERVER_ENABLE') {
-    enableObserver().then((state) => sendResponse({ type: 'OBSERVER_STATE', payload: state }));
-    return true;
-  }
-  if (message.type === 'OBSERVER_DISABLE') {
-    disableObserver().then((state) => sendResponse({ type: 'OBSERVER_STATE', payload: state }));
-    return true;
-  }
-  if (message.type === 'OBSERVER_UPDATE_SETTINGS') {
-    updateObserverSettings(message.payload || {}).then((state) =>
-      sendResponse({ type: 'OBSERVER_STATE', payload: state }),
-    );
-    return true;
-  }
-  if (message.type === 'OBSERVER_GET_HISTORY') {
-    getObserverHistory(message.filters).then((history) =>
-      sendResponse({ type: 'OBSERVER_HISTORY', payload: history }),
-    );
-    return true;
-  }
-  if (message.type === 'OBSERVER_CLEAR_HISTORY') {
-    clearObserverHistory().then(() => sendResponse({ ok: true }));
-    return true;
-  }
-  if (message.type === 'OBSERVER_EXPORT_HISTORY') {
-    exportObserverHistory().then((json) => sendResponse({ type: 'OBSERVER_EXPORT', json }));
-    return true;
-  }
-  if (message.type === 'OBSERVER_RECORD_SCAN') {
-    recordManualObserverScan(message.entry).then(() => sendResponse({ ok: true }));
-    return true;
-  }
-});
-
-/** When user switches tabs, notify side panel to update. */
-chrome.tabs.onActivated.addListener((activeInfo) => {
-  const results = tabResults.get(activeInfo.tabId);
-  chrome.runtime.sendMessage({
-    type: 'TAB_CHANGED',
-    tabId: activeInfo.tabId,
-    results: results || null,
-  }).catch(() => {});
-});
-
-/** When a tab navigates, notify side panel but do NOT clear results.
- *  Results persist so the user can navigate to scanned pages and toggle overlays.
- *  Also powers Observer Mode: when a navigation completes, we run an axe scan in the background. */
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (changeInfo.url) {
-    chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
-      if (activeTab?.id === tabId) {
-        chrome.runtime.sendMessage({
-          type: 'TAB_NAVIGATED',
-          tabId,
-          url: changeInfo.url,
-        }).catch(() => {});
-      }
-    });
-  }
-
-  // Observer Mode — passive auto-scan on load complete.
-  if (changeInfo.status === 'complete' && tab.url && isScannableUrl(tab.url)) {
-    try {
-      const state = await getObserverState();
-      if (!state.enabled) return;
-      if (!shouldObserveUrl(tab.url, state.settings)) return;
-      await runObserverScan(tabId, tab.url, tab.title ?? '', state.settings);
-    } catch (err) {
-      console.warn('[observer] onUpdated handler failed', err);
-    }
-  }
-});
-
-/** When a tab closes, clean up its results. */
-chrome.tabs.onRemoved.addListener((tabId) => {
-  tabResults.delete(tabId);
-});
-
-async function handleScan(sendResponse: (response: unknown) => void, scanTimeout?: number, wcagTags?: string[], rulesMode?: string, ruleIds?: string[]) {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    if (!tab?.id) {
-      sendResponse({ type: 'SCAN_ERROR', message: 'No active tab found.' });
-      return;
-    }
-
-    const url = tab.url || '';
-    const blocked =
-      !url ||
-      url.startsWith('chrome://') ||
-      url.startsWith('chrome-extension://') ||
-      url.startsWith('edge://') ||
-      url.startsWith('brave://') ||
-      url.startsWith('chrome-search://') ||
-      url.startsWith('about:');
-
-    if (blocked) {
-      sendResponse({ type: 'SCAN_ERROR', message: 'Cannot scan Chrome internal pages. Navigate to a website (http/https) to scan.' });
-      return;
-    }
-
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ['content.js'],
-    });
-
-    await new Promise((r) => setTimeout(r, 100));
-
-    chrome.tabs.sendMessage(tab.id, { type: 'RUN_SCAN', scanTimeout: scanTimeout || 0, wcagTags, rulesMode, ruleIds }, (response) => {
-      if (chrome.runtime.lastError) {
-        sendResponse({ type: 'SCAN_ERROR', message: chrome.runtime.lastError.message });
-      } else {
-        tabResults.set(tab.id!, response);
-        sendResponse(response);
-      }
-    });
-  } catch (err) {
-    sendResponse({ type: 'SCAN_ERROR', message: String(err) });
-  }
-}
-
-async function handleGetTabResults(sendResponse: (response: unknown) => void) {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id && tabResults.has(tab.id)) {
-    sendResponse({ type: 'TAB_RESULTS', results: tabResults.get(tab.id) });
-  } else {
-    sendResponse({ type: 'TAB_RESULTS', results: null });
-  }
-}
-
-async function handleClearTabResults(sendResponse: (response: unknown) => void) {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id) {
-    tabResults.delete(tab.id);
-  }
-  sendResponse({ type: 'TAB_CLEARED' });
-}
-
-async function handleSaveManualState(manualState: Record<string, string | null>) {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id && tabResults.has(tab.id)) {
-    const results = tabResults.get(tab.id) as any;
-    results._manualState = manualState;
-    tabResults.set(tab.id, results);
-  }
-}
-
-async function handleHighlight(selector: string, sendResponse: (response: unknown) => void) {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) { sendResponse({ ok: false }); return; }
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-    const response = await chrome.tabs.sendMessage(tab.id, { type: 'HIGHLIGHT_ELEMENT', selector });
-    sendResponse(response);
-  } catch {
-    sendResponse({ ok: false });
-  }
-}
-
-async function handleCvdFilter(matrix: number[] | null, sendResponse: (response: unknown) => void) {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) { sendResponse({ ok: false }); return; }
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-    const response = await chrome.tabs.sendMessage(tab.id, { type: 'APPLY_CVD_FILTER', matrix });
-    sendResponse(response);
-  } catch {
-    sendResponse({ ok: false });
-  }
-}
-
 /**
- * Injects the content script if needed and forwards a message to the active tab.
+ * Background service worker — message router and orchestrator.
+ * Source of truth: MESSAGES.md, F01-F23
  */
-async function forwardToContentScript(message: Record<string, unknown>, sendResponse: (response: unknown) => void) {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) { sendResponse({ ok: false }); return; }
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
-    const response = await chrome.tabs.sendMessage(tab.id, message);
-    sendResponse(response);
-  } catch {
-    sendResponse({ ok: false });
+
+import type { iMessage } from "@shared/messages";
+import { getConfig, forceUpdateConfig } from "@shared/config";
+import { isScannableUrl } from "@shared/utils";
+import { handleObserverMessage, onTabUpdated as observerOnTabUpdated } from "./observer";
+import { handleCrawlMessage } from "./crawl";
+import { multiViewportScan } from "./multi-viewport";
+
+/* ═══════════════════════════════════════════════════════════════════
+   Extension Lifecycle
+   ═══════════════════════════════════════════════════════════════════ */
+
+// Open side panel on extension icon click
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.windowId) {
+    chrome.sidePanel.open({ windowId: tab.windowId });
   }
-}
+});
 
-async function handleAriaScan(sendResponse: (response: unknown) => void) {
+// Register context menu items (F22)
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({ id: "open-panel", title: "Open Panel", contexts: ["action"] });
+  chrome.contextMenus.create({ id: "settings", title: "Settings", contexts: ["action"] });
+  chrome.contextMenus.create({ id: "chat-history", title: "Chat History", contexts: ["action"] });
+  chrome.contextMenus.create({ id: "clear-all", title: "Clear All Data", contexts: ["action"] });
+});
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (!tab?.windowId) return;
+
+  switch (info.menuItemId) {
+    case "open-panel":
+      chrome.sidePanel.open({ windowId: tab.windowId });
+      break;
+    case "settings":
+      chrome.sidePanel.open({ windowId: tab.windowId });
+      chrome.runtime.sendMessage({ type: "NAVIGATE", payload: { target: "settings" } });
+      break;
+    case "chat-history":
+      chrome.sidePanel.open({ windowId: tab.windowId });
+      chrome.runtime.sendMessage({ type: "NAVIGATE", payload: { target: "chatHistory" } });
+      break;
+    case "clear-all":
+      chrome.runtime.sendMessage({ type: "CONFIRM_CLEAR_ALL" });
+      break;
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   Observer: Tab Navigation Listener (F04)
+   ═══════════════════════════════════════════════════════════════════ */
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === "complete" && tab.url && isScannableUrl(tab.url)) {
+    observerOnTabUpdated(tabId, tab);
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   Message Router
+   ═══════════════════════════════════════════════════════════════════ */
+
+chrome.runtime.onMessage.addListener(
+  (msg: iMessage, sender, sendResponse) => {
+    handleMessage(msg, sender, sendResponse);
+    return true; // async response
+  }
+);
+
+async function handleMessage(
+  msg: iMessage,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: unknown) => void
+): Promise<void> {
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) {
-      sendResponse({ type: 'ARIA_SCAN_ERROR', message: 'No active tab found.' });
-      return;
-    }
+    switch (msg.type) {
+      /* ── Scan (F01) ── */
+      case "SCAN_REQUEST": {
+        const config = await getConfig();
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.id) { sendResponse({ type: "SCAN_ERROR", payload: { message: "No active tab" } }); return; }
 
-    const response = await chrome.tabs.sendMessage(tab.id, { type: 'RUN_ARIA_SCAN' });
+        // F01-AC19 / F13-AC4: Merge testConfig fields into config before scanning
+        const testConfig = (msg as { type: "SCAN_REQUEST"; payload?: { testConfig?: import("@shared/types").iTestConfig } }).payload?.testConfig;
+        if (testConfig?.wcag?.version) config.wcagVersion = testConfig.wcag.version;
+        if (testConfig?.wcag?.level) config.wcagLevel = testConfig.wcag.level;
+        if (testConfig?.rules?.include || testConfig?.rules?.exclude) {
+          const overrideRules: Record<string, { enabled: boolean }> = { ...config.rules };
+          for (const id of testConfig.rules?.include ?? []) overrideRules[id] = { enabled: true };
+          for (const id of testConfig.rules?.exclude ?? []) overrideRules[id] = { enabled: false };
+          config.rules = overrideRules;
+        }
+        if (testConfig?.heuristics?.exclude) {
+          config.heuristics = { ...config.heuristics, exclude: testConfig.heuristics.exclude };
+        }
 
-    // Store ARIA results alongside main scan results
-    if (tabResults.has(tab.id)) {
-      const results = tabResults.get(tab.id) as any;
-      results._ariaWidgets = response?.widgets || [];
-      tabResults.set(tab.id, results);
+        // Inject content script if needed
+        try {
+          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+        } catch { /* already injected */ }
+
+        // F14-AC1: Activate mocks before scan if testConfig has mocks
+        if (testConfig?.mocks && testConfig.mocks.length > 0) {
+          try {
+            await chrome.tabs.sendMessage(tab.id, { type: "ACTIVATE_MOCKS", payload: { mocks: testConfig.mocks } });
+          } catch { /* content script not ready */ }
+        }
+
+        const result = await chrome.tabs.sendMessage(tab.id, {
+          type: "RUN_SCAN",
+          payload: { config },
+        });
+        sendResponse(result);
+        break;
+      }
+
+      /* ── Config ── */
+      case "FORCE_CONFIG_UPDATE": {
+        const config = await forceUpdateConfig();
+        sendResponse({ type: "CONFIG_UPDATED", payload: { version: config.version } });
+        break;
+      }
+
+      /* ── Observer (F04) ── */
+      case "OBSERVER_ENABLE":
+      case "OBSERVER_DISABLE":
+      case "OBSERVER_GET_STATE":
+      case "OBSERVER_STATE":
+      case "OBSERVER_UPDATE_SETTINGS":
+      case "OBSERVER_GET_HISTORY":
+      case "OBSERVER_CLEAR_HISTORY":
+      case "OBSERVER_EXPORT_HISTORY":
+      case "OBSERVER_LOG_ENTRY":
+        await handleObserverMessage(msg, sendResponse);
+        break;
+
+      /* ── Crawl (F03) ── */
+      case "START_CRAWL":
+      case "PAUSE_CRAWL":
+      case "RESUME_CRAWL":
+      case "CANCEL_CRAWL":
+      case "GET_CRAWL_STATE":
+      case "USER_CONTINUE":
+        await handleCrawlMessage(msg, sendResponse);
+        break;
+
+      /* ── Content script forwarding ── */
+      case "SHOW_VIOLATION_OVERLAY":
+      case "HIDE_VIOLATION_OVERLAY":
+      case "SHOW_TAB_ORDER":
+      case "HIDE_TAB_ORDER":
+      case "SHOW_FOCUS_GAPS":
+      case "HIDE_FOCUS_GAPS":
+      case "HIGHLIGHT_ELEMENT":
+      case "CLEAR_HIGHLIGHTS":
+      case "START_MOVIE_MODE":
+      case "PAUSE_MOVIE_MODE":
+      case "RESUME_MOVIE_MODE":
+      case "STOP_MOVIE_MODE":
+      case "SET_MOVIE_SPEED":
+      case "APPLY_CVD_FILTER":
+      case "RUN_ARIA_SCAN":
+      case "COLLECT_ENRICHED_CONTEXT":
+      case "ACTIVATE_MOCKS":
+      case "DEACTIVATE_MOCKS":
+      case "ANALYZE_READING_ORDER":
+      case "GET_TAB_ORDER":
+      case "GET_FOCUS_GAPS":
+      case "GET_FOCUS_INDICATORS":
+      case "GET_KEYBOARD_TRAPS":
+      case "GET_SKIP_LINKS":
+      case "ENTER_INSPECT_MODE":
+      case "EXIT_INSPECT_MODE": {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.id) { sendResponse({ type: "SCAN_ERROR", payload: { message: "No active tab" } }); return; }
+        // Ensure content script is injected before forwarding
+        try {
+          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+        } catch { /* already injected */ }
+        try {
+          const result = await chrome.tabs.sendMessage(tab.id, msg);
+          sendResponse(result);
+        } catch (err) {
+          sendResponse({ type: "SCAN_ERROR", payload: { message: String(err) } });
+        }
+        break;
+      }
+
+      /* ── Clear All Confirmed (F22) ── */
+      case "CLEAR_ALL_CONFIRMED": {
+        await chrome.storage.local.remove([
+          "observer_state", "observer_history", "crawlState",
+          "a11yscan_config", "a11yscan_config_timestamp",
+          "chatHistory",
+        ]);
+        chrome.runtime.sendMessage({ type: "STATE_CLEARED" });
+        sendResponse({ type: "STATE_CLEARED" });
+        break;
+      }
+
+      /* ── Multi-Viewport (F02) ── */
+      case "MULTI_VIEWPORT_SCAN": {
+        await multiViewportScan(msg.payload.viewports, sendResponse);
+        break;
+      }
+
+      default:
+        sendResponse({ type: "SCAN_ERROR", payload: { message: `Unknown message type: ${(msg as { type: string }).type}` } });
     }
-    sendResponse(response);
   } catch (err) {
-    sendResponse({ type: 'ARIA_SCAN_ERROR', message: String(err) });
+    sendResponse({ type: "SCAN_ERROR", payload: { message: String(err) } });
   }
 }
