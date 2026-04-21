@@ -3,7 +3,7 @@
  */
 
 import type { iMessage } from "@shared/messages";
-import type { iCrawlOptions, iCrawlState, iScanResult } from "@shared/types";
+import type { iCrawlOptions, iCrawlState, iCrawlAuth, iScanResult } from "@shared/types";
 import { getConfig } from "@shared/config";
 import { isScannableUrl } from "@shared/utils";
 import { setCrawlActive } from "./observer";
@@ -100,7 +100,7 @@ async function startCrawl(options: iCrawlOptions): Promise<void> {
     status: "crawling",
     startedAt: new Date().toISOString(),
     pagesVisited: 0,
-    pagesTotal: options.mode === "urllist" ? options.urlList.length : options.maxPages,
+    pagesTotal: options.mode === "urllist" ? options.urlList.length : 0,
     currentUrl: startUrl,
     results: {},
     failed: {},
@@ -112,7 +112,49 @@ async function startCrawl(options: iCrawlOptions): Promise<void> {
   broadcastState();
   await saveCrawlState();
 
+  // Pre-crawl authentication (F03 Auth)
+  if (options.auth) {
+    try {
+      await performAuth(options.auth, tab.id!);
+    } catch (err) {
+      crawlState.status = "complete";
+      crawlState.failed["auth"] = `Login failed: ${String(err)}`;
+      setCrawlActive(false);
+      broadcastState();
+      return;
+    }
+  }
+
   await processCrawlQueue();
+}
+
+async function performAuth(auth: iCrawlAuth, tabId: number): Promise<void> {
+  // Navigate to login page
+  await chrome.tabs.update(tabId, { url: auth.loginUrl });
+  await waitForPageLoad(tabId, crawlOptions?.timeout || 30000);
+
+  // Inject content script and fill credentials
+  await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (usernameSelector: string, passwordSelector: string, submitSelector: string, username: string, password: string) => {
+      const usernameEl = document.querySelector(usernameSelector) as HTMLInputElement | null;
+      const passwordEl = document.querySelector(passwordSelector) as HTMLInputElement | null;
+      const submitEl = document.querySelector(submitSelector) as HTMLElement | null;
+      if (!usernameEl) throw new Error(`Username field not found: ${usernameSelector}`);
+      if (!passwordEl) throw new Error(`Password field not found: ${passwordSelector}`);
+      if (!submitEl) throw new Error(`Submit button not found: ${submitSelector}`);
+      usernameEl.value = username;
+      usernameEl.dispatchEvent(new Event("input", { bubbles: true }));
+      passwordEl.value = password;
+      passwordEl.dispatchEvent(new Event("input", { bubbles: true }));
+      submitEl.click();
+    },
+    args: [auth.usernameSelector, auth.passwordSelector, auth.submitSelector, auth.username, auth.password],
+  });
+
+  // Wait for post-login navigation to complete
+  await waitForPageLoad(tabId, crawlOptions?.timeout || 30000);
 }
 
 async function resumeCrawl(): Promise<void> {
@@ -121,7 +163,7 @@ async function resumeCrawl(): Promise<void> {
 }
 
 async function processCrawlQueue(): Promise<void> {
-  while (crawlState.queue.length > 0 && crawlState.pagesVisited < (crawlOptions?.maxPages || 50)) {
+  while (crawlState.queue.length > 0) {
     if (shouldCancel) return;
 
     if (shouldPause) {

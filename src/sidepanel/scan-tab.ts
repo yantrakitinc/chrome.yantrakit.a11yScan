@@ -1141,7 +1141,16 @@ function attachScanTabListeners(): void {
       state.accordionExpanded = false;
       updateTabDisabledStates();
       renderScanTab();
-      await sendMessage({ type: "START_CRAWL", payload: { mode: _crawlMode, maxPages: 50, timeout: 30000, scanTimeout: 30000, delay: 1000, scope: "", urlList: _crawlMode === "urllist" ? [...crawlUrlList] : [], pageRules: [] } });
+      await sendMessage({ type: "START_CRAWL", payload: {
+        mode: state.testConfig?.crawl?.mode ?? _crawlMode,
+        timeout: state.testConfig?.timing?.pageLoadTimeout ?? 30000,
+        scanTimeout: state.testConfig?.timing?.scanTimeout ?? 30000,
+        delay: state.testConfig?.timing?.delayBetweenPages ?? 1000,
+        scope: state.testConfig?.crawl?.scope ?? "",
+        urlList: _crawlMode === "urllist" ? [...crawlUrlList] : (state.testConfig?.crawl?.urlList ?? []),
+        pageRules: state.testConfig?.pageRules ?? [],
+        auth: state.testConfig?.auth ?? undefined,
+      } });
     } else {
       const wasResults = state.scanPhase === "results";
       state.scanPhase = "scanning";

@@ -101,6 +101,11 @@ export interface iPageRule {
   description: string;
 }
 
+export interface iGatedUrls {
+  mode: "none" | "list" | "prefix" | "regex";
+  patterns: string[];
+}
+
 export interface iCrawlAuth {
   loginUrl: string;
   usernameSelector: string;
@@ -108,11 +113,11 @@ export interface iCrawlAuth {
   submitSelector: string;
   username: string;
   password: string;
+  gatedUrls?: iGatedUrls;
 }
 
 export interface iCrawlOptions {
   mode: "follow" | "urllist";
-  maxPages: number;
   timeout: number;
   scanTimeout: number;
   delay: number;
@@ -348,7 +353,6 @@ export interface iTestConfig {
   mocks?: iMockEndpoint[];
   crawl?: {
     mode?: "follow" | "urllist";
-    maxPages?: number;
     scope?: string;
     urlList?: string[];
   };

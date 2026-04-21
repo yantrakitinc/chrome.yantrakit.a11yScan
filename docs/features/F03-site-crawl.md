@@ -167,7 +167,6 @@ Pre-crawl login flow (from test config):
 ```typescript
 interface iCrawlOptions {
   mode: "follow" | "urllist";
-  maxPages: number;        // default: 50
   timeout: number;         // page load timeout ms, default: 30000
   scanTimeout: number;     // axe-core timeout ms, default: 30000
   delay: number;           // ms between pages, default: 1000
@@ -176,6 +175,8 @@ interface iCrawlOptions {
   pageRules: iPageRule[];
   auth?: iCrawlAuth;
 }
+// No maxPages — crawl runs until all discovered/listed URLs are scanned.
+// Scope is controlled by providing specific URLs (URL list) or a crawl scope prefix (Follow mode).
 
 interface iPageRule {
   pattern: string;        // URL substring or regex
@@ -190,6 +191,10 @@ interface iCrawlAuth {
   submitSelector: string;
   username: string;
   password: string;
+  gatedUrls?: {
+    mode: "none" | "list" | "prefix" | "regex";
+    patterns: string[];
+  };
 }
 
 interface iCrawlState {

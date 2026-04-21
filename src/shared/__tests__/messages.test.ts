@@ -75,7 +75,6 @@ describe("iMessage type coverage", () => {
       type: "START_CRAWL",
       payload: {
         mode: "follow",
-        maxPages: 50,
         timeout: 30000,
         scanTimeout: 30000,
         delay: 1000,
