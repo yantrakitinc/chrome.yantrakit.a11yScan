@@ -1,0 +1,8 @@
+{
+  "wcag": { "version": "2.2", "level": "AA" },
+  "timing": {
+    "pageLoadTimeout": 15000,
+    "scanTimeout": 60000,
+    "delayBetweenPages": 2000
+  }
+}

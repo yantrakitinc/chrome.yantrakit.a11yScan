@@ -55,9 +55,8 @@ For each focusable element (in tab order):
   - Positive tabindex elements come first (sorted by tabindex value).
   - Then elements in DOM order.
   - Elements with `tabindex="-1"`: dark gray badge, excluded from sequence numbering.
-- **Connecting lines**: SVG paths between sequential badges showing navigation flow.
-  - Curved bezier lines, semi-transparent.
-  - Updated on scroll (recalculates positions).
+  - Each badge has a **white border ring** and **drop shadow** for contrast against any page background (light or dark).
+- No connecting lines between badges. Navigation sequence is communicated by the badge numbers alone.
 
 ### Focus gap overlay
 
@@ -119,7 +118,7 @@ interface iOverlayElement {
 4. Clicking a violation badge scrolls to that violation in the side panel.
 5. Tab order toggle shows numbered badges on focusable elements.
 6. Tab order badges are numbered in correct keyboard navigation sequence.
-7. Connecting lines (SVG) show the navigation flow between elements.
+7. Tab order badges have a white border ring and drop shadow for visibility on any background. No connecting lines between badges.
 8. Focus gap toggle shows red dashed outlines on unreachable elements.
 9. Focus gap tooltips explain why each element is unreachable.
 10. Overlays render in Shadow DOM, isolated from page styles.

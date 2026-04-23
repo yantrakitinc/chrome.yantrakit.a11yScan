@@ -1,0 +1,11 @@
+{
+  "wcag": { "version": "2.2", "level": "AA" },
+  "mocks": [
+    {
+      "urlPattern": "/api/test",
+      "method": "GET",
+      "status": 200,
+      "body": { "message": "mocked response" }
+    }
+  ]
+}

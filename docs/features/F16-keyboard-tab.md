@@ -65,8 +65,9 @@ Whether the page has skip navigation:
 
 Play button that starts the animated tab order walkthrough (F06):
 - **Play / Pause / Stop** controls
-- **Speed selector** (0.5×, 1×, 2×, 4×)
+- **Speed selector** (0.5×, 1×, 2×, 4×) — four options
 - **Progress**: "Element X of Y"
+- When resuming from pause, sends `RESUME_MOVIE_MODE` message (not `START_MOVIE_MODE`)
 
 This is Movie Mode's natural home — the Keyboard tab.
 
@@ -76,14 +77,18 @@ The Keyboard tab owns the **Tab order** and **Focus gaps** page overlays. These 
 
 | Toggle | What it shows on the page |
 |---|---|
-| **Tab order** | Numbered badges on every focusable element + connecting lines showing navigation sequence |
+| **Tab order** | Numbered badges on every focusable element showing keyboard navigation sequence |
 | **Focus gaps** | Red dashed outlines on interactive elements that can't be reached by keyboard |
 
 The Scan tab's bottom toolbar only has **Violations** overlay. Tab and Gaps moved here because they are keyboard navigation features.
 
-### Rescan
+### Analyze and Clear
 
-Button refreshes all keyboard data when the page changes.
+Two buttons are available:
+- **Analyze** — runs the keyboard analysis on the current page (or re-runs it after page changes).
+- **Clear** — removes the analysis results and returns to the initial state.
+
+There is no separate Rescan button. Clicking Analyze again re-runs the analysis.
 
 ### Data structures
 
@@ -141,10 +146,10 @@ interface iSkipLink {
 8. Keyboard trap detection identifies trapped focus.
 9. Skip link detection identifies skip navigation presence and validity.
 10. Movie Mode play controls work (play, pause, stop, speed).
-11. Rescan button refreshes all data.
+11. Analyze button re-runs analysis; Clear button removes results and returns to initial state.
 12. Tab is disabled during scanning/crawling.
 13. All sections are expandable `<details>`.
 14. Tab order and Focus gaps overlay toggles are in the Keyboard tab toolbar, not the Scan tab.
-15. Toggling Tab order overlay shows numbered badges + connecting lines on the page.
+15. Toggling Tab order overlay shows numbered badges on focusable elements on the page.
 16. Toggling Focus gaps overlay shows red dashed outlines on unreachable elements.
 17. All UI fits within 360px.

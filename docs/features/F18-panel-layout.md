@@ -13,7 +13,7 @@ Defines the overall structure of the Chrome side panel: header, tabs, accordion,
 ### Panel dimensions
 
 - **Minimum width**: 360px (Chrome side panel constraint).
-- **Maximum width**: screen width (when expanded via pop-out).
+- **Maximum width**: screen width.
 - **Height**: fills the available vertical space.
 
 ### Architecture
@@ -39,7 +39,6 @@ Four completely independent top-level tabs sharing only the header:
 Always visible. Contains:
 - **Logo** (20×20px) + "**A11y Scan**" text + **Beta** badge
 - **CVD dropdown** (F08 — color vision simulation)
-- **Pop-out button** (F21 — expand panel)
 
 **No gear icon in header.** Gear is inside the Scan tab accordion, next to WCAG dropdowns.
 
@@ -65,7 +64,7 @@ Top to bottom:
 1. **Debossed accordion** — collapsible form area:
    - Toggle bar (always visible): WCAG label + dropdowns + gear + reset + chevron
    - Animated body (collapsible): mode toggles, MV, crawl config, movie speed
-   - Action button area: scan/crawl button + clear button
+   - Action button area: "**Scan Page**" button + clear button
 
 2. **Progress bar** (conditional): scan or crawl progress
 
@@ -105,6 +104,20 @@ Per PHASE_MODE_CHART.md Chart 9:
 - **Can be expanded ANYTIME**: even during scanning. Never blocked.
 - **Auto-collapse**: on scan/crawl start. User can manually override.
 - **Auto-expand**: on Clear.
+
+### Button styles
+
+Unified button styles across the panel:
+
+**Primary buttons** (e.g., "Scan Page", "Analyze", "Apply"):
+- `font-weight: 800`
+- `background: #f59e0b` (amber)
+- `border-radius: 4px`
+
+**Destructive buttons** (e.g., "Clear", "Cancel", "Delete"):
+- `font-weight: 700`
+- `border: 1px solid #fecaca` (red-200)
+- `border-radius: 4px`
 
 ### Collapsed accordion summary
 
@@ -147,7 +160,7 @@ The extension must pass its own standards:
 ## Acceptance Criteria
 
 1. Panel renders at 360px width without horizontal overflow.
-2. Header shows logo, brand, beta badge, CVD dropdown, pop-out button.
+2. Header shows logo, brand, beta badge, CVD dropdown. No pop-out button.
 3. No gear icon in header.
 4. Four top-level tabs with icon above label.
 5. Active tab has amber styling (bg, border, text color).

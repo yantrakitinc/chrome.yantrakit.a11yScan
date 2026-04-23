@@ -1,5 +1,7 @@
 # F17 — AI Chat Tab
 
+> **Status: Hidden — Coming Soon.** This feature is currently not accessible to users. The tab is present in the codebase but rendered with a "Coming Soon" badge and is not functional. The documentation below describes the intended behavior for when it ships.
+
 ## Purpose
 
 A chat interface powered by Chrome's built-in Gemini Nano AI. Explains violations, suggests fixes, generates action plans, and answers accessibility questions — all locally, no API key, no cost, no data leaving the browser.

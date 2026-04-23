@@ -164,11 +164,21 @@ async function runScan(config: import("@shared/types").iRemoteConfig, isCrawl = 
 
   // Apply rule include/exclude from config
   if (config.rules && Object.keys(config.rules).length > 0) {
-    const rules: Record<string, { enabled: boolean }> = {};
-    for (const [id, rule] of Object.entries(config.rules)) {
-      rules[id] = { enabled: rule.enabled };
+    const enabledRules = Object.entries(config.rules).filter(([, r]) => r.enabled).map(([id]) => id);
+    const disabledRules = Object.entries(config.rules).filter(([, r]) => !r.enabled).map(([id]) => id);
+
+    if (enabledRules.length > 0 && disabledRules.length === 0) {
+      // Include-only mode: run ONLY these specific rules (override tag-based selection)
+      delete (runOptions as Record<string, unknown>).runOnly;
+      runOptions.runOnly = { type: "rule", values: enabledRules };
+    } else {
+      // Exclude mode or mixed: use rules object
+      const rules: Record<string, { enabled: boolean }> = {};
+      for (const [id, rule] of Object.entries(config.rules)) {
+        rules[id] = { enabled: rule.enabled };
+      }
+      runOptions.rules = rules;
     }
-    runOptions.rules = rules;
   }
 
   const results = await axe.run(document, runOptions);

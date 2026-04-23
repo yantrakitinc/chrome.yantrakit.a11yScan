@@ -115,13 +115,13 @@ An **Inspect** button in the toolbar lets the user pick a specific region of the
 7. Clicking "Clear scope" returns to full page reading order.
 8. The element count updates to reflect the scoped subset (e.g., "5 elements in scope").
 
-**Scope persists** until cleared or until Rescan is clicked (which clears scope and re-reads the full page).
+**Scope persists** until cleared or until Clear is clicked (which clears scope and re-reads the full page).
 
 **In the mockup:** clicking Inspect toggles a "scoped" state that filters the element list to a subset (simulating picking a `<nav>` or `<section>`). A scope indicator bar appears showing the scoped selector.
 
-### Rescan
+### Clear
 
-Button refreshes the element tree when the page changes (user opens modals, expands accordions, navigates SPAs). Also clears any active scope.
+The **Clear** button resets the element tree and clears any active scope. Use it when the page has changed (user opened modals, expanded accordions, navigated SPAs) and a fresh analysis is needed.
 
 ### Accessible name source
 
@@ -181,7 +181,7 @@ interface iScreenReaderElement {
 12. Progress shows "Playing X of Y" or "Paused at X of Y".
 13. Escape key stops playback.
 14. Playback auto-returns to idle on completion.
-15. Rescan button refreshes the tree and clears scope.
+15. Clear button resets the tree and clears scope.
 16. Row height is ~30px for density.
 17. Role badges have consistent width (min-width).
 18. Speak buttons have proper treatment (padding, bg, aria-label) — not bare emoji.

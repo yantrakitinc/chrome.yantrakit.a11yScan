@@ -52,12 +52,24 @@ interface iTestConfig {
 }
 ```
 
+### Config modal
+
+The config panel is a **modal dialog**, not an inline accordion panel. Clicking the gear icon (⚙) in the scan accordion opens the modal.
+
+**Modal controls:**
+- **Apply** button — validates and applies the current config.
+- **Upload .json** label — file picker for `.json` config files.
+- **Clear Config** button — removes the active config and resets to defaults.
+- **Close button (×)** — closes the modal without applying changes.
+
+**Modal dismissal:** clicking the × button, clicking the backdrop, or pressing Escape all close the modal.
+
 ### Loading config
 
-Three methods, accessible via the gear icon in the accordion:
+Three methods, accessible by opening the config modal via the gear icon:
 
-1. **Paste JSON** — text area where user pastes config JSON. Validated on apply.
-2. **Upload file** — file picker for `.json` files.
+1. **Paste JSON** — text area where user pastes config JSON. Validated on Apply.
+2. **Upload file** — file picker for `.json` files, triggered by the "Upload .json" label.
 3. **Link to builder** — opens the website's Test Config Builder at `a11yscan.yantrakit.com/tools/test-config-builder`.
 
 ### Validation
@@ -74,11 +86,13 @@ When a config is loaded, a small indicator appears next to the gear icon: "Confi
 
 ## Acceptance Criteria
 
-1. Config can be pasted as JSON.
-2. Config can be uploaded as .json file.
-3. Invalid config shows specific, helpful error messages.
-4. Valid config overrides scan defaults.
-5. Config fields are all optional (partial configs work).
-6. Config status indicator shows when a config is active.
-7. Config is cleared when user clicks Reset.
-8. Config persists across panel close/reopen (stored in chrome.storage.local).
+1. Clicking the gear icon opens the config modal dialog.
+2. Modal closes on × button, backdrop click, or Escape key.
+3. Config can be pasted as JSON and applied via the Apply button.
+4. Config can be uploaded as .json file via the "Upload .json" label.
+5. Invalid config shows specific, helpful error messages.
+6. Valid config overrides scan defaults.
+7. Config fields are all optional (partial configs work).
+8. Config status indicator shows when a config is active.
+9. Config is cleared when user clicks Clear Config.
+10. Config persists across panel close/reopen (stored in chrome.storage.local).

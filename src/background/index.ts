@@ -88,10 +88,16 @@ async function handleMessage(
         const testConfig = (msg as { type: "SCAN_REQUEST"; payload?: { testConfig?: import("@shared/types").iTestConfig } }).payload?.testConfig;
         if (testConfig?.wcag?.version) config.wcagVersion = testConfig.wcag.version;
         if (testConfig?.wcag?.level) config.wcagLevel = testConfig.wcag.level;
-        if (testConfig?.rules?.include || testConfig?.rules?.exclude) {
+        if (testConfig?.rules?.include) {
+          // Include mode: disable all, then enable only specified
+          const overrideRules: Record<string, { enabled: boolean }> = {};
+          for (const [id] of Object.entries(config.rules || {})) overrideRules[id] = { enabled: false };
+          for (const id of testConfig.rules.include) overrideRules[id] = { enabled: true };
+          config.rules = overrideRules;
+        } else if (testConfig?.rules?.exclude) {
+          // Exclude mode: keep all enabled, disable specified
           const overrideRules: Record<string, { enabled: boolean }> = { ...config.rules };
-          for (const id of testConfig.rules?.include ?? []) overrideRules[id] = { enabled: true };
-          for (const id of testConfig.rules?.exclude ?? []) overrideRules[id] = { enabled: false };
+          for (const id of testConfig.rules.exclude) overrideRules[id] = { enabled: false };
           config.rules = overrideRules;
         }
         if (testConfig?.heuristics?.exclude) {

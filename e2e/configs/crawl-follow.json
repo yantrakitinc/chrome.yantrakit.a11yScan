@@ -1,0 +1,7 @@
+{
+  "wcag": { "version": "2.2", "level": "AA" },
+  "crawl": {
+    "mode": "follow",
+    "scope": "https://a11yscan.yantrakit.com/demo/tutorials/site-crawl/"
+  }
+}

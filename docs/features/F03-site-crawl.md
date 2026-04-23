@@ -198,7 +198,7 @@ interface iCrawlAuth {
 }
 
 interface iCrawlState {
-  status: "idle" | "crawling" | "paused" | "complete";
+  status: "idle" | "crawling" | "paused" | "wait" | "complete";
   startedAt: string;
   pagesVisited: number;
   pagesTotal: number;     // maxPages or urlList.length
