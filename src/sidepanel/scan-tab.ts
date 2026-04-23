@@ -1150,6 +1150,7 @@ function attachScanTabListeners(): void {
         urlList: _crawlMode === "urllist" ? [...crawlUrlList] : (state.testConfig?.crawl?.urlList ?? []),
         pageRules: state.testConfig?.pageRules ?? [],
         auth: state.testConfig?.auth ?? undefined,
+        testConfig: state.testConfig ?? undefined,
       } });
     } else {
       const wasResults = state.scanPhase === "results";

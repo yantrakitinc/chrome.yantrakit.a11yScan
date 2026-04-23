@@ -54,7 +54,7 @@ export type iMessage =
   | { type: "OBSERVER_SCAN_COMPLETE"; payload: { entry: iObserverEntry } }
 
   /* ── Crawl (F03) ── */
-  | { type: "START_CRAWL"; payload: iCrawlOptions }
+  | { type: "START_CRAWL"; payload: iCrawlOptions & { testConfig?: iTestConfig } }
   | { type: "PAUSE_CRAWL" }
   | { type: "RESUME_CRAWL" }
   | { type: "CANCEL_CRAWL" }

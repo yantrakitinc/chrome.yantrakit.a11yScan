@@ -3,7 +3,7 @@
  */
 
 import type { iMessage } from "@shared/messages";
-import type { iCrawlOptions, iCrawlState, iCrawlAuth, iScanResult } from "@shared/types";
+import type { iCrawlOptions, iCrawlState, iCrawlAuth, iScanResult, iTestConfig } from "@shared/types";
 import { getConfig } from "@shared/config";
 import { isScannableUrl } from "@shared/utils";
 import { setCrawlActive } from "./observer";
@@ -23,6 +23,7 @@ let crawlState: iCrawlState = {
 };
 
 let crawlOptions: iCrawlOptions | null = null;
+let crawlTestConfig: iTestConfig | null = null;
 let shouldPause = false;
 let shouldCancel = false;
 
@@ -35,13 +36,17 @@ export async function handleCrawlMessage(
   sendResponse: (response?: unknown) => void
 ): Promise<void> {
   switch (msg.type) {
-    case "START_CRAWL":
-      crawlOptions = (msg as { payload: iCrawlOptions }).payload;
+    case "START_CRAWL": {
+      const crawlPayload = (msg as { payload: iCrawlOptions & { testConfig?: iTestConfig } }).payload;
+      const { testConfig: tc, ...opts } = crawlPayload;
+      crawlOptions = opts;
+      crawlTestConfig = tc ?? null;
       shouldPause = false;
       shouldCancel = false;
       startCrawl(crawlOptions);
       sendResponse({ success: true });
       break;
+    }
 
     case "PAUSE_CRAWL":
       shouldPause = true;
@@ -162,6 +167,16 @@ async function resumeCrawl(): Promise<void> {
   await processCrawlQueue();
 }
 
+function isUrlGated(url: string, gatedUrls?: { mode: string; patterns: string[] }): boolean {
+  if (!gatedUrls || gatedUrls.mode === "none" || !gatedUrls.patterns?.length) return false;
+  switch (gatedUrls.mode) {
+    case "list": return gatedUrls.patterns.some((p) => url === p);
+    case "prefix": return gatedUrls.patterns.some((p) => url.startsWith(p));
+    case "regex": return gatedUrls.patterns.some((p) => new RegExp(p).test(url));
+    default: return false;
+  }
+}
+
 async function processCrawlQueue(): Promise<void> {
   while (crawlState.queue.length > 0) {
     if (shouldCancel) return;
@@ -175,6 +190,9 @@ async function processCrawlQueue(): Promise<void> {
 
     const url = crawlState.queue.pop()! // depth-first: LIFO stack;
     if (crawlState.visited.includes(url)) continue;
+
+    // Tag gated URLs for auth awareness
+    const isGated = isUrlGated(url, crawlOptions?.auth?.gatedUrls);
 
     // Check page rules
     if (crawlOptions?.pageRules) {
@@ -214,10 +232,34 @@ async function processCrawlQueue(): Promise<void> {
       // Inject and scan
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
       const config = await getConfig();
+
+      // Apply testConfig overrides (wcag, rules) so crawl scans respect the loaded config
+      if (crawlTestConfig?.wcag?.version) config.wcagVersion = crawlTestConfig.wcag.version;
+      if (crawlTestConfig?.wcag?.level) config.wcagLevel = crawlTestConfig.wcag.level;
+      if (crawlTestConfig?.rules?.include) {
+        const overrideRules: Record<string, { enabled: boolean }> = {};
+        for (const [id] of Object.entries(config.rules || {})) overrideRules[id] = { enabled: false };
+        for (const id of crawlTestConfig.rules.include) overrideRules[id] = { enabled: true };
+        config.rules = overrideRules;
+      } else if (crawlTestConfig?.rules?.exclude) {
+        const overrideRules: Record<string, { enabled: boolean }> = { ...config.rules };
+        for (const id of crawlTestConfig.rules.exclude) overrideRules[id] = { enabled: false };
+        config.rules = overrideRules;
+      }
+
+      // Activate mocks before scanning if testConfig has mocks
+      if (crawlTestConfig?.mocks && crawlTestConfig.mocks.length > 0) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { type: "ACTIVATE_MOCKS", payload: { mocks: crawlTestConfig.mocks } });
+        } catch { /* content script not ready */ }
+      }
+
       const result = await chrome.tabs.sendMessage(tab.id, { type: "RUN_SCAN", payload: { config, isCrawl: true } });
 
       if (result?.type === "SCAN_RESULT") {
-        crawlState.results[url] = result.payload as iScanResult;
+        const scanResult = result.payload as iScanResult;
+        if (isGated) (scanResult as unknown as Record<string, unknown>).authRequired = true;
+        crawlState.results[url] = scanResult;
         crawlState.visited.push(url);
         crawlState.pagesVisited++;
 
