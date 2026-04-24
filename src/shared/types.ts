@@ -119,7 +119,6 @@ export interface iCrawlAuth {
 export interface iCrawlOptions {
   mode: "follow" | "urllist";
   timeout: number;
-  scanTimeout: number;
   delay: number;
   scope: string;
   urlList: string[];
@@ -334,7 +333,6 @@ export interface iTestConfig {
   };
   viewports?: number[];
   timing?: {
-    scanTimeout?: number;
     pageLoadTimeout?: number;
     delayBetweenPages?: number;
   };

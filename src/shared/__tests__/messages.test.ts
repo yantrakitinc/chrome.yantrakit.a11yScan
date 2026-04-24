@@ -76,7 +76,6 @@ describe("iMessage type coverage", () => {
       payload: {
         mode: "follow",
         timeout: 30000,
-        scanTimeout: 30000,
         delay: 1000,
         scope: "",
         urlList: [],

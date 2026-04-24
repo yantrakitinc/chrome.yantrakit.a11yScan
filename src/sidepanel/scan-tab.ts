@@ -977,7 +977,7 @@ function validateTestConfig(jsonText: string): iTestConfig {
       throw new Error("timing must be an object. Got: " + JSON.stringify(obj.timing));
     }
     const timing = obj.timing as Record<string, unknown>;
-    for (const key of ["scanTimeout", "pageLoadTimeout", "delayBetweenPages"] as const) {
+    for (const key of ["pageLoadTimeout", "delayBetweenPages"] as const) {
       if (key in timing && timing[key] !== undefined) {
         if (typeof timing[key] !== "number" || !Number.isFinite(timing[key] as number) || (timing[key] as number) < 0) {
           throw new Error("timing." + key + " must be a non-negative number. Got: " + JSON.stringify(timing[key]));
@@ -1144,7 +1144,6 @@ function attachScanTabListeners(): void {
       await sendMessage({ type: "START_CRAWL", payload: {
         mode: state.testConfig?.crawl?.mode ?? _crawlMode,
         timeout: state.testConfig?.timing?.pageLoadTimeout ?? 30000,
-        scanTimeout: state.testConfig?.timing?.scanTimeout ?? 30000,
         delay: state.testConfig?.timing?.delayBetweenPages ?? 1000,
         scope: state.testConfig?.crawl?.scope ?? "",
         urlList: _crawlMode === "urllist" ? [...crawlUrlList] : (state.testConfig?.crawl?.urlList ?? []),
