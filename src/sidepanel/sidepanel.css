@@ -443,6 +443,26 @@ select:focus-visible, input:focus-visible {
    Responsive — wider panel (F21-AC3)
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Visually hidden but readable by screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Accordion chevron rotation + hover affordance */
+#scan-content details summary::-webkit-details-marker { display: none; }
+#scan-content details > summary { transition: background 0.1s; }
+#scan-content details > summary:hover { background: rgba(0,0,0,0.04); }
+#scan-content details > summary:focus-visible { outline: 2px solid #f59e0b; outline-offset: -2px; }
+#scan-content details[open] > summary .chevron { transform: rotate(180deg); }
+
 @media (min-width: 600px) {
   /* Remove text truncation on violation rule/selector text */
   #scan-content details summary b {

@@ -97,11 +97,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initTabs(): void {
   const tabs = document.querySelectorAll<HTMLButtonElement>("#top-tabs .tab");
+  const enabledTabs = Array.from(tabs).filter((t) => !t.disabled);
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       const tabId = tab.dataset.tab as iTopTab;
       if (!tabId) return;
       switchTab(tabId);
+    });
+    tab.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "Home" && e.key !== "End") return;
+      e.preventDefault();
+      const idx = enabledTabs.indexOf(tab);
+      if (idx === -1) return;
+      let next: HTMLButtonElement;
+      if (e.key === "Home") next = enabledTabs[0];
+      else if (e.key === "End") next = enabledTabs[enabledTabs.length - 1];
+      else if (e.key === "ArrowRight") next = enabledTabs[(idx + 1) % enabledTabs.length];
+      else next = enabledTabs[(idx - 1 + enabledTabs.length) % enabledTabs.length];
+      const tabId = next.dataset.tab as iTopTab;
+      if (tabId) {
+        switchTab(tabId);
+        next.focus();
+      }
     });
   });
 }
@@ -114,6 +131,7 @@ export function switchTab(tabId: iTopTab): void {
     const isActive = tab.dataset.tab === tabId;
     tab.classList.toggle("active", isActive);
     tab.setAttribute("aria-selected", String(isActive));
+    tab.setAttribute("tabindex", isActive ? "0" : "-1");
   });
 
   // Update panels
@@ -265,6 +283,8 @@ function initMessageListener(): void {
           const activePanel = document.querySelector<HTMLElement>(".tab-panel:not([hidden])");
           if (activePanel) {
             const toast = document.createElement("div");
+            toast.setAttribute("role", "alert");
+            toast.setAttribute("aria-live", "assertive");
             toast.textContent = "Element not found on page";
             toast.style.cssText = "position:sticky;top:0;z-index:100;padding:8px 12px;background:#fef2f2;border-bottom:1px solid #fca5a5;color:#b91c1c;font-size:11px;font-weight:700;text-align:center";
             activePanel.prepend(toast);

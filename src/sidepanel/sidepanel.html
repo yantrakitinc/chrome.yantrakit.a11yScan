@@ -9,9 +9,10 @@
 <body>
   <!-- Header -->
   <header id="header">
+    <h1 class="sr-only">A11y Scan — Accessibility audit toolkit</h1>
     <div class="header-left">
       <img src="icons/icon16.png" alt="" width="20" height="20">
-      <span class="brand">A11y Scan</span>
+      <span class="brand" aria-hidden="true">A11y Scan</span>
       <span class="beta-badge">Beta</span>
     </div>
     <div class="header-right">
@@ -39,38 +40,39 @@
   </div>
 
   <!-- Top Tabs -->
-  <nav id="top-tabs" role="tablist">
-    <button role="tab" aria-selected="true" data-tab="scan" class="tab active">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+  <div id="top-tabs" role="tablist" aria-label="A11y Scan sections">
+    <button id="tab-scan" role="tab" aria-selected="true" aria-controls="panel-scan" tabindex="0" data-tab="scan" class="tab active">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
       <span>Scan</span>
     </button>
-    <button role="tab" aria-selected="false" data-tab="sr" class="tab">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h3l4-3v10L5 10H2V6z"/><path d="M11.5 5c1.2 1 1.8 2.3 1.8 3s-.6 2-1.8 3"/></svg>
+    <button id="tab-sr" role="tab" aria-selected="false" aria-controls="panel-sr" tabindex="-1" data-tab="sr" class="tab">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h3l4-3v10L5 10H2V6z"/><path d="M11.5 5c1.2 1 1.8 2.3 1.8 3s-.6 2-1.8 3"/></svg>
       <span>Screen Reader</span>
     </button>
-    <button role="tab" aria-selected="false" data-tab="kb" class="tab">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="4" width="14" height="8" rx="1.5"/><path d="M4.5 10h7"/><circle cx="4.5" cy="7" r=".6" fill="currentColor" stroke="none"/><circle cx="8" cy="7" r=".6" fill="currentColor" stroke="none"/><circle cx="11.5" cy="7" r=".6" fill="currentColor" stroke="none"/></svg>
+    <button id="tab-kb" role="tab" aria-selected="false" aria-controls="panel-kb" tabindex="-1" data-tab="kb" class="tab">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="4" width="14" height="8" rx="1.5"/><path d="M4.5 10h7"/><circle cx="4.5" cy="7" r=".6" fill="currentColor" stroke="none"/><circle cx="8" cy="7" r=".6" fill="currentColor" stroke="none"/><circle cx="11.5" cy="7" r=".6" fill="currentColor" stroke="none"/></svg>
       <span>Keyboard</span>
     </button>
     <!-- AI Chat tab — coming soon -->
-    <button role="tab" aria-selected="false" data-tab="ai" class="tab" disabled style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1h10a1 1 0 011 1v7z"/><path d="M5 6h6M5 8.5h3"/></svg>
+    <button id="tab-ai" role="tab" aria-selected="false" aria-controls="panel-ai" tabindex="-1" data-tab="ai" class="tab" disabled aria-disabled="true" style="opacity:0.4;cursor:not-allowed;position:relative" aria-describedby="ai-soon-desc">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1h10a1 1 0 011 1v7z"/><path d="M5 6h6M5 8.5h3"/></svg>
       <span>AI Chat</span>
-      <span style="font-size:7px;font-weight:800;color:#b45309;position:absolute;top:2px;right:2px;background:#fef3c7;border:1px solid #fcd34d;border-radius:3px;padding:0 2px;line-height:1.4">SOON</span>
+      <span aria-hidden="true" style="font-size:7px;font-weight:800;color:#b45309;position:absolute;top:2px;right:2px;background:#fef3c7;border:1px solid #fcd34d;border-radius:3px;padding:0 2px;line-height:1.4">SOON</span>
+      <span id="ai-soon-desc" class="sr-only">Coming soon</span>
     </button>
-  </nav>
+  </div>
 
   <!-- Tab Content Panels -->
-  <div id="tab-panels">
+  <main id="tab-panels">
     <!-- Scan Tab -->
-    <div id="panel-scan" class="tab-panel active" role="tabpanel"></div>
+    <div id="panel-scan" class="tab-panel active" role="tabpanel" aria-labelledby="tab-scan" tabindex="0"></div>
     <!-- Screen Reader Tab -->
-    <div id="panel-sr" class="tab-panel" role="tabpanel" hidden></div>
+    <div id="panel-sr" class="tab-panel" role="tabpanel" aria-labelledby="tab-sr" tabindex="0" hidden></div>
     <!-- Keyboard Tab -->
-    <div id="panel-kb" class="tab-panel" role="tabpanel" hidden></div>
+    <div id="panel-kb" class="tab-panel" role="tabpanel" aria-labelledby="tab-kb" tabindex="0" hidden></div>
     <!-- AI Chat Tab — hidden until Chrome AI is reliable -->
-    <div id="panel-ai" class="tab-panel" role="tabpanel" hidden></div>
-  </div>
+    <div id="panel-ai" class="tab-panel" role="tabpanel" aria-labelledby="tab-ai" tabindex="0" hidden></div>
+  </main>
 
   <!-- Footer -->
   <footer id="footer">

@@ -138,11 +138,18 @@ export function renderScreenReaderTab(): void {
     btn.addEventListener("mouseleave", () => { btn.style.color = "#71717a"; btn.style.background = ""; });
   });
 
-  // Row click → highlight on page only
+  // Row click/keyboard → highlight on page
   document.querySelectorAll<HTMLDivElement>(".sr-row").forEach((row) => {
-    row.addEventListener("click", () => {
+    const activate = () => {
       const selector = row.dataset.selector;
       if (selector) sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector } });
+    };
+    row.addEventListener("click", activate);
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activate();
+      }
     });
   });
 
@@ -309,13 +316,13 @@ function renderSrRow(el: iScreenReaderElement): string {
   const sourceLabel = el.nameSource === "contents" ? "text" : el.nameSource;
 
   return `
-    <div class="sr-row" data-selector="${el.selector}" data-index="${el.index - 1}" style="display:flex;align-items:center;gap:8px;padding:4px 12px;border-bottom:1px solid #f4f4f5;cursor:pointer;min-height:30px;transition:background 0.1s${playState !== "idle" && (el.index - 1) === playIndex ? ";background:#fef3c7" : ""}">
+    <div class="sr-row" role="button" tabindex="0" aria-label="Highlight ${el.role}: ${el.accessibleName.replace(/"/g, "&quot;")}" data-selector="${el.selector}" data-index="${el.index - 1}" style="display:flex;align-items:center;gap:8px;padding:4px 12px;border-bottom:1px solid #f4f4f5;cursor:pointer;min-height:30px;transition:background 0.1s${playState !== "idle" && (el.index - 1) === playIndex ? ";background:#fef3c7" : ""}">
       <span style="font-size:11px;font-family:monospace;color:#71717a;width:16px;text-align:right;flex-shrink:0">${el.index}</span>
       <span style="font-size:11px;font-weight:700;padding:2px 4px;border-radius:3px;min-width:50px;text-align:center;flex-shrink:0;${rc}">${el.role}</span>
       <span style="font-size:11px;font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${el.accessibleName}</span>
-      <span style="font-size:9px;font-weight:600;color:#a1a1aa;background:#f4f4f5;border-radius:2px;padding:1px 3px;flex-shrink:0;font-family:monospace">${sourceLabel}</span>
-      ${el.states.map((s) => `<span style="font-size:11px;font-weight:600;color:#71717a;background:#f4f4f5;border-radius:3px;padding:1px 4px;flex-shrink:0">${s}</span>`).join("")}
-      <button class="sr-speak" data-text="${speakText.replace(/"/g, "&quot;")}" aria-label="Speak: ${el.accessibleName.replace(/"/g, "&quot;")}" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:#71717a;flex-shrink:0;border-radius:4px">
+      <span style="font-size:9px;font-weight:600;color:#52525b;background:#e4e4e7;border-radius:2px;padding:1px 3px;flex-shrink:0;font-family:monospace">${sourceLabel}</span>
+      ${el.states.map((s) => `<span style="font-size:11px;font-weight:600;color:#52525b;background:#e4e4e7;border-radius:3px;padding:1px 4px;flex-shrink:0">${s}</span>`).join("")}
+      <button class="sr-speak" data-text="${speakText.replace(/"/g, "&quot;")}" aria-label="Speak: ${el.accessibleName.replace(/"/g, "&quot;")}" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:#52525b;flex-shrink:0;border-radius:4px">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.5h2l3-2.5v8L3 7.5H1V4.5z"/><path d="M8.5 3.5c1 .7 1.5 1.8 1.5 2.5s-.5 1.8-1.5 2.5"/></svg>
       </button>
     </div>

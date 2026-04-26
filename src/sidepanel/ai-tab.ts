@@ -149,7 +149,7 @@ export function renderAiChatTab(): void {
       </button>
     </div>
     <div id="chat-area" style="flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative">
-      <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px">
+      <div id="chat-messages" role="log" aria-live="polite" aria-label="Chat conversation" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px">
         <div style="font-size:11px;color:#71717a;text-align:center;font-weight:600">Powered by Chrome AI \u00b7 runs locally \u00b7 private</div>
         <div style="display:flex;gap:8px">
           <img src="icons/icon16.png" alt="" width="16" height="16" style="flex-shrink:0;margin-top:2px">
@@ -267,7 +267,7 @@ async function renderHistoryPanel(): Promise<void> {
   } else {
     const items = history.map((conv) => `
       <div style="padding:10px 12px;border-bottom:1px solid #f4f4f5;display:flex;align-items:flex-start;gap:8px">
-        <div style="flex:1;min-width:0;cursor:pointer" class="history-load" data-id="${conv.id}">
+        <div role="button" tabindex="0" aria-label="Load conversation: ${escapeHtml(conv.title)}" style="flex:1;min-width:0;cursor:pointer" class="history-load" data-id="${conv.id}">
           <div style="font-size:12px;font-weight:600;color:#27272a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(conv.title)}</div>
           <div style="font-size:10px;color:#71717a;margin-top:2px">${new Date(conv.createdAt).toLocaleString()}</div>
         </div>
@@ -290,7 +290,7 @@ async function renderHistoryPanel(): Promise<void> {
 
   // Attach listeners for history items
   panel.querySelectorAll<HTMLElement>(".history-load").forEach((el) => {
-    el.addEventListener("click", async () => {
+    const activate = async () => {
       const id = el.dataset.id || "";
       const history = await loadHistory();
       const conv = history.find((c) => c.id === id);
@@ -306,6 +306,10 @@ async function renderHistoryPanel(): Promise<void> {
           appendAiMessage(msg.content);
         }
       });
+    };
+    el.addEventListener("click", activate);
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
     });
   });
 

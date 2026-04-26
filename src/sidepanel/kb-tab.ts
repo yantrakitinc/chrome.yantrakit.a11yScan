@@ -39,7 +39,7 @@ export function renderKeyboardTab(): void {
           ${tabOrder.length === 0
             ? '<div style="padding:12px;font-size:11px;color:#71717a;text-align:center">Click Analyze to scan keyboard navigation.</div>'
             : tabOrder.map((el) => `
-              <div class="kb-row" data-selector="${el.selector}" style="display:flex;align-items:center;gap:8px;padding:4px 12px;border-bottom:1px solid #f4f4f5;cursor:pointer;min-height:30px;transition:background 0.1s">
+              <div class="kb-row" role="button" tabindex="0" aria-label="Highlight ${el.role}: ${el.accessibleName.replace(/"/g, "&quot;")}" data-selector="${el.selector}" style="display:flex;align-items:center;gap:8px;padding:4px 12px;border-bottom:1px solid #f4f4f5;cursor:pointer;min-height:30px;transition:background 0.1s">
                 <span style="font-size:11px;font-family:monospace;font-weight:700;color:#fff;background:#1e1b4b;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${el.index}</span>
                 <span style="font-size:11px;font-weight:700;padding:2px 4px;border-radius:3px;flex-shrink:0;${el.role === "button" ? "background:#ede9fe;color:#5b21b6" : el.role === "link" ? "background:#e0f2fe;color:#075985" : "background:#d1fae5;color:#065f46"}">${el.role}</span>
                 <span style="font-size:11px;font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${el.accessibleName}</span>
@@ -55,7 +55,7 @@ export function renderKeyboardTab(): void {
           ${focusGaps.length === 0
             ? '<div style="padding:12px;font-size:11px;color:#71717a;text-align:center">No focus gaps detected.</div>'
             : focusGaps.map((g) => `
-              <div class="kb-gap" data-selector="${g.selector}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
+              <div class="kb-gap" role="button" tabindex="0" aria-label="Highlight focus gap: ${g.selector.replace(/"/g, "&quot;")}" data-selector="${g.selector}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
                 <div style="font-family:monospace;font-weight:600;color:#27272a">${g.selector}</div>
                 <div style="color:#b91c1c;margin-top:2px">${g.reason}</div>
               </div>
@@ -70,7 +70,7 @@ export function renderKeyboardTab(): void {
             : failedIndicators.length === 0
               ? '<div style="padding:12px;font-size:11px;color:#047857;text-align:center">All focusable elements have visible focus indicators.</div>'
               : failedIndicators.map((fi) => `
-                <div class="kb-fi" data-selector="${fi.selector}" style="font-size:11px;padding:8px;border:1px solid #fde68a;background:#fffbeb;border-radius:4px;cursor:pointer">
+                <div class="kb-fi" role="button" tabindex="0" aria-label="Highlight missing focus indicator: ${fi.selector.replace(/"/g, "&quot;")}" data-selector="${fi.selector}" style="font-size:11px;padding:8px;border:1px solid #fde68a;background:#fffbeb;border-radius:4px;cursor:pointer">
                   <div style="font-family:monospace;font-weight:600;color:#27272a">${fi.selector}</div>
                   <div style="color:#d97706;margin-top:2px">No visible focus indicator detected</div>
                 </div>
@@ -85,7 +85,7 @@ export function renderKeyboardTab(): void {
             : keyboardTraps.length === 0
               ? '<div style="padding:12px;font-size:11px;color:#047857;text-align:center">No keyboard traps detected.</div>'
               : keyboardTraps.map((t) => `
-                <div class="kb-trap" data-selector="${t.selector}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
+                <div class="kb-trap" role="button" tabindex="0" aria-label="Highlight keyboard trap: ${t.selector.replace(/"/g, "&quot;")}" data-selector="${t.selector}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
                   <div style="font-family:monospace;font-weight:600;color:#27272a">${t.selector}</div>
                   <div style="color:#dc2626;margin-top:2px">${t.description}</div>
                 </div>
@@ -117,7 +117,7 @@ export function renderKeyboardTab(): void {
           <div style="display:flex;align-items:center;gap:8px">
             <button id="movie-play" style="padding:6px 12px;font-size:11px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px;cursor:pointer;min-height:24px">${moviePlaying ? "Pause" : "Play"}</button>
             <button id="movie-stop" ${!moviePlaying ? "disabled" : ""} style="padding:6px 12px;font-size:11px;font-weight:700;color:${moviePlaying ? "#dc2626" : "#a1a1aa"};border:1px solid ${moviePlaying ? "#fecaca" : "#e4e4e7"};border-radius:4px;background:none;min-height:24px;cursor:${moviePlaying ? "pointer" : "not-allowed"}">Stop</button>
-            <select id="movie-speed" aria-label="Movie speed" style="font-size:11px;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600;margin-left:auto">
+            <select id="kb-movie-speed" aria-label="Movie speed" style="font-size:11px;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600;margin-left:auto">
               <option value="0.5">0.5&times;</option>
               <option value="1" selected>1&times;</option>
               <option value="2">2&times;</option>
@@ -183,27 +183,35 @@ export function renderKeyboardTab(): void {
     renderKeyboardTab();
   });
 
-  // Row hover (no inline handlers — CSP) + click → highlight
+  // Row hover + click/keyboard → highlight
   document.querySelectorAll<HTMLDivElement>(".kb-row").forEach((row) => {
     row.addEventListener("mouseenter", () => { row.style.background = "#fafafa"; });
     row.addEventListener("mouseleave", () => { row.style.background = ""; });
-    row.addEventListener("click", () => {
+    const activate = () => {
       const selector = row.dataset.selector;
       if (selector) sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector } });
+    };
+    row.addEventListener("click", activate);
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
     });
   });
 
-  // Gap/indicator/trap item click → highlight
+  // Gap/indicator/trap item click/keyboard → highlight
   document.querySelectorAll<HTMLDivElement>(".kb-gap, .kb-fi, .kb-trap").forEach((item) => {
-    item.addEventListener("click", () => {
+    const activate = () => {
       const selector = item.dataset.selector;
       if (selector) sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector } });
+    };
+    item.addEventListener("click", activate);
+    item.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
     });
   });
 
   // Movie controls
   document.getElementById("movie-play")?.addEventListener("click", () => {
-    const speed = parseFloat((document.getElementById("movie-speed") as HTMLSelectElement).value);
+    const speed = parseFloat((document.getElementById("kb-movie-speed") as HTMLSelectElement).value);
     sendMessage({ type: "SET_MOVIE_SPEED", payload: { speed } });
     if (moviePlaying) {
       sendMessage({ type: "PAUSE_MOVIE_MODE" });
@@ -224,8 +232,8 @@ export function renderKeyboardTab(): void {
   });
 
   // Speed change during playback
-  document.getElementById("movie-speed")?.addEventListener("change", () => {
-    const speed = parseFloat((document.getElementById("movie-speed") as HTMLSelectElement).value);
+  document.getElementById("kb-movie-speed")?.addEventListener("change", () => {
+    const speed = parseFloat((document.getElementById("kb-movie-speed") as HTMLSelectElement).value);
     sendMessage({ type: "SET_MOVIE_SPEED", payload: { speed } });
   });
 
