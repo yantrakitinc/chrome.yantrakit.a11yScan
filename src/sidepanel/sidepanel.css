@@ -867,6 +867,13 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
 #scan-content details > summary { transition: background 0.1s; }
 #scan-content details > summary:hover { background: rgba(0,0,0,0.04); }
 #scan-content details > summary:focus-visible { outline: 2px solid #f59e0b; outline-offset: -2px; }
+
+/* Chevron icon used in <details> summaries */
+.chevron {
+  flex-shrink: 0;
+  color: var(--ds-zinc-500);
+  transition: transform var(--ds-motion-fast);
+}
 #scan-content details[open] > summary .chevron { transform: rotate(180deg); }
 
 @media (min-width: 600px) {

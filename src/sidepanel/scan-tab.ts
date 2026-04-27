@@ -594,7 +594,7 @@ function renderCrawlResults(): string {
         return `
           <details style="border:1px solid #fecaca;border-radius:4px;margin-bottom:4px;background:#fef2f2">
             <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:11px">
-              <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#71717a;transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
+              <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
               <span style="color:#dc2626;font-weight:700;flex-shrink:0">\u2717</span>
               <span style="font-family:monospace;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(url)}">${escHtml(url)}</span>
             </summary>
@@ -608,7 +608,7 @@ function renderCrawlResults(): string {
       return `
         <details style="border:1px solid ${hasViolations ? "#fecaca" : "#a7f3d0"};border-radius:4px;margin-bottom:4px;background:${hasViolations ? "#fef2f2" : "#ecfdf5"}">
           <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:11px">
-            <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#71717a;transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
+            <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
             <span style="color:${hasViolations ? "#dc2626" : "#047857"};font-weight:700;flex-shrink:0">${hasViolations ? "\u2717" : "\u2713"}</span>
             <span style="font-family:monospace;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(url)}">${escHtml(url)}</span>
             <span style="font-size:10px;font-weight:700;color:${hasViolations ? "#b91c1c" : "#047857"};flex-shrink:0">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
@@ -641,7 +641,7 @@ function renderCrawlResults(): string {
         return `
           <details class="severity-${entries[0].violation.impact}" style="border-radius:0 4px 4px 0;margin-bottom:4px">
             <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11px;cursor:pointer">
-              <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#71717a;transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
+              <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
               <b style="color:#18181b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                 <a href="https://a11yscan.yantrakit.com/wcag/${criterion}" target="_blank" rel="noopener" style="color:#4338ca;text-decoration:underline">${criterion}</a>
               </b>
@@ -726,7 +726,7 @@ function renderResults(result: iScanResult): string {
           ${result.passes.map((p) => `
             <details style="border-bottom:1px solid #f4f4f5">
               <summary style="list-style:none;display:flex;align-items:center;gap:8px;padding:4px 8px;cursor:pointer;font-size:11px">
-                <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#71717a;transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
+                <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
                 <span style="font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.id}</span>
                 <span style="color:#71717a;flex-shrink:0">${p.wcagCriteria?.join(", ") || ""}</span>
@@ -757,7 +757,7 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
   return `
     <details class="severity-${v.impact} sr-details" style="border-radius:0 4px 4px 0;margin-bottom:4px">
       <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11px;cursor:pointer">
-        <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#71717a;transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
+        <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <b style="color:#18181b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.wcagCriteria?.join(", ") || v.id}${vpBadge}</b>
         <span style="font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px;flex-shrink:0">${v.impact}</span>
         <span style="color:#52525b;font-family:monospace;font-weight:700;flex-shrink:0">${v.nodes.length}</span>
@@ -858,7 +858,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
   return `
     <details style="border:1px solid ${pass ? "#a7f3d0" : "#fecaca"};border-radius:4px;background:${pass ? "#ecfdf5" : "#fef2f2"};margin-bottom:4px">
       <summary style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;font-size:11px">
-        <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#71717a;transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
+        <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${escHtml(w.role)}</span>
         <span style="font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(w.label)}</span>
         <span style="font-weight:700;${pass ? "color:#047857" : "color:#b91c1c"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
