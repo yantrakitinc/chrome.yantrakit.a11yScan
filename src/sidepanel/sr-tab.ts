@@ -56,9 +56,9 @@ export function renderScreenReaderTab(): void {
       ${srAnalyzed ? '<button id="sr-clear" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;background:none">Clear</button>' : ""}
     </div>
     ${scopeSelector ? `
-      <div class="fs-0" style="padding:4px 12px;background:#eff6ff;border-bottom:1px solid #bfdbfe;display:flex;align-items:center;gap:6px">
-        <span style="font-size:10px;font-weight:600;color:#1d4ed8">Scoped to:</span>
-        <span class="f-1 font-mono" style="font-size:10px;color:#3b82f6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${scopeSelector}</span>
+      <div class="fs-0" style="padding:4px 12px;background:var(--ds-blue-50);border-bottom:1px solid var(--ds-blue-100);display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;font-weight:600;color:var(--ds-blue-700)">Scoped to:</span>
+        <span class="truncate f-1 font-mono" style="font-size:10px;color:var(--ds-sky-700)" title="${escHtml(scopeSelector)}">${escHtml(scopeSelector)}</span>
         <button id="sr-clear-scope" class="cur-pointer" style="font-size:10px;font-weight:700;color:var(--ds-red-600);border:none;background:none;padding:2px 4px">Clear scope</button>
       </div>
     ` : ""}
