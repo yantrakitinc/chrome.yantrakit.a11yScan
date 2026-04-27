@@ -21,6 +21,27 @@ let movieIndex = 0;
 let selectedKbIndex: number | null = null;
 let selectedKbTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** Document-level Escape handler — stops Movie Mode if it's playing/paused
+   and the KB tab is the active panel (R-KB AC6). Attached once. */
+let kbEscapeHandlerAttached = false;
+function ensureKbEscapeHandler(): void {
+  if (kbEscapeHandlerAttached) return;
+  kbEscapeHandlerAttached = true;
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (moviePlayState === "idle") return;
+    const kbTabActive = document.getElementById("panel-kb")?.hasAttribute("hidden") === false;
+    if (!kbTabActive) return;
+    if (selectedKbTimer) { clearTimeout(selectedKbTimer); selectedKbTimer = null; }
+    if (movieCompleteTimer) { clearTimeout(movieCompleteTimer); movieCompleteTimer = null; }
+    selectedKbIndex = null;
+    moviePlayState = "idle";
+    movieIndex = 0;
+    sendMessage({ type: "STOP_MOVIE_MODE" });
+    renderKeyboardTab();
+  });
+}
+
 /** Receives MOVIE_TICK from the content script — keeps the "Playing N of total"
    counter and the active-row highlight in sync with what's actually playing. */
 export function onMovieTick(currentIndex: number): void {
@@ -78,6 +99,7 @@ let kbScrollSetByAnalyze = false;
 export function renderKeyboardTab(): void {
   const panel = document.getElementById("panel-kb");
   if (!panel) return;
+  ensureKbEscapeHandler();
 
   // Save current scroll before innerHTML replacement.
   const prevScroll = document.getElementById("kb-scroll-container")?.scrollTop ?? null;
@@ -99,7 +121,7 @@ export function renderKeyboardTab(): void {
             <button id="movie-play-all" aria-label="Play all - animate through tab order" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:#b45309">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 1l7 4-7 4z"/></svg>
             </button>
-            ${moviePlayState === "complete" ? `<span class="font-mono" style="font-size:11px;color:#047857;font-weight:600">Complete</span>` : ""}
+            ${moviePlayState === "complete" ? `<span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:#047857;font-weight:600">Complete</span>` : ""}
           ` : ""}
           ${moviePlayState === "playing" ? `
             <button id="movie-pause" aria-label="Pause movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:#b45309">
@@ -108,7 +130,7 @@ export function renderKeyboardTab(): void {
             <button id="movie-stop" aria-label="Stop movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;color:#dc2626">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
             </button>
-            <span class="font-mono" style="font-size:11px;color:#92400e;font-weight:600">Playing ${movieIndex + 1} of ${tabOrder.length}</span>
+            <span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:#92400e;font-weight:600">Playing ${movieIndex + 1} of ${tabOrder.length}</span>
           ` : ""}
           ${moviePlayState === "paused" ? `
             <button id="movie-resume" aria-label="Resume movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:#b45309">
@@ -117,7 +139,7 @@ export function renderKeyboardTab(): void {
             <button id="movie-stop" aria-label="Stop movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;color:#dc2626">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
             </button>
-            <span class="font-mono" style="font-size:11px;color:#92400e;font-weight:600">Paused at ${movieIndex + 1} of ${tabOrder.length}</span>
+            <span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:#92400e;font-weight:600">Paused at ${movieIndex + 1} of ${tabOrder.length}</span>
           ` : ""}
         </summary>
         <div>
@@ -267,6 +289,9 @@ export function renderKeyboardTab(): void {
     kbAnalyzed = true;
     kbScrollSetByAnalyze = true;
     renderKeyboardTab();
+    // R-KB AC5: auto-focus Play All so keyboard users don't have to tab
+    // through the disclosure to reach the Movie Mode entry point.
+    document.getElementById("movie-play-all")?.focus();
   });
 
   // Clear
