@@ -83,10 +83,12 @@ function getActionButtonText(): string {
     return state.observer ? "Scan This Page" : "Scan Page";
   }
 
-  // Idle or Results — determine by active mode combination
+  // Idle or Results — determine by active mode combination.
+  // Precedence: crawl > observer > multi-viewport > default (per R-SCAN AC4).
   if (idle || results) {
     if (state.crawl) return "Start Crawl";
     if (state.observer) return "Scan This Page";
+    if (state.mv) return "Scan All Viewports";
     return "Scan Page";
   }
 
