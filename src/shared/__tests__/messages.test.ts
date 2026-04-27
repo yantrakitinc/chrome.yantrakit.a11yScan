@@ -110,4 +110,33 @@ describe("iMessage type coverage", () => {
     const msg: iMessage = { type: "EXIT_INSPECT_MODE" };
     expect(msg.type).toBe("EXIT_INSPECT_MODE");
   });
+
+  it("MOVIE_TICK carries currentIndex and total", () => {
+    const msg: iMessage = { type: "MOVIE_TICK", payload: { currentIndex: 3, total: 10 } };
+    expect(msg.type).toBe("MOVIE_TICK");
+    expect(msg.payload.currentIndex).toBe(3);
+    expect(msg.payload.total).toBe(10);
+  });
+
+  it("MOVIE_COMPLETE has no payload", () => {
+    const msg: iMessage = { type: "MOVIE_COMPLETE" };
+    expect(msg.type).toBe("MOVIE_COMPLETE");
+  });
+
+  it("INSPECT_ELEMENT carries iInspectorData payload", () => {
+    const msg: iMessage = {
+      type: "INSPECT_ELEMENT",
+      payload: {
+        selector: "#main",
+        role: "main",
+        accessibleName: "",
+        ariaAttributes: {},
+        tabindex: null,
+        isFocusable: false,
+        violations: [],
+      },
+    };
+    expect(msg.type).toBe("INSPECT_ELEMENT");
+    expect(msg.payload.selector).toBe("#main");
+  });
 });
