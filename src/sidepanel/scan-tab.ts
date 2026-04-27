@@ -122,7 +122,7 @@ export function renderScanTab(): void {
       state.scanSubTab && showSubTabs
         ? `role="tabpanel" aria-labelledby="subtab-${state.scanSubTab}"`
         : `role="region" aria-label="Scan results"`
-    } aria-live="polite" style="flex:1;overflow-y:auto;min-height:0">
+    } aria-live="polite" class="f-1" style="overflow-y:auto;min-height:0">
       ${renderContent()}
     </div>
 
@@ -215,7 +215,7 @@ function renderMvCheckbox(busy: boolean): string {
           <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:4px">
             ${state.viewports.map((v, i) => `
               <input type="number" min="320" value="${v}" data-index="${i}" class="vp-input" aria-label="Viewport ${i + 1} width in pixels"
-                style="width:60px;font-size:11px;font-family:monospace;font-weight:600;padding:2px 4px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;min-height:24px;box-sizing:border-box">
+                class="font-mono" style="width:60px;font-size:11px;font-weight:600;padding:2px 4px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;min-height:24px;box-sizing:border-box">
               <button type="button" class="vp-remove" data-index="${i}" aria-label="Remove ${v}px viewport"
                 style="font-size:12px;font-weight:700;line-height:1;padding:2px 5px;min-height:24px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#52525b;cursor:pointer"
                 ${state.viewports.length <= 1 ? "disabled" : ""}>×</button>
@@ -230,7 +230,7 @@ function renderMvCheckbox(busy: boolean): string {
           </div>
         </div>`
       : `<div style="display:flex;align-items:center;gap:4px;padding-left:24px;flex-wrap:wrap">
-          ${state.viewports.map((v) => `<span style="font-size:11px;font-family:monospace;font-weight:600;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px;padding:2px 6px">${v}</span>`).join("")}
+          ${state.viewports.map((v) => `<span class="font-mono" style="font-size:11px;font-weight:600;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px;padding:2px 6px">${v}</span>`).join("")}
           <button type="button" id="vp-edit"
             style="font-size:11px;font-weight:700;padding:1px 6px;min-height:24px;border:none;background:none;color:#4338ca;cursor:pointer;text-decoration:underline">edit</button>
         </div>`
@@ -259,7 +259,7 @@ function renderCrawlConfig(busy: boolean): string {
   return `
     <div style="display:flex;align-items:center;gap:8px">
       <span class="scan-caption-strong">Crawl mode</span>
-      <select id="crawl-mode" aria-label="Crawl mode" ${busy ? "disabled" : ""} style="flex:1;font-size:12px;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600">
+      <select id="crawl-mode" aria-label="Crawl mode" ${busy ? "disabled" : ""} class="f-1" style="font-size:12px;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600">
         <option value="follow" ${_crawlMode === "follow" ? "selected" : ""}>Follow all links</option>
         <option value="urllist" ${_crawlMode === "urllist" ? "selected" : ""}>URL list</option>
       </select>
@@ -273,10 +273,10 @@ function renderUrlListPanel(): string {
   const listRows = crawlUrlList.map((url, i) => `
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
       <input type="text" readonly value="${escHtml(url)}"
-        style="flex:1;font-size:11px;font-family:monospace;padding:3px 6px;border:1px solid #e4e4e7;border-radius:3px;background:#fafafa;color:#27272a;min-width:0">
+        class="f-1 font-mono" style="font-size:11px;padding:3px 6px;border:1px solid #e4e4e7;border-radius:3px;background:#fafafa;color:#27272a;min-width:0">
       <button type="button" class="url-remove-btn" data-index="${i}"
         aria-label="Remove URL"
-        style="font-size:12px;font-weight:700;color:#b91c1c;background:none;border:none;cursor:pointer;min-height:24px;padding:0 4px;flex-shrink:0">&times;</button>
+        class="fs-0" style="font-size:12px;font-weight:700;color:#b91c1c;background:none;border:none;cursor:pointer;min-height:24px;padding:0 4px">&times;</button>
     </div>
   `).join("");
 
@@ -290,7 +290,7 @@ function renderUrlListPanel(): string {
 
       <div style="margin-bottom:8px">
         <textarea id="url-paste-area" rows="3" aria-label="Paste URLs or sitemap XML" placeholder="Paste URLs (one per line) or sitemap XML (&lt;?xml\u2026)"
-          style="width:100%;box-sizing:border-box;font-size:11px;font-family:monospace;padding:6px;border:1px solid #d4d4d8;border-radius:4px;resize:vertical;background:#fff;color:#27272a"></textarea>
+          class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:6px;border:1px solid #d4d4d8;border-radius:4px;resize:vertical;background:#fff;color:#27272a"></textarea>
         <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
           <button type="button" id="url-paste-add"
             style="font-size:11px;font-weight:700;padding:3px 10px;min-height:24px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000;cursor:pointer">Add from textarea</button>
@@ -303,9 +303,9 @@ function renderUrlListPanel(): string {
 
       <div style="display:flex;gap:4px;margin-bottom:8px">
         <input type="url" id="url-manual-input" aria-label="Add URL to crawl list" placeholder="https://example.com/page"
-          style="flex:1;font-size:11px;padding:4px 6px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;min-width:0">
+          class="f-1" style="font-size:11px;padding:4px 6px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;min-width:0">
         <button type="button" id="url-manual-add"
-          style="font-size:11px;font-weight:700;padding:3px 10px;min-height:24px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000;cursor:pointer;flex-shrink:0">Add</button>
+          class="fs-0" style="font-size:11px;font-weight:700;padding:3px 10px;min-height:24px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000;cursor:pointer">Add</button>
       </div>
 
       ${summary}
@@ -339,10 +339,10 @@ function openConfigDialog(): void {
       </button>
     </div>
     <a href="https://a11yscan.yantrakit.com/tools/test-config-builder" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:#4338ca;text-decoration:none">Open Builder ↗</a>
-    <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' style="width:100%;box-sizing:border-box;font-size:11px;font-family:monospace;padding:8px;border:1px solid ${state.testConfig ? "#fcd34d" : "#d4d4d8"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:#27272a;line-height:1.5">${escHtml(configJson)}</textarea>
+    <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "#fcd34d" : "#d4d4d8"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:#27272a;line-height:1.5">${escHtml(configJson)}</textarea>
     <div id="config-error" role="alert" aria-live="polite" style="font-size:11px;color:#b91c1c;display:none"></div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <button id="config-apply-btn" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px;cursor:pointer;min-height:24px;flex:1">Apply</button>
+      <button id="config-apply-btn" class="f-1" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px;cursor:pointer;min-height:24px">Apply</button>
       <label id="config-upload-label" style="padding:4px 10px;font-size:11px;font-weight:700;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px;cursor:pointer;min-height:24px;display:flex;align-items:center">
         Upload .json
         <input type="file" id="config-file-input" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap" aria-label="Upload JSON config file">
@@ -439,7 +439,7 @@ function renderScanProgress(): string {
   return `
     <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:11px;color:#52525b;font-family:monospace">${state.mv ? `viewport ${state.mvProgress ? `${state.mvProgress.current}/${state.mvProgress.total}` : `1/${state.viewports.length}`}` : "analyzing page\u2026"}</span>
+        <span class="font-mono" style="font-size:11px;color:#52525b">${state.mv ? `viewport ${state.mvProgress ? `${state.mvProgress.current}/${state.mvProgress.total}` : `1/${state.viewports.length}`}` : "analyzing page\u2026"}</span>
         <button id="cancel-scan" aria-label="Cancel scan" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
           <svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
         </button>
@@ -459,9 +459,9 @@ function renderCrawlProgress(): string {
   return `
     <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex;align-items:center;margin-bottom:4px;gap:8px">
-        <span style="font-size:11px;font-weight:700;color:#52525b;font-family:monospace;flex-shrink:0">${pageLabel}</span>
-        ${urlDisplay ? `<span class="truncate" style="font-size:10px;color:#71717a;font-family:monospace;flex:1;min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
-        <div style="display:flex;gap:4px;flex-shrink:0">
+        <span class="fs-0 font-mono" style="font-size:11px;font-weight:700;color:#52525b">${pageLabel}</span>
+        ${urlDisplay ? `<span class="truncate f-1 font-mono" style="font-size:10px;color:#71717a;min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
+        <div class="fs-0" style="display:flex;gap:4px">
           ${state.crawlPhase === "crawling"
             ? '<button id="pause-crawl" aria-label="Pause crawl" class="scan-progress-icon-btn"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
             : '<button id="resume-crawl" aria-label="Resume crawl" class="scan-progress-icon-btn"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><path d="M0 0l8 5-8 5z"/></svg></button>'
@@ -478,7 +478,7 @@ function renderCrawlProgress(): string {
 
 function renderPageRuleWait(): string {
   return `
-    <div style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:#fffbeb;flex-shrink:0">
+    <div class="fs-0" style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:#fffbeb">
       <div style="font-size:11px;font-weight:700;color:#78350f;margin-bottom:6px">\u26a0 Page rule triggered</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button id="continue-crawl" style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a1000;background:#f59e0b;border:none;border-radius:4px;cursor:pointer;min-height:24px">Continue</button>
@@ -569,9 +569,9 @@ function renderCrawlResults(): string {
   const toggle = `
     <div style="display:flex;gap:0;border:1px solid #d4d4d8;border-radius:4px;overflow:hidden;margin-bottom:8px">
       <button type="button" id="crawl-view-page"
-        style="flex:1;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;border:none;min-height:24px;background:${crawlViewMode === "page" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "page" ? "#92400e" : "#52525b"}">By page</button>
+        class="f-1" style="padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;border:none;min-height:24px;background:${crawlViewMode === "page" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "page" ? "#92400e" : "#52525b"}">By page</button>
       <button type="button" id="crawl-view-wcag"
-        style="flex:1;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;border:none;border-left:1px solid #d4d4d8;min-height:24px;background:${crawlViewMode === "wcag" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "wcag" ? "#92400e" : "#52525b"}">By WCAG</button>
+        class="f-1" style="padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;border:none;border-left:1px solid #d4d4d8;min-height:24px;background:${crawlViewMode === "wcag" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "wcag" ? "#92400e" : "#52525b"}">By WCAG</button>
     </div>
   `;
 
@@ -595,8 +595,8 @@ function renderCrawlResults(): string {
           <details style="border:1px solid #fecaca;border-radius:4px;margin-bottom:4px;background:#fef2f2">
             <summary class="scan-detail-summary">
               <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-              <span style="color:#dc2626;font-weight:700;flex-shrink:0">\u2717</span>
-              <span class="truncate" style="font-family:monospace;color:#27272a;flex:1" title="${escHtml(url)}">${escHtml(url)}</span>
+              <span class="fs-0" style="color:#dc2626;font-weight:700">\u2717</span>
+              <span class="truncate f-1 font-mono" style="color:#27272a" title="${escHtml(url)}">${escHtml(url)}</span>
             </summary>
             <div style="padding:4px 8px 8px;font-size:11px;color:#b91c1c">${escHtml(err)}</div>
           </details>
@@ -609,9 +609,9 @@ function renderCrawlResults(): string {
         <details style="border:1px solid ${hasViolations ? "#fecaca" : "#a7f3d0"};border-radius:4px;margin-bottom:4px;background:${hasViolations ? "#fef2f2" : "#ecfdf5"}">
           <summary class="scan-detail-summary">
             <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-            <span style="color:${hasViolations ? "#dc2626" : "#047857"};font-weight:700;flex-shrink:0">${hasViolations ? "\u2717" : "\u2713"}</span>
-            <span class="truncate" style="font-family:monospace;color:#27272a;flex:1" title="${escHtml(url)}">${escHtml(url)}</span>
-            <span style="font-size:10px;font-weight:700;color:${hasViolations ? "#b91c1c" : "#047857"};flex-shrink:0">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
+            <span class="fs-0" style="color:${hasViolations ? "#dc2626" : "#047857"};font-weight:700">${hasViolations ? "\u2717" : "\u2713"}</span>
+            <span class="truncate f-1 font-mono" style="color:#27272a" title="${escHtml(url)}">${escHtml(url)}</span>
+            <span class="fs-0" style="font-size:10px;font-weight:700;color:${hasViolations ? "#b91c1c" : "#047857"}">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
           </summary>
           <div class="scan-detail-body">
             ${r.violations.sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact)).map((v) => renderViolation(v)).join("") || '<div style="font-size:11px;color:#047857;padding:4px 0">No violations found.</div>'}
@@ -642,18 +642,18 @@ function renderCrawlResults(): string {
           <details class="severity-${entries[0].violation.impact}" style="border-radius:0 4px 4px 0;margin-bottom:4px">
             <summary class="scan-detail-summary">
               <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-              <b class="truncate" style="color:#18181b;flex:1">
+              <b class="truncate f-1" style="color:#18181b">
                 <a href="https://a11yscan.yantrakit.com/wcag/${criterion}" target="_blank" rel="noopener" style="color:#4338ca;text-decoration:underline">${criterion}</a>
               </b>
-              <span style="font-size:10px;color:#52525b;flex-shrink:0">${uniquePages.length} page${uniquePages.length === 1 ? "" : "s"}</span>
-              <span style="color:#52525b;font-family:monospace;font-weight:700;flex-shrink:0">${totalNodes}</span>
+              <span class="fs-0" style="font-size:10px;color:#52525b">${uniquePages.length} page${uniquePages.length === 1 ? "" : "s"}</span>
+              <span class="fs-0 font-mono" style="color:#52525b;font-weight:700">${totalNodes}</span>
             </summary>
             <div class="scan-detail-body">
               ${uniquePages.map((pageUrl) => {
                 const pageEntries = entries.filter((e) => e.pages[0] === pageUrl);
                 return `
                   <div style="margin-bottom:4px">
-                    <div class="truncate" style="font-size:10px;font-family:monospace;color:#52525bmargin-bottom:2px" title="${escHtml(pageUrl)}">${escHtml(pageUrl)}</div>
+                    <div class="truncate font-mono" style="font-size:10px;color:#52525bmargin-bottom:2px" title="${escHtml(pageUrl)}">${escHtml(pageUrl)}</div>
                     ${pageEntries.map((e) => renderViolation(e.violation)).join("")}
                   </div>
                 `;
@@ -694,7 +694,7 @@ function renderResults(result: iScanResult): string {
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
       <button class="mv-filter-chip" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;min-height:24px;border:1px solid ${mvFilter === null ? "#d97706" : "#d4d4d8"};background:${mvFilter === null ? "#fef3c7" : "#fff"};color:${mvFilter === null ? "#92400e" : "#52525b"}">All</button>
-      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;min-height:24px;border:1px solid ${mvFilter === vp ? "#d97706" : "#d4d4d8"};background:${mvFilter === vp ? "#fef3c7" : "#fff"};color:${mvFilter === vp ? "#92400e" : "#52525b"};font-family:monospace">${vp}px</button>`).join("")}
+      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip font-mono" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;min-height:24px;border:1px solid ${mvFilter === vp ? "#d97706" : "#d4d4d8"};background:${mvFilter === vp ? "#fef3c7" : "#fff"};color:${mvFilter === vp ? "#92400e" : "#52525b"}">${vp}px</button>`).join("")}
     </div>
   ` : "";
 
@@ -718,7 +718,7 @@ function renderResults(result: iScanResult): string {
 
       <details style="margin-top:8px">
         <summary style="list-style:none;font-size:12px;font-weight:700;color:#047857;cursor:pointer;padding:6px 0;display:flex;align-items:center;gap:6px">
-          <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
+          <svg class="chevron fs-0" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6l3 3 5-5"/></svg>
           ${result.passes.length} rules passed
         </summary>
@@ -727,16 +727,16 @@ function renderResults(result: iScanResult): string {
             <details style="border-bottom:1px solid #f4f4f5">
               <summary style="list-style:none;display:flex;align-items:center;gap:8px;padding:4px 8px;cursor:pointer;font-size:11px">
                 <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
-                <span class="truncate" style="font-weight:600;color:#27272a;flex:1">${p.id}</span>
-                <span style="color:#71717a;flex-shrink:0">${p.wcagCriteria?.join(", ") || ""}</span>
-                <span style="color:#047857;font-weight:700;flex-shrink:0">${p.nodes.length}</span>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
+                <span class="truncate f-1" style="font-weight:600;color:#27272a">${p.id}</span>
+                <span class="fs-0" style="color:#71717a">${p.wcagCriteria?.join(", ") || ""}</span>
+                <span class="fs-0" style="color:#047857;font-weight:700">${p.nodes.length}</span>
               </summary>
               <div style="padding:2px 8px 6px 28px">
                 <div style="font-size:11px;color:#52525b;margin-bottom:4px">${escHtml(p.description)}</div>
                 ${p.nodes.map((n) => `
-                  <div style="font-size:11px;font-family:monospace;color:#047857;padding:2px 8px;margin:1px 0;background:#ecfdf5;border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
-                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0"><path d="M1 4l2 2 4-4"/></svg>
+                  <div class="font-mono" style="font-size:11px;color:#047857;padding:2px 8px;margin:1px 0;background:#ecfdf5;border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1 4l2 2 4-4"/></svg>
                     <span class="truncate">${escHtml(n.selector)}</span>
                   </div>
                 `).join("")}
@@ -752,23 +752,23 @@ function renderResults(result: iScanResult): string {
 function renderViolation(v: iScanResult["violations"][0], viewportWidths: number[] | null = null): string {
   // Viewport-specific badge shown when violation only appears at some widths (F02-AC13)
   const vpBadge = viewportWidths && viewportWidths.length > 0
-    ? viewportWidths.map((w) => `<span style="font-size:10px;font-weight:700;font-family:monospace;padding:1px 4px;background:#e0f2fe;color:#0369a1;border-radius:3px;margin-left:2px">${w}px</span>`).join("")
+    ? viewportWidths.map((w) => `<span class="font-mono" style="font-size:10px;font-weight:700;padding:1px 4px;background:#e0f2fe;color:#0369a1;border-radius:3px;margin-left:2px">${w}px</span>`).join("")
     : "";
   return `
     <details class="severity-${v.impact} sr-details" style="border-radius:0 4px 4px 0;margin-bottom:4px">
       <summary class="scan-detail-summary">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-        <b class="truncate" style="color:#18181b;flex:1">${v.wcagCriteria?.join(", ") || v.id}${vpBadge}</b>
-        <span style="font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px;flex-shrink:0">${v.impact}</span>
-        <span style="color:#52525b;font-family:monospace;font-weight:700;flex-shrink:0">${v.nodes.length}</span>
+        <b class="truncate f-1" style="color:#18181b">${v.wcagCriteria?.join(", ") || v.id}${vpBadge}</b>
+        <span class="fs-0" style="font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px">${v.impact}</span>
+        <span class="fs-0 font-mono" style="color:#52525b;font-weight:700">${v.nodes.length}</span>
       </summary>
       <div class="scan-detail-body">
         ${v.wcagCriteria && v.wcagCriteria.length > 0 ? `<div style="margin-bottom:6px">${v.wcagCriteria.map((c) => `<a href="${getWcagUrl(c)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;color:#4338ca;text-decoration:underline;margin-right:8px">${c} — Learn more \u2197</a>`).join("")}</div>` : ""}
         ${v.nodes.map((n) => `
           <div style="background:#fff;border:1px solid #e4e4e7;border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
             <div style="display:flex;justify-content:space-between;gap:4px">
-              <span class="truncate" style="font-family:monospace;font-weight:600;color:#27272a">${escHtml(n.selector)}</span>
-              <button class="highlight-btn" data-selector="${escHtml(n.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;flex-shrink:0;min-height:24px">Highlight</button>
+              <span class="truncate font-mono" style="font-weight:600;color:#27272a">${escHtml(n.selector)}</span>
+              <button class="highlight-btn fs-0" data-selector="${escHtml(n.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;min-height:24px">Highlight</button>
             </div>
             <div style="color:#b91c1c;margin-top:2px">${escHtml(n.failureSummary)}</div>
             <button class="explain-btn" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:11px;font-weight:700;color:#4338ca;background:none;border:none;cursor:pointer;margin-top:4px;min-height:24px">Chat about it \u2192</button>
@@ -807,8 +807,8 @@ function renderManualReview(): string {
         return `
           <div style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:6px" data-criterion="${c.id}">
             <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:11px;font-weight:700;color:#27272a;flex:1;min-width:0">${c.id} ${c.name}</span>
-              <div style="display:flex;gap:2px;flex-shrink:0">
+              <span class="f-1" style="font-size:11px;font-weight:700;color:#27272a;min-width:0">${c.id} ${c.name}</span>
+              <div class="fs-0" style="display:flex;gap:2px">
                 <button class="manual-btn" data-id="${c.id}" data-status="pass" aria-pressed="${status === "pass"}" aria-label="Mark ${c.id} ${c.name} as Pass" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;cursor:pointer;min-height:24px;min-width:24px;border:none;${status === "pass" ? "background:#047857;color:#fff" : "background:#f4f4f5;color:#52525b"}">Pass</button>
                 <button class="manual-btn" data-id="${c.id}" data-status="fail" aria-pressed="${status === "fail"}" aria-label="Mark ${c.id} ${c.name} as Fail" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;cursor:pointer;min-height:24px;min-width:24px;border:none;${status === "fail" ? "background:#b91c1c;color:#fff" : "background:#f4f4f5;color:#52525b"}">Fail</button>
                 <button class="manual-btn" data-id="${c.id}" data-status="na" aria-pressed="${status === "na"}" aria-label="Mark ${c.id} ${c.name} as Not Applicable" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;cursor:pointer;min-height:24px;min-width:24px;border:none;${status === "na" ? "background:#3f3f46;color:#fff" : "background:#f4f4f5;color:#52525b"}">N/A</button>
@@ -860,7 +860,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
       <summary style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;font-size:11px">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${escHtml(w.role)}</span>
-        <span class="truncate" style="font-weight:600;color:#27272a;flex:1">${escHtml(w.label)}</span>
+        <span class="truncate f-1" style="font-weight:600;color:#27272a">${escHtml(w.label)}</span>
         <span style="font-weight:700;${pass ? "color:#047857" : "color:#b91c1c"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
       </summary>
       <div class="scan-detail-body">
@@ -908,9 +908,9 @@ function renderObserveHistory(): string {
   return `
     <div class="scan-pane">
       <div style="display:flex;gap:6px;margin-bottom:8px">
-        <input id="observer-domain-filter" type="search" placeholder="Filter by domain\u2026" aria-label="Filter by domain" value="${observerFilter}" style="flex:1;font-size:11px;padding:6px 8px;border:1px solid #d4d4d8;border-radius:4px;min-width:0">
-        <button id="clear-observer" style="font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:4px 10px;background:none;cursor:pointer;min-height:24px;flex-shrink:0">Clear</button>
-        <button id="export-observer" style="font-size:11px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;padding:4px 10px;background:none;cursor:pointer;min-height:24px;flex-shrink:0">Export</button>
+        <input id="observer-domain-filter" type="search" placeholder="Filter by domain\u2026" aria-label="Filter by domain" value="${observerFilter}" class="f-1" style="font-size:11px;padding:6px 8px;border:1px solid #d4d4d8;border-radius:4px;min-width:0">
+        <button id="clear-observer" class="fs-0" style="font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:4px 10px;background:none;cursor:pointer;min-height:24px">Clear</button>
+        <button id="export-observer" class="fs-0" style="font-size:11px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;padding:4px 10px;background:none;cursor:pointer;min-height:24px">Export</button>
       </div>
       <div id="observer-list-content">${renderObserverListInner()}</div>
     </div>
@@ -928,12 +928,12 @@ function renderObserverListInner(): string {
   return filtered.map((entry) => `
     <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px;cursor:pointer" class="observer-entry" data-url="${escHtml(entry.url)}">
       <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "#b91c1c" : "#047857"};flex-shrink:0">${entry.violationCount}</span>
-        <span class="truncate" style="font-size:11px;font-weight:600;color:#27272a;flex:1">${escHtml(entry.title || entry.url)}</span>
-        <span style="font-size:10px;color:#71717a;flex-shrink:0">${entry.source === "auto" ? "auto" : "manual"}</span>
-        ${entry.viewportBucket ? `<span style="font-size:10px;color:#0369a1;background:#e0f2fe;padding:1px 4px;border-radius:3px;flex-shrink:0">${escHtml(entry.viewportBucket)}</span>` : ""}
+        <span class="fs-0" style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "#b91c1c" : "#047857"}">${entry.violationCount}</span>
+        <span class="truncate f-1" style="font-size:11px;font-weight:600;color:#27272a">${escHtml(entry.title || entry.url)}</span>
+        <span class="fs-0" style="font-size:10px;color:#71717a">${entry.source === "auto" ? "auto" : "manual"}</span>
+        ${entry.viewportBucket ? `<span class="fs-0" style="font-size:10px;color:#0369a1;background:#e0f2fe;padding:1px 4px;border-radius:3px">${escHtml(entry.viewportBucket)}</span>` : ""}
       </div>
-      <div class="truncate" style="font-size:10px;color:#71717a;margin-top:2px;font-family:monospace">${escHtml(entry.url)}</div>
+      <div class="truncate font-mono" style="font-size:10px;color:#71717a;margin-top:2px">${escHtml(entry.url)}</div>
       <div style="font-size:10px;color:#71717a;margin-top:1px">${new Date(entry.timestamp).toLocaleString()}</div>
     </div>
   `).join("");

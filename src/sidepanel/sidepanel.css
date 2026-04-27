@@ -940,6 +940,12 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   padding: var(--ds-space-8);
 }
 
+/* Single-property utilities — high-frequency single-property inline styles
+   in scan-tab.ts. flex-shrink:0 (24×), flex:1 (17×), monospace font (18×). */
+.fs-0 { flex-shrink: 0; }
+.f-1 { flex: 1; }
+.font-mono { font-family: monospace; }
+
 /* 24×24 progress-bar icon button — used in scan/crawl progress bars (4×) */
 .scan-progress-icon-btn {
   width: 24px;
