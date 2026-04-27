@@ -940,6 +940,24 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   padding: var(--ds-space-8);
 }
 
+/* 24×24 progress-bar icon button — used in scan/crawl progress bars (4×) */
+.scan-progress-icon-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ds-zinc-300);
+  border-radius: var(--ds-radius-3);
+  background: none;
+  cursor: pointer;
+  color: var(--ds-zinc-600);
+}
+.scan-progress-icon-btn--danger {
+  border-color: var(--ds-red-200);
+  color: var(--ds-red-600);
+}
+
 @media (min-width: 600px) {
   /* Remove text truncation on violation rule/selector text */
   #scan-content details summary b {

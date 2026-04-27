@@ -440,7 +440,7 @@ function renderScanProgress(): string {
     <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
         <span style="font-size:11px;color:#52525b;font-family:monospace">${state.mv ? `viewport ${state.mvProgress ? `${state.mvProgress.current}/${state.mvProgress.total}` : `1/${state.viewports.length}`}` : "analyzing page\u2026"}</span>
-        <button id="cancel-scan" aria-label="Cancel scan" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;cursor:pointer;color:#dc2626">
+        <button id="cancel-scan" aria-label="Cancel scan" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
           <svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
         </button>
       </div>
@@ -463,10 +463,10 @@ function renderCrawlProgress(): string {
         ${urlDisplay ? `<span class="truncate" style="font-size:10px;color:#71717a;font-family:monospace;flex:1;min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
         <div style="display:flex;gap:4px;flex-shrink:0">
           ${state.crawlPhase === "crawling"
-            ? '<button id="pause-crawl" aria-label="Pause crawl" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #d4d4d8;border-radius:4px;background:none;cursor:pointer;color:#52525b"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
-            : '<button id="resume-crawl" aria-label="Resume crawl" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #d4d4d8;border-radius:4px;background:none;cursor:pointer;color:#52525b"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><path d="M0 0l8 5-8 5z"/></svg></button>'
+            ? '<button id="pause-crawl" aria-label="Pause crawl" class="scan-progress-icon-btn"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
+            : '<button id="resume-crawl" aria-label="Resume crawl" class="scan-progress-icon-btn"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><path d="M0 0l8 5-8 5z"/></svg></button>'
           }
-          <button id="cancel-crawl" aria-label="Cancel crawl" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;cursor:pointer;color:#dc2626">
+          <button id="cancel-crawl" aria-label="Cancel crawl" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
             <svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
           </button>
         </div>
