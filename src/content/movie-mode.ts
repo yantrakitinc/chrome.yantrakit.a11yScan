@@ -72,9 +72,14 @@ function scheduleNext(): void {
     if (currentIndex >= elements.length) {
       state = "complete";
       removeHighlight();
+      // Notify side panel so it can drop out of "playing" state.
+      // Without this, kb-tab's controls stay stuck on Pause/Stop forever.
+      try { chrome.runtime.sendMessage({ type: "MOVIE_COMPLETE" }); } catch { /* sidepanel may be closed */ }
       return;
     }
     highlightCurrent();
+    // Notify side panel of progress so the "Playing X of Y" status counts up.
+    try { chrome.runtime.sendMessage({ type: "MOVIE_TICK", payload: { currentIndex, total: elements.length } }); } catch { /* sidepanel may be closed */ }
     scheduleNext();
   }, speed);
 }

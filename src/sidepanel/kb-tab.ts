@@ -20,6 +20,31 @@ let movieIndex = 0;
 let selectedKbIndex: number | null = null;
 let selectedKbTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** Receives MOVIE_TICK from the content script — keeps the "Playing N of total"
+   counter and the active-row highlight in sync with what's actually playing. */
+export function onMovieTick(currentIndex: number): void {
+  if (moviePlayState !== "playing") return;
+  movieIndex = currentIndex;
+  renderKeyboardTab();
+}
+
+/** Receives MOVIE_COMPLETE from the content script — drops controls back
+   to idle and clears the highlight. Without this the kb-tab stays stuck
+   on Pause/Stop forever after the movie reaches the last element. */
+let movieCompleteTimer: ReturnType<typeof setTimeout> | null = null;
+export function onMovieComplete(): void {
+  if (moviePlayState === "idle") return;
+  moviePlayState = "complete";
+  renderKeyboardTab();
+  if (movieCompleteTimer) clearTimeout(movieCompleteTimer);
+  movieCompleteTimer = setTimeout(() => {
+    moviePlayState = "idle";
+    movieIndex = 0;
+    movieCompleteTimer = null;
+    renderKeyboardTab();
+  }, 2000);
+}
+
 /** Escape page-derived strings for safe innerHTML interpolation. */
 function escKb(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -70,10 +95,11 @@ export function renderKeyboardTab(): void {
       <details open>
         <summary style="padding:8px 12px;font-size:12px;font-weight:800;color:#18181b;cursor:pointer;border-bottom:1px solid #e4e4e7;background:#fafafa;display:flex;align-items:center;gap:8px">
           <span style="flex:1">Tab Order \u2014 ${tabOrder.length} elements</span>
-          ${tabOrder.length > 0 && moviePlayState === "idle" ? `
+          ${tabOrder.length > 0 && (moviePlayState === "idle" || moviePlayState === "complete") ? `
             <button id="movie-play-all" aria-label="Play all - animate through tab order" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;color:#b45309">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 1l7 4-7 4z"/></svg>
             </button>
+            ${moviePlayState === "complete" ? `<span style="font-size:11px;font-family:monospace;color:#047857;font-weight:600">Complete</span>` : ""}
           ` : ""}
           ${moviePlayState === "playing" ? `
             <button id="movie-pause" aria-label="Pause movie" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;color:#b45309">

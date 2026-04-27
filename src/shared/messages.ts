@@ -79,6 +79,8 @@ export type iMessage =
   | { type: "RESUME_MOVIE_MODE" }
   | { type: "STOP_MOVIE_MODE" }
   | { type: "SET_MOVIE_SPEED"; payload: { speed: number } }
+  | { type: "MOVIE_TICK"; payload: { currentIndex: number; total: number } }
+  | { type: "MOVIE_COMPLETE" }
 
   /* ── CVD Simulation (F08) ── */
   | { type: "APPLY_CVD_FILTER"; payload: { matrix: number[] | null } }

@@ -9,7 +9,7 @@ import type { iMessage } from "@shared/messages";
 import type { iScanResult, iTestConfig, iMultiViewportResult } from "@shared/types";
 import { renderScanTab, invalidateObserverCache } from "./scan-tab";
 import { renderScreenReaderTab, setScopeFromInspect } from "./sr-tab";
-import { renderKeyboardTab } from "./kb-tab";
+import { renderKeyboardTab, onMovieTick, onMovieComplete } from "./kb-tab";
 import { renderAiChatTab, openAiHistoryPanel } from "./ai-tab";
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -283,6 +283,14 @@ function initMessageListener(): void {
         // Observer entry received — invalidate cache so re-render fetches fresh history
         invalidateObserverCache();
         renderScanTab();
+        break;
+
+      case "MOVIE_TICK":
+        onMovieTick(msg.payload.currentIndex);
+        break;
+
+      case "MOVIE_COMPLETE":
+        onMovieComplete();
         break;
 
       case "HIGHLIGHT_RESULT":
