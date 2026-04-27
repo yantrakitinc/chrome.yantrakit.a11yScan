@@ -3,6 +3,7 @@
  */
 
 import type { iTabOrderElement, iFocusGap, iFocusIndicator, iKeyboardTrap, iSkipLink } from "@shared/types";
+import { buildElementSelector } from "@shared/utils";
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]';
 const INTERACTIVE_SELECTOR = 'a[href], button, input, select, textarea, [onclick], [role="button"], [role="link"], [role="menuitem"]';
@@ -85,13 +86,7 @@ function checkFocusIndicator(el: HTMLElement): boolean {
   }
 }
 
-/** Build a CSS selector for an element */
-function getSelector(el: Element): string {
-  if (el.id) return `#${CSS.escape(el.id)}`;
-  const tag = el.tagName.toLowerCase();
-  const classes = Array.from(el.classList).filter(c => !/[[\]:@!]/.test(c)).slice(0, 2).map(c => CSS.escape(c)).join(".");
-  return classes ? `${tag}.${classes}` : tag;
-}
+const getSelector = buildElementSelector;
 
 /** Compute accessible name (simplified) */
 function getAccessibleName(el: HTMLElement): string {

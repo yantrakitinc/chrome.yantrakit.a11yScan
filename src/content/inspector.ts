@@ -4,7 +4,7 @@
  */
 
 import type { iInspectorData } from "@shared/types";
-import { escHtml } from "@shared/utils";
+import { escHtml, buildElementSelector } from "@shared/utils";
 import { lastScanViolations } from "./scan-state";
 
 let active = false;
@@ -223,9 +223,4 @@ function isFocusable(el: HTMLElement): boolean {
   return el.tabIndex >= 0;
 }
 
-function getSelector(el: Element): string {
-  if (el.id) return `#${CSS.escape(el.id)}`;
-  const tag = el.tagName.toLowerCase();
-  const classes = Array.from(el.classList).filter(c => !/[[\]:@!]/.test(c)).slice(0, 2).map(c => CSS.escape(c)).join(".");
-  return classes ? `${tag}.${classes}` : tag;
-}
+const getSelector = buildElementSelector;

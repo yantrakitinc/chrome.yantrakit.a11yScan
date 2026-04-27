@@ -4,6 +4,7 @@
  */
 
 import type { iEnrichedContext, iDomContext, iCssContext, iFrameworkHints, iFilePathGuess } from "@shared/types";
+import { buildElementSelector } from "@shared/utils";
 
 /** Collect enriched context for a list of CSS selectors */
 export function collectEnrichedContext(selectors: string[]): Record<string, iEnrichedContext> {
@@ -116,9 +117,4 @@ function getFilePathGuesses(el: Element): iFilePathGuess[] {
   return guesses;
 }
 
-function getSelector(el: Element): string {
-  if (el.id) return `#${CSS.escape(el.id)}`;
-  const tag = el.tagName.toLowerCase();
-  const classes = Array.from(el.classList).filter(c => !/[[\]:@!]/.test(c)).slice(0, 2).map(c => CSS.escape(c)).join(".");
-  return classes ? `${tag}.${classes}` : tag;
-}
+const getSelector = buildElementSelector;

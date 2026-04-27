@@ -59,6 +59,28 @@ export function escHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/**
+ * Build a CSS selector string for an element. Prefers `#id` (CSS.escape'd so
+ * any id is safe to feed back into querySelector), falls back to
+ * `tag.class1.class2` with up to two classes (filtered to skip Tailwind
+ * variants like `hover:bg-red`, and CSS.escape'd). When no usable id or
+ * classes exist, returns just the tag name.
+ *
+ * Used by content scripts (heuristic-rules, inspector, tab-order, aria-scanner,
+ * enriched-context) so the same selector format is round-trippable for
+ * highlight / scope / overlay paths.
+ */
+export function buildElementSelector(el: Element): string {
+  if (el.id) return `#${CSS.escape(el.id)}`;
+  const tag = el.tagName.toLowerCase();
+  const classes = Array.from(el.classList)
+    .filter((c) => !/[[\]:@!]/.test(c))
+    .slice(0, 2)
+    .map((c) => CSS.escape(c))
+    .join(".");
+  return classes ? `${tag}.${classes}` : tag;
+}
+
 /** Compute breakpoint bucket label for a width given breakpoints */
 export function getViewportBucket(width: number, breakpoints: number[]): string {
   const sorted = [...breakpoints].sort((a, b) => a - b);

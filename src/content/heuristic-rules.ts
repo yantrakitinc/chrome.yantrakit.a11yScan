@@ -5,6 +5,7 @@
  */
 
 import type { iViolation, iViolationNode } from "@shared/types";
+import { buildElementSelector } from "@shared/utils";
 
 interface iHeuristicResult {
   ruleId: string;
@@ -75,16 +76,7 @@ export function runHeuristicRules(isCrawl: boolean, excludeRules?: number[]): iV
     }));
 }
 
-function sel(el: Element): string {
-  if (el.id) return `#${CSS.escape(el.id)}`;
-  const tag = el.tagName.toLowerCase();
-  // Filter out Tailwind classes with special chars that break querySelector
-  const safeClasses = Array.from(el.classList)
-    .filter(c => !/[[\]:@!]/.test(c))
-    .slice(0, 2);
-  const cls = safeClasses.map(c => CSS.escape(c)).join(".");
-  return cls ? `${tag}.${cls}` : tag;
-}
+const sel = buildElementSelector;
 
 function node(el: Element, msg: string): iViolationNode {
   return { selector: sel(el), html: el.outerHTML.substring(0, 200), failureSummary: msg };
