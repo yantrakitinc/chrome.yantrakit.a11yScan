@@ -126,10 +126,10 @@ describe("validateTestConfig — mocks", () => {
       mocks: [{ status: 200 }],
     }))).toThrow(/urlPattern is required/);
   });
-  it("rejects missing status", () => {
+  it("accepts a mock without status (consumer applies default 200)", () => {
     expect(() => validateTestConfig(JSON.stringify({
       mocks: [{ urlPattern: "/api" }],
-    }))).toThrow(/status is required/);
+    }))).not.toThrow();
   });
   it("rejects non-object headers", () => {
     expect(() => validateTestConfig(JSON.stringify({

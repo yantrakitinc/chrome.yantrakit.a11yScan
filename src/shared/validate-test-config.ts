@@ -199,8 +199,10 @@ export function validateTestConfig(jsonText: string): iTestConfig {
       if (typeof mock.urlPattern !== "string") {
         throw new Error("mocks[].urlPattern is required and must be a string. Got: " + JSON.stringify(mock.urlPattern));
       }
-      if (typeof mock.status !== "number" || !Number.isInteger(mock.status) || mock.status < 100 || mock.status > 599) {
-        throw new Error("mocks[].status is required and must be an integer between 100 and 599. Got: " + JSON.stringify(mock.status));
+      if ("status" in mock && mock.status !== undefined) {
+        if (typeof mock.status !== "number" || !Number.isInteger(mock.status) || mock.status < 100 || mock.status > 599) {
+          throw new Error("mocks[].status must be an integer between 100 and 599. Got: " + JSON.stringify(mock.status));
+        }
       }
       if ("method" in mock && mock.method !== undefined) {
         if (typeof mock.method !== "string") {

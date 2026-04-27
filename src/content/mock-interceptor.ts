@@ -21,8 +21,9 @@ export function activateMocks(mocks: iMockEndpoint[]): void {
     const method = init?.method || "GET";
     const mock = findMatch(url, method);
     if (mock) {
+      // Schema default for mocks[].status is 200 when omitted.
       return new Response(JSON.stringify(mock.body), {
-        status: mock.status,
+        status: mock.status ?? 200,
         headers: { "Content-Type": "application/json", ...(mock.headers || {}) },
       });
     }
@@ -42,7 +43,7 @@ export function activateMocks(mocks: iMockEndpoint[]): void {
       // Override send to return mock response
       const originalSend = this.send;
       this.send = function (): void {
-        Object.defineProperty(this, "status", { value: mock.status, writable: false });
+        Object.defineProperty(this, "status", { value: mock.status ?? 200, writable: false });
         Object.defineProperty(this, "responseText", { value: JSON.stringify(mock.body), writable: false });
         Object.defineProperty(this, "readyState", { value: 4, writable: false });
         this.dispatchEvent(new Event("readystatechange"));
