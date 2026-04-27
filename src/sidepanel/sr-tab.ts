@@ -309,12 +309,10 @@ function playNext(): void {
   const el = elements[playIndex];
   // Highlight on page
   sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector: el.selector } });
-  // Highlight row in panel
+  // Panel-side highlight is handled by renderSrRow via .ds-row--active class —
+  // re-render already happened (or runs after speech ends below). Just scroll
+  // the current row into view.
   const rows = document.querySelectorAll<HTMLDivElement>(".sr-row");
-  rows.forEach((r, i) => {
-    r.style.background = i === playIndex ? "#fef3c7" : "";
-  });
-  // Scroll row into view in panel
   rows[playIndex]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   // Speak — for Play All, speak each element individually (children are separate rows)
   const text = elementToSpeechText(el);
