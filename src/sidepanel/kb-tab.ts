@@ -192,7 +192,7 @@ export function renderKeyboardTab(): void {
             : failedIndicators.length === 0
               ? '<div style="padding:12px;font-size:11px;color:var(--ds-green-700);text-align:center">All focusable elements have visible focus indicators.</div>'
               : failedIndicators.map((fi) => `
-                <div class="kb-fi cur-pointer" role="button" tabindex="0" aria-label="Highlight missing focus indicator: ${escHtml(fi.selector)}" data-selector="${escHtml(fi.selector)}" style="font-size:11px;padding:8px;border:1px solid #fde68a;background:var(--ds-amber-50);border-radius:4px">
+                <div class="kb-fi cur-pointer" role="button" tabindex="0" aria-label="Highlight missing focus indicator: ${escHtml(fi.selector)}" data-selector="${escHtml(fi.selector)}" style="font-size:11px;padding:8px;border:1px solid var(--ds-amber-200);background:var(--ds-amber-50);border-radius:4px">
                   <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(fi.selector)}</div>
                   <div style="color:var(--ds-amber-600);margin-top:2px">No visible focus indicator detected</div>
                 </div>
