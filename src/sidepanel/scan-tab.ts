@@ -641,7 +641,7 @@ function renderCrawlResults(): string {
         return `
           <details style="border:1px solid var(--ds-red-200);border-radius:4px;margin-bottom:4px;background:var(--ds-red-50)">
             <summary class="scan-detail-summary">
-              <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
+              <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
               <span class="fs-0" style="color:var(--ds-red-600);font-weight:700">\u2717</span>
               <span class="truncate f-1 font-mono" style="color:var(--ds-zinc-800)" title="${escHtml(url)}">${escHtml(url)}</span>
             </summary>
@@ -655,7 +655,7 @@ function renderCrawlResults(): string {
       return `
         <details style="border:1px solid ${hasViolations ? "var(--ds-red-200)" : "var(--ds-green-200)"};border-radius:4px;margin-bottom:4px;background:${hasViolations ? "var(--ds-red-50)" : "var(--ds-green-50)"}">
           <summary class="scan-detail-summary">
-            <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
+            <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
             <span class="fs-0" style="color:${hasViolations ? "var(--ds-red-600)" : "var(--ds-green-700)"};font-weight:700">${hasViolations ? "\u2717" : "\u2713"}</span>
             <span class="truncate f-1 font-mono" style="color:var(--ds-zinc-800)" title="${escHtml(url)}">${escHtml(url)}</span>
             <span class="fs-0" style="font-size:10px;font-weight:700;color:${hasViolations ? "var(--ds-red-700)" : "var(--ds-green-700)"}">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
@@ -688,7 +688,7 @@ function renderCrawlResults(): string {
         return `
           <details class="severity-${entries[0].violation.impact}" style="border-radius:0 4px 4px 0;margin-bottom:4px">
             <summary class="scan-detail-summary">
-              <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
+              <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
               <b class="truncate f-1" style="color:var(--ds-zinc-900)">
                 <a href="https://a11yscan.yantrakit.com/wcag/${criterion}" target="_blank" rel="noopener" style="color:var(--ds-indigo-700);text-decoration:underline">${criterion}</a>
               </b>
@@ -773,7 +773,7 @@ function renderResults(result: iScanResult): string {
           ${result.passes.map((p) => `
             <details style="border-bottom:1px solid var(--ds-zinc-100)">
               <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:11px">
-                <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
+                <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
                 <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${p.id}</span>
                 <span class="fs-0" style="color:var(--ds-zinc-500)">${p.wcagCriteria?.join(", ") || ""}</span>
@@ -804,7 +804,7 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
   return `
     <details class="severity-${v.impact} sr-details" style="border-radius:0 4px 4px 0;margin-bottom:4px">
       <summary class="scan-detail-summary">
-        <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
+        <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <b class="truncate f-1" style="color:var(--ds-zinc-900)">${v.wcagCriteria?.join(", ") || v.id}${vpBadge}</b>
         <span class="fs-0" style="font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px">${v.impact}</span>
         <span class="fs-0 font-mono" style="color:var(--ds-zinc-600);font-weight:700">${v.nodes.length}</span>
@@ -907,7 +907,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
   return `
     <details${pass ? "" : " open"} style="border:1px solid ${pass ? "var(--ds-green-200)" : "var(--ds-red-200)"};border-radius:4px;background:${pass ? "var(--ds-green-50)" : "var(--ds-red-50)"};margin-bottom:4px">
       <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;font-size:11px">
-        <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
+        <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:var(--ds-green-200);color:var(--ds-green-900)" : "background:var(--ds-red-200);color:var(--ds-red-900)"}">${escHtml(w.role)}</span>
         <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(w.label)}</span>
         <span style="font-weight:700;${pass ? "color:var(--ds-green-700)" : "color:var(--ds-red-700)"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
