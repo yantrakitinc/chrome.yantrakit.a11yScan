@@ -39,6 +39,7 @@
   --ds-blue-50: #f0f9ff;
   --ds-blue-100: #e0f2fe;
   --ds-blue-700: #075985;
+  --ds-sky-200: #bae6fd;       /* Skip Links 'target exists' card border */
   --ds-sky-400: #38bdf8;       /* Skip Links chevron icon */
   --ds-sky-700: #0369a1;       /* Skip Links section title + valid skip link target */
   --ds-sky-900: #0c4a6e;       /* Crawl mode badge text */

@@ -222,7 +222,7 @@ export function renderKeyboardTab(): void {
             : skipLinks.length === 0
               ? '<div style="padding:12px;font-size:11px;color:var(--ds-amber-600);text-align:center">No skip links found. Consider adding a "Skip to main content" link.</div>'
               : skipLinks.map((sl) => `
-                <div style="font-size:11px;padding:8px;border:1px solid ${sl.targetExists ? "#bae6fd" : "var(--ds-red-200)"};background:${sl.targetExists ? "var(--ds-blue-50)" : "var(--ds-red-50)"};border-radius:4px">
+                <div style="font-size:11px;padding:8px;border:1px solid ${sl.targetExists ? "var(--ds-sky-200)" : "var(--ds-red-200)"};background:${sl.targetExists ? "var(--ds-blue-50)" : "var(--ds-red-50)"};border-radius:4px">
                   <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(sl.selector)}</div>
                   <div style="margin-top:2px;color:${sl.targetExists ? "var(--ds-sky-700)" : "var(--ds-red-600)"}">
                     Target: ${escHtml(sl.target)} ${sl.targetExists ? "\u2713 exists" : "\u2717 target not found"}

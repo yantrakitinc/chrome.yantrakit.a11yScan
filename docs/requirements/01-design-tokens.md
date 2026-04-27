@@ -42,6 +42,7 @@ Single source of design values used by the entire sidepanel. All colors, spacing
 - `--ds-blue-50`: `#f0f9ff` — info banner bg
 - `--ds-blue-100`: `#e0f2fe` — link role badge bg
 - `--ds-blue-700`: `#075985` — link role badge text
+- `--ds-sky-200`: `#bae6fd` — Skip Links 'target exists' card border
 - `--ds-sky-400`: `#38bdf8` — Skip Links chevron icon
 - `--ds-sky-700`: `#0369a1` — Skip Links section title, valid skip-link target text
 - `--ds-sky-900`: `#0c4a6e` — Crawl mode badge text
