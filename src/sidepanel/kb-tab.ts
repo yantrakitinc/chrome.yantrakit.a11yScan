@@ -234,8 +234,8 @@ export function renderKeyboardTab(): void {
     </div>` : ""}
     ${kbAnalyzed ? `<!-- Overlay toggles — Tab order + Focus gaps live here, not in Scan tab -->
     <div class="fs-0" style="border-top:2px solid var(--ds-zinc-300);background:var(--ds-zinc-100)">
-      <div style="display:flex;align-items:center;gap:6px;padding:6px 12px">
-        <span style="font-size:11px;font-weight:800;color:var(--ds-zinc-600)">Highlight</span>
+      <div role="group" aria-labelledby="kb-highlight-label" style="display:flex;align-items:center;gap:6px;padding:6px 12px">
+        <span id="kb-highlight-label" style="font-size:11px;font-weight:800;color:var(--ds-zinc-600)">Highlight</span>
         <label class="cur-pointer min-h-24" style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--ds-zinc-700);padding:4px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff">
           <input type="checkbox" id="toggle-tab-order" ${state.tabOrderOverlayOn ? "checked" : ""} style="margin:0">
           Tab order
