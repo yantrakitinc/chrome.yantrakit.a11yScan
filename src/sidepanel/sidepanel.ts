@@ -89,12 +89,28 @@ document.addEventListener("DOMContentLoaded", () => {
       if (res && (res as { type: string }).type === "OBSERVER_STATE") {
         state.observer = (res as { payload: { enabled: boolean } }).payload.enabled;
       }
-      renderScanTab();
+      // Restore active top-level tab so reopen returns the user to where they were (R-PANEL)
+      restoreTopTab();
     }).catch(() => {
-      renderScanTab();
+      restoreTopTab();
     });
   });
 });
+
+function restoreTopTab(): void {
+  try {
+    chrome.storage.session.get(TOP_TAB_STORAGE_KEY, (result) => {
+      const stored = result?.[TOP_TAB_STORAGE_KEY] as iTopTab | undefined;
+      if (stored && stored !== state.topTab && stored !== "ai") {
+        switchTab(stored);
+      } else {
+        renderScanTab();
+      }
+    });
+  } catch {
+    renderScanTab();
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    Tab Navigation (F18)
@@ -128,8 +144,14 @@ function initTabs(): void {
   });
 }
 
+/** chrome.storage.session key for the active top-level tab — survives side
+   panel close/reopen so users land back where they were (R-PANEL). */
+const TOP_TAB_STORAGE_KEY = "a11yscan_top_tab";
+
 export function switchTab(tabId: iTopTab): void {
   state.topTab = tabId;
+  // Persist so reopening the side panel returns to this tab.
+  try { chrome.storage.session.set({ [TOP_TAB_STORAGE_KEY]: tabId }); } catch { /* session storage may not be available in tests */ }
 
   // Update tab buttons
   document.querySelectorAll<HTMLButtonElement>("#top-tabs .tab").forEach((tab) => {
