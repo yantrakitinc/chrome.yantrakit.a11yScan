@@ -1664,7 +1664,13 @@ function attachScanTabListeners(): void {
     const input = document.getElementById("url-manual-input") as HTMLInputElement | null;
     if (!input) return;
     const url = input.value.trim();
-    if (url && !crawlUrlList.includes(url)) {
+    // Use the browser's built-in URL validation (input type="url"). reportValidity
+    // surfaces the native error tooltip when the URL is malformed.
+    if (!url || !input.checkValidity()) {
+      input.reportValidity();
+      return;
+    }
+    if (!crawlUrlList.includes(url)) {
       crawlUrlList.push(url);
       input.value = "";
       renderScanTab();
