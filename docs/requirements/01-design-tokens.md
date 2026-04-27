@@ -28,7 +28,8 @@ Single source of design values used by the entire sidepanel. All colors, spacing
 - `--ds-red-200`: `#fecaca` — destructive button border ("Reset", "Stop", "Clear", "Cancel")
 - `--ds-red-600`: `#dc2626` — destructive text and icon color
 - `--ds-red-700`: `#b91c1c` — emphasized destructive text (error messages)
-- `--ds-red-900`: `#7f1d1d` — strongest red text (severity:critical)
+- `--ds-red-800`: `#991b1b` — severity:critical body text in HTML report header
+- `--ds-red-900`: `#7f1d1d` — strongest red text
 
 ### Green (success, passes)
 - `--ds-green-50`: `#ecfdf5` — pass region background
@@ -37,13 +38,29 @@ Single source of design values used by the entire sidepanel. All colors, spacing
 - `--ds-green-700`: `#047857` — pass text/icon color
 - `--ds-green-900`: `#064e3b` — strongest green text
 
-### Blue / Indigo (links, info, banners, navigation)
+### Blue / Sky / Indigo (links, info, banners, navigation)
 - `--ds-blue-50`: `#f0f9ff` — info banner bg
 - `--ds-blue-100`: `#e0f2fe` — link role badge bg
 - `--ds-blue-700`: `#075985` — link role badge text
+- `--ds-sky-400`: `#38bdf8` — Skip Links chevron icon
+- `--ds-sky-700`: `#0369a1` — Skip Links section title, valid skip-link target text
+- `--ds-sky-900`: `#0c4a6e` — Crawl mode badge text
 - `--ds-indigo-700`: `#4338ca` — interactive link color (Open Builder, WCAG ref, "explain" button)
 - `--ds-indigo-900`: `#1e1b4b` — tab order badge background, deep-indigo accents
 - `--ds-indigo-950`: `#080720` — same as `--ds-brand-bg`
+
+### Violet (Movie Mode badge)
+- `--ds-violet-100`: `#ede9fe` — Movie mode badge bg
+- `--ds-violet-400`: `#a78bfa` — accent
+- `--ds-violet-900`: `#4c1d95` — Movie mode badge text
+
+### Emerald (alternate green accents — Observer mode badge)
+- `--ds-emerald-100`: `#d1fae5` — Observer mode badge bg
+- `--ds-emerald-400`: `#34d399` — accent
+- `--ds-emerald-600`: `#059669` — checkmark stroke
+
+### Yellow (page-rule wait accent)
+- `--ds-yellow-400`: `#fbbf24` — page-rule wait UI border
 
 ### Zinc (neutral surfaces and text)
 - `--ds-zinc-50`: `#fafafa` — hover row background

@@ -35,13 +35,32 @@
   --ds-green-700: #047857;
   --ds-green-900: #064e3b;
 
-  /* Blue / Indigo */
+  /* Blue / Sky / Indigo */
   --ds-blue-50: #f0f9ff;
   --ds-blue-100: #e0f2fe;
   --ds-blue-700: #075985;
+  --ds-sky-400: #38bdf8;       /* Skip Links chevron icon */
+  --ds-sky-700: #0369a1;       /* Skip Links section title + valid skip link target */
+  --ds-sky-900: #0c4a6e;       /* Crawl mode badge text */
   --ds-indigo-700: #4338ca;
   --ds-indigo-900: #1e1b4b;
   --ds-indigo-950: #080720;
+
+  /* Violet — Movie mode badge */
+  --ds-violet-100: #ede9fe;
+  --ds-violet-400: #a78bfa;
+  --ds-violet-900: #4c1d95;
+
+  /* Emerald — alternate green accents */
+  --ds-emerald-100: #d1fae5;   /* Observer mode badge bg */
+  --ds-emerald-400: #34d399;
+  --ds-emerald-600: #059669;
+
+  /* Red-800 — strongest red emphasis (severity:critical accent) */
+  --ds-red-800: #991b1b;
+
+  /* Yellow — page-rule wait border accent */
+  --ds-yellow-400: #fbbf24;
 
   /* Zinc */
   --ds-zinc-50: #fafafa;

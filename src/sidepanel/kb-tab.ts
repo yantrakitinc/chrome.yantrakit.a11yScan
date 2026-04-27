@@ -215,7 +215,7 @@ export function renderKeyboardTab(): void {
         </div>
       </details>
       <details>
-        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:#0369a1;border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-blue-50)">Skip Links \u2014 ${skipLinks.length}</summary>
+        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-sky-700);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-blue-50)">Skip Links \u2014 ${skipLinks.length}</summary>
         <div style="padding:${skipLinks.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
           ${tabOrder.length === 0
             ? '<div style="padding:12px;font-size:11px;color:var(--ds-zinc-500);text-align:center">Run Analyze to detect skip links.</div>'
@@ -224,7 +224,7 @@ export function renderKeyboardTab(): void {
               : skipLinks.map((sl) => `
                 <div style="font-size:11px;padding:8px;border:1px solid ${sl.targetExists ? "#bae6fd" : "var(--ds-red-200)"};background:${sl.targetExists ? "var(--ds-blue-50)" : "var(--ds-red-50)"};border-radius:4px">
                   <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(sl.selector)}</div>
-                  <div style="margin-top:2px;color:${sl.targetExists ? "#0369a1" : "var(--ds-red-600)"}">
+                  <div style="margin-top:2px;color:${sl.targetExists ? "var(--ds-sky-700)" : "var(--ds-red-600)"}">
                     Target: ${escHtml(sl.target)} ${sl.targetExists ? "\u2713 exists" : "\u2717 target not found"}
                   </div>
                 </div>

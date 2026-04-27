@@ -209,16 +209,16 @@ function renderCollapsedToggle(): string {
   ].filter(Boolean);
 
   const modeColors: Record<string, string> = {
-    Crawl: "background:#e0f2fe;color:#0c4a6e",
-    Observer: "background:#d1fae5;color:var(--ds-green-900)",
-    Movie: "background:#ede9fe;color:#4c1d95",
-    "Multi-Viewport": "background:#fef3c7;color:var(--ds-amber-800)",
+    Crawl: "background:var(--ds-blue-100);color:var(--ds-sky-900)",
+    Observer: "background:var(--ds-emerald-100);color:var(--ds-green-900)",
+    Movie: "background:var(--ds-violet-100);color:var(--ds-violet-900)",
+    "Multi-Viewport": "background:var(--ds-amber-100);color:var(--ds-amber-800)",
   };
   let modeHtml = "";
   if (modes.length === 0) {
     modeHtml = '<span style="font-size:11px;color:var(--ds-zinc-500)">Single page</span>';
   } else if (modes.length <= 2) {
-    modeHtml = modes.map((m) => `<span style="font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;${modeColors[m as string] || "background:#e4e4e7;color:var(--ds-zinc-700)"}">${m}</span>`).join(" ");
+    modeHtml = modes.map((m) => `<span style="font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;${modeColors[m as string] || "background:var(--ds-zinc-200);color:var(--ds-zinc-700)"}">${m}</span>`).join(" ");
   } else {
     modeHtml = `<span style="font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--ds-zinc-200);color:var(--ds-zinc-700)">${modes.length} modes</span>`;
   }
@@ -521,7 +521,7 @@ function renderCrawlProgress(): string {
 function renderPageRuleWait(): string {
   const info = state.crawlWaitInfo;
   return `
-    <div role="alert" aria-live="assertive" class="fs-0" style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:var(--ds-amber-50)">
+    <div role="alert" aria-live="assertive" class="fs-0" style="padding:8px 12px;border-bottom:2px solid var(--ds-yellow-400);background:var(--ds-amber-50)">
       <div style="font-size:11px;font-weight:700;color:var(--ds-amber-900);margin-bottom:6px">\u26a0 Page rule triggered</div>
       ${info?.description ? `<div style="font-size:11px;color:var(--ds-zinc-800);margin-bottom:4px">${escHtml(info.description)}</div>` : ""}
       ${info?.url ? `<div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-500);margin-bottom:6px" title="${escHtml(info.url)}">${escHtml(info.url)}</div>` : ""}
@@ -585,15 +585,15 @@ function renderEmptyState(): string {
       <p style="font-size:12px;color:var(--ds-zinc-600);line-height:1.5">Click the button above to check this page for accessibility issues.</p>
       <div style="margin-top:16px">
         <h3 style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Scan modes</h3>
-        <div style="padding-left:12px;border-left:2px solid #38bdf8;margin-bottom:8px">
+        <div style="padding-left:12px;border-left:2px solid var(--ds-sky-400);margin-bottom:8px">
           <div class="scan-section-title">Crawl</div>
           <div class="scan-body">Automatically visits every page on your website and checks each one for issues.</div>
         </div>
-        <div style="padding-left:12px;border-left:2px solid #34d399;margin-bottom:8px">
+        <div style="padding-left:12px;border-left:2px solid var(--ds-emerald-400);margin-bottom:8px">
           <div class="scan-section-title">Observer</div>
           <div class="scan-body">Watches your browsing and checks every page you visit. Everything stays on your computer.</div>
         </div>
-        <div style="padding-left:12px;border-left:2px solid #a78bfa;margin-bottom:8px">
+        <div style="padding-left:12px;border-left:2px solid var(--ds-violet-400);margin-bottom:8px">
           <div class="scan-section-title">Movie</div>
           <div class="scan-body">After each scan, shows you how keyboard-only users navigate the page step by step.</div>
         </div>
@@ -780,7 +780,7 @@ function renderResults(result: iScanResult): string {
               <div style="padding:2px 8px 6px 28px">
                 <div style="font-size:11px;color:var(--ds-zinc-600);margin-bottom:4px">${escHtml(p.description)}</div>
                 ${p.nodes.map((n) => `
-                  <div class="font-mono" style="font-size:11px;color:var(--ds-green-700);padding:2px 8px;margin:1px 0;background:#ecfdf5;border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
+                  <div class="font-mono" style="font-size:11px;color:var(--ds-green-700);padding:2px 8px;margin:1px 0;background:var(--ds-green-50);border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
                     <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1 4l2 2 4-4"/></svg>
                     <span class="truncate">${escHtml(n.selector)}</span>
                   </div>
@@ -797,7 +797,7 @@ function renderResults(result: iScanResult): string {
 function renderViolation(v: iScanResult["violations"][0], viewportWidths: number[] | null = null): string {
   // Viewport-specific badge shown when violation only appears at some widths (F02-AC13)
   const vpBadge = viewportWidths && viewportWidths.length > 0
-    ? viewportWidths.map((w) => `<span class="font-mono" style="font-size:10px;font-weight:700;padding:1px 4px;background:var(--ds-blue-100);color:#0369a1;border-radius:3px;margin-left:2px">${w}px</span>`).join("")
+    ? viewportWidths.map((w) => `<span class="font-mono" style="font-size:10px;font-weight:700;padding:1px 4px;background:var(--ds-blue-100);color:var(--ds-sky-700);border-radius:3px;margin-left:2px">${w}px</span>`).join("")
     : "";
   return `
     <details class="severity-${v.impact} sr-details" style="border-radius:0 4px 4px 0;margin-bottom:4px">
@@ -906,7 +906,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
     <details${pass ? "" : " open"} style="border:1px solid ${pass ? "var(--ds-green-200)" : "var(--ds-red-200)"};border-radius:4px;background:${pass ? "var(--ds-green-50)" : "var(--ds-red-50)"};margin-bottom:4px">
       <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;font-size:11px">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-        <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:var(--ds-green-200);color:var(--ds-green-900)" : "background:#fecaca;color:var(--ds-red-900)"}">${escHtml(w.role)}</span>
+        <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:var(--ds-green-200);color:var(--ds-green-900)" : "background:var(--ds-red-200);color:var(--ds-red-900)"}">${escHtml(w.role)}</span>
         <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(w.label)}</span>
         <span style="font-weight:700;${pass ? "color:var(--ds-green-700)" : "color:var(--ds-red-700)"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
       </summary>
@@ -978,7 +978,7 @@ function renderObserverListInner(): string {
         <span class="fs-0" style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "var(--ds-red-700)" : "var(--ds-green-700)"}">${entry.violationCount}</span>
         <span class="truncate f-1" style="font-size:11px;font-weight:600;color:var(--ds-zinc-800)">${escHtml(entry.title || entry.url)}</span>
         <span class="fs-0" style="font-size:10px;color:var(--ds-zinc-500)">${entry.source === "auto" ? "auto" : "manual"}</span>
-        ${entry.viewportBucket ? `<span class="fs-0" style="font-size:10px;color:#0369a1;background:var(--ds-blue-100);padding:1px 4px;border-radius:3px">${escHtml(entry.viewportBucket)}</span>` : ""}
+        ${entry.viewportBucket ? `<span class="fs-0" style="font-size:10px;color:var(--ds-sky-700);background:var(--ds-blue-100);padding:1px 4px;border-radius:3px">${escHtml(entry.viewportBucket)}</span>` : ""}
       </div>
       <div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-500);margin-top:2px">${escHtml(entry.url)}</div>
       <div style="font-size:10px;color:var(--ds-zinc-500);margin-top:1px">${new Date(entry.timestamp).toLocaleString()}</div>
@@ -1779,7 +1779,7 @@ function showError(message: string): void {
     content.innerHTML = `
       <div style="padding:16px">
         <div style="padding:12px;background:var(--ds-red-50);border:1px solid var(--ds-red-200);border-radius:8px">
-          <div style="font-size:12px;font-weight:700;color:#991b1b;margin-bottom:4px">Scan failed</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ds-red-800);margin-bottom:4px">Scan failed</div>
           <div style="font-size:11px;color:var(--ds-red-900);word-break:break-all">${escHtml(message)}</div>
         </div>
       </div>
