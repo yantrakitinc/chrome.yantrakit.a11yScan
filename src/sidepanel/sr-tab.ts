@@ -99,8 +99,10 @@ export function renderScreenReaderTab(): void {
     </div>
   `;
 
-  // Scroll list to top after render
-  document.getElementById("sr-list")?.scrollTo(0, 0);
+  // Scroll list to top after render — but NOT during playback (would fight scrollIntoView)
+  if (playState === "idle") {
+    document.getElementById("sr-list")?.scrollTo(0, 0);
+  }
 
   // Analyze button
   document.getElementById("sr-analyze")?.addEventListener("click", async () => {

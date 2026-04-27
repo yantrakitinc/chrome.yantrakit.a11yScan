@@ -889,7 +889,11 @@ function renderObserveHistory(): string {
     sendMessage({ type: "OBSERVER_GET_HISTORY" }).then((result) => {
       if (result && (result as { type: string }).type === "OBSERVER_HISTORY") {
         observerEntries = (result as { payload: iObserverEntry[] }).payload;
-        renderScanTab();
+        // Targeted update: refresh only the list, not the whole scan tab,
+        // so the filter input keeps focus mid-typing.
+        const listEl = document.getElementById("observer-list-content");
+        if (listEl) listEl.innerHTML = renderObserverListInner();
+        else renderScanTab();
       }
     });
   }
@@ -901,29 +905,31 @@ function renderObserveHistory(): string {
         <button id="clear-observer" style="font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:4px 10px;background:none;cursor:pointer;min-height:24px;flex-shrink:0">Clear</button>
         <button id="export-observer" style="font-size:11px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;padding:4px 10px;background:none;cursor:pointer;min-height:24px;flex-shrink:0">Export</button>
       </div>
-      ${observerEntries.length === 0
-        ? '<div style="font-size:11px;color:#71717a;text-align:center;padding:16px">Observer history will appear here as you browse with Observer mode on. Data stays local to your browser.</div>'
-        : (() => {
-            const filtered = observerFilter
-              ? observerEntries.filter((e) => e.url.includes(observerFilter) || (e.title || "").toLowerCase().includes(observerFilter.toLowerCase()))
-              : observerEntries;
-            if (filtered.length === 0) return '<div style="font-size:11px;color:#71717a;text-align:center;padding:16px">No entries match that domain.</div>';
-            return filtered.map((entry) => `
-              <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtmlConfig(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px;cursor:pointer" class="observer-entry" data-url="${entry.url}">
-                <div style="display:flex;align-items:center;gap:6px">
-                  <span style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "#b91c1c" : "#047857"};flex-shrink:0">${entry.violationCount}</span>
-                  <span style="font-size:11px;font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.title || entry.url}</span>
-                  <span style="font-size:10px;color:#71717a;flex-shrink:0">${entry.source === "auto" ? "auto" : "manual"}</span>
-                  ${entry.viewportBucket ? `<span style="font-size:10px;color:#0369a1;background:#e0f2fe;padding:1px 4px;border-radius:3px;flex-shrink:0">${entry.viewportBucket}</span>` : ""}
-                </div>
-                <div style="font-size:10px;color:#71717a;margin-top:2px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.url}</div>
-                <div style="font-size:10px;color:#71717a;margin-top:1px">${new Date(entry.timestamp).toLocaleString()}</div>
-              </div>
-            `).join("");
-          })()
-      }
+      <div id="observer-list-content">${renderObserverListInner()}</div>
     </div>
   `;
+}
+
+function renderObserverListInner(): string {
+  if (observerEntries.length === 0) {
+    return '<div style="font-size:11px;color:#71717a;text-align:center;padding:16px">Observer history will appear here as you browse with Observer mode on. Data stays local to your browser.</div>';
+  }
+  const filtered = observerFilter
+    ? observerEntries.filter((e) => e.url.includes(observerFilter) || (e.title || "").toLowerCase().includes(observerFilter.toLowerCase()))
+    : observerEntries;
+  if (filtered.length === 0) return '<div style="font-size:11px;color:#71717a;text-align:center;padding:16px">No entries match that domain.</div>';
+  return filtered.map((entry) => `
+    <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtmlConfig(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px;cursor:pointer" class="observer-entry" data-url="${entry.url}">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "#b91c1c" : "#047857"};flex-shrink:0">${entry.violationCount}</span>
+        <span style="font-size:11px;font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.title || entry.url}</span>
+        <span style="font-size:10px;color:#71717a;flex-shrink:0">${entry.source === "auto" ? "auto" : "manual"}</span>
+        ${entry.viewportBucket ? `<span style="font-size:10px;color:#0369a1;background:#e0f2fe;padding:1px 4px;border-radius:3px;flex-shrink:0">${entry.viewportBucket}</span>` : ""}
+      </div>
+      <div style="font-size:10px;color:#71717a;margin-top:2px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.url}</div>
+      <div style="font-size:10px;color:#71717a;margin-top:1px">${new Date(entry.timestamp).toLocaleString()}</div>
+    </div>
+  `).join("");
 }
 
 function renderToolbar(): string {
@@ -1565,9 +1571,11 @@ function attachScanTabListeners(): void {
     renderScanTab();
   });
   // Observer domain filter (F04-AC12)
+  // Targeted DOM update — full re-render would destroy the input mid-keystroke and lose focus.
   document.getElementById("observer-domain-filter")?.addEventListener("input", (e) => {
     observerFilter = (e.target as HTMLInputElement).value;
-    renderScanTab();
+    const listEl = document.getElementById("observer-list-content");
+    if (listEl) listEl.innerHTML = renderObserverListInner();
   });
 
   // Movie speed change (F06-AC4)
