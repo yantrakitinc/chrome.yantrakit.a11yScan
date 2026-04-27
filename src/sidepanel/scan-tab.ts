@@ -451,6 +451,10 @@ function attachConfigDialogListeners(dialog: HTMLDialogElement): void {
     } catch (err) {
       errorEl.textContent = err instanceof Error ? err.message : String(err);
       errorEl.style.display = "block";
+      // Return focus to the textarea so the user can fix the JSON without
+      // having to re-click into the input. role=alert + aria-live on the
+      // error region announces the message.
+      textarea.focus();
     }
   });
 
