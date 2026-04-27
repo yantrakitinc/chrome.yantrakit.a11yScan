@@ -61,7 +61,7 @@ export function renderScreenReaderTab(): void {
         <button id="sr-clear-scope" class="cur-pointer" style="font-size:10px;font-weight:700;color:#dc2626;border:none;background:none;padding:2px 4px">Clear scope</button>
       </div>
     ` : ""}
-    <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:8px;${playState === "playing" || playState === "paused" ? "background:#fffbeb" : ""}">
+    <div role="status" aria-live="polite" aria-atomic="true" class="fs-0" style="padding:8px 12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:8px;${playState === "playing" || playState === "paused" ? "background:#fffbeb" : ""}">
       <span class="f-1 font-mono" style="font-size:11px;font-weight:600;color:#52525b">${
         playState === "complete" ? '<span style="color:#047857;font-weight:700">Complete</span>' :
         playState === "playing" ? `<span style="color:#92400e;font-weight:700">${
@@ -89,7 +89,7 @@ export function renderScreenReaderTab(): void {
           </button>
         ` : ""}
         ${playState === "playing" || playState === "paused" ? `
-          <button id="sr-stop" aria-label="Stop speech" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;color:#dc2626">
+          <button id="sr-stop" aria-label="Stop speech" title="Stop speech (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;color:#dc2626">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="8" height="8"/></svg>
           </button>
         ` : ""}
