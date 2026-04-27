@@ -67,8 +67,16 @@ export async function multiViewportScan(
   sendResponse({ type: "MULTI_VIEWPORT_RESULT", payload: mvResult });
 }
 
-/** Diff violations across viewports into shared vs viewport-specific */
-function diffResults(
+/**
+ * Diff violations across viewports into shared vs viewport-specific.
+ *
+ * Exported for unit testing. A violation is "shared" if it appears in every
+ * viewport that produced a result; otherwise it's reported with the list of
+ * viewports it was observed at. Viewports whose scans failed (no entry in
+ * `perViewport`) are excluded from the denominator so a single failure
+ * doesn't reclassify a truly-shared violation as viewport-specific.
+ */
+export function diffResults(
   perViewport: Record<number, iScanResult>,
   viewports: number[]
 ): { shared: iViolation[]; viewportSpecific: iViewportViolation[] } {
@@ -82,6 +90,7 @@ function diffResults(
 
   const shared: iViolation[] = [];
   const viewportSpecific: iViewportViolation[] = [];
+  const succeededCount = viewports.reduce((n, w) => n + (perViewport[w] ? 1 : 0), 0);
 
   for (const ruleId of allRuleIds) {
     const presentIn: number[] = [];
@@ -99,7 +108,7 @@ function diffResults(
 
     if (!firstViolation) continue;
 
-    if (presentIn.length === viewports.length) {
+    if (presentIn.length === succeededCount && succeededCount > 0) {
       shared.push(firstViolation);
     } else {
       viewportSpecific.push({ ...firstViolation, viewports: presentIn });
