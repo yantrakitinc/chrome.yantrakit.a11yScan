@@ -144,7 +144,7 @@ export function renderKeyboardTab(): void {
         </summary>
         <div>
           ${tabOrder.length === 0
-            ? '<div style="padding:12px;font-size:11px;color:#71717a;text-align:center">Click Analyze to scan keyboard navigation.</div>'
+            ? '<div class="ds-empty" style="padding:12px">Click Analyze to scan keyboard navigation.</div>'
             : tabOrder.map((el, i) => {
               const escName = escHtml(el.accessibleName);
               const roleClass = el.role === "button" ? "ds-badge--role-button"
