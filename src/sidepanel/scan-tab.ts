@@ -693,8 +693,8 @@ function renderResults(result: iScanResult): string {
       Multi-Viewport: ${mvResult.shared.length} shared &middot; ${mvResult.viewportSpecific.length} viewport-specific
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
-      <button class="mv-filter-chip" data-mvfilter="all" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;min-height:24px;border:1px solid ${mvFilter === null ? "#d97706" : "#d4d4d8"};background:${mvFilter === null ? "#fef3c7" : "#fff"};color:${mvFilter === null ? "#92400e" : "#52525b"}">All</button>
-      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip" data-mvfilter="${vp}" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;min-height:24px;border:1px solid ${mvFilter === vp ? "#d97706" : "#d4d4d8"};background:${mvFilter === vp ? "#fef3c7" : "#fff"};color:${mvFilter === vp ? "#92400e" : "#52525b"};font-family:monospace">${vp}px</button>`).join("")}
+      <button class="mv-filter-chip" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;min-height:24px;border:1px solid ${mvFilter === null ? "#d97706" : "#d4d4d8"};background:${mvFilter === null ? "#fef3c7" : "#fff"};color:${mvFilter === null ? "#92400e" : "#52525b"}">All</button>
+      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;min-height:24px;border:1px solid ${mvFilter === vp ? "#d97706" : "#d4d4d8"};background:${mvFilter === vp ? "#fef3c7" : "#fff"};color:${mvFilter === vp ? "#92400e" : "#52525b"};font-family:monospace">${vp}px</button>`).join("")}
     </div>
   ` : "";
 
