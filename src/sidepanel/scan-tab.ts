@@ -810,7 +810,7 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
           <div style="background:#fff;border:1px solid #e4e4e7;border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
             <div style="display:flex;justify-content:space-between;gap:4px">
               <span class="truncate font-mono" style="font-weight:600;color:#27272a">${escHtml(n.selector)}</span>
-              <button class="highlight-btn fs-0 cur-pointer min-h-24" data-selector="${escHtml(n.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none">Highlight</button>
+              <button class="highlight-btn fs-0 cur-pointer min-h-24" data-selector="${escHtml(n.selector)}" aria-label="Highlight ${escHtml(n.selector)} on the page" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none">Highlight</button>
             </div>
             <div style="color:#b91c1c;margin-top:2px">${escHtml(n.failureSummary)}</div>
             <button class="explain-btn cur-pointer min-h-24" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:11px;font-weight:700;color:#4338ca;background:none;border:none;margin-top:4px">Chat about it \u2192</button>
