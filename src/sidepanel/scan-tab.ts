@@ -1228,11 +1228,16 @@ function attachScanTabListeners(): void {
       const wasResults = state.scanPhase === "results";
       state.scanPhase = "scanning";
       if (!wasResults) { state.accordionExpanded = false; }
-      // Remove old overlays and highlights before new scan (F05-AC15)
+      // Remove old overlays and highlights before new scan (F05-AC15).
+      // Reset the corresponding state flags so the toolbar/checkbox toggles
+      // reflect what's actually on the page after the new scan completes.
       sendMessage({ type: "HIDE_VIOLATION_OVERLAY" });
       sendMessage({ type: "HIDE_TAB_ORDER" });
       sendMessage({ type: "HIDE_FOCUS_GAPS" });
       sendMessage({ type: "CLEAR_HIGHLIGHTS" });
+      state.violationsOverlayOn = false;
+      state.tabOrderOverlayOn = false;
+      state.focusGapsOverlayOn = false;
       updateTabDisabledStates();
       renderScanTab();
       try {
