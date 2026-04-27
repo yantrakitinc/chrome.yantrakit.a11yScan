@@ -20,6 +20,7 @@ import { analyzeReadingOrder } from "./reading-order";
 import { getTabOrder, getFocusGaps, detectFocusIndicators, detectKeyboardTraps, detectSkipLinks } from "./tab-order";
 import { enterInspectMode, exitInspectMode } from "./inspector";
 import { runHeuristicRules } from "./heuristic-rules";
+import { mapAxeTagsToWcag } from "@shared/wcag-mapping";
 
 /* ═══════════════════════════════════════════════════════════════════
    Message Listener — guarded against double-registration
@@ -237,8 +238,6 @@ async function runScan(config: import("@shared/types").iRemoteConfig, isCrawl = 
   // Page elements detection
   const pageElements = detectPageElements();
 
-  const scanDurationMs = Math.round(performance.now() - startTime);
-
   // Run custom heuristic rules (F11) after axe-core
   try {
     const heuristicViolations = runHeuristicRules(isCrawl, config.heuristics?.exclude);
@@ -296,20 +295,6 @@ function checkCssAnimations(): boolean {
   }
   return false;
 }
-
-/** Map axe tags to WCAG criterion IDs */
-function mapAxeTagsToWcag(tags: string[]): string[] {
-  const wcagPattern = /^wcag(\d)(\d)(\d+)$/;
-  const criteria: string[] = [];
-  for (const tag of tags) {
-    const match = tag.match(wcagPattern);
-    if (match) {
-      criteria.push(`${match[1]}.${match[2]}.${match[3]}`);
-    }
-  }
-  return [...new Set(criteria)];
-}
-
 
 /* ═══════════════════════════════════════════════════════════════════
    Element Highlighting (F07)

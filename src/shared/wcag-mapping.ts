@@ -180,3 +180,23 @@ export function getManualReviewCriteria(version: string, level: string): iWcagCr
 export function mapRuleToWcag(ruleId: string): string[] {
   return WCAG_CRITERIA.filter((c) => c.axeRules.includes(ruleId)).map((c) => c.id);
 }
+
+/**
+ * Convert axe-core tag list (e.g. ["wcag2aa", "wcag111", "wcag1410"]) to
+ * dotted WCAG criterion IDs (e.g. ["1.1.1", "1.4.10"]). Tags that don't
+ * encode a numbered criterion (level tags like "wcag2aa", "best-practice",
+ * "ACT") are skipped. Result is deduplicated.
+ *
+ * Format expected: ^wcag<principle><guideline><criterion>$ where each digit
+ * group is a single digit except the last, which can be 1-2 digits to
+ * accommodate WCAG 2.2 criteria like 1.4.10, 1.4.13, 2.4.11, 2.4.13, etc.
+ */
+export function mapAxeTagsToWcag(tags: string[]): string[] {
+  const wcagPattern = /^wcag(\d)(\d)(\d+)$/;
+  const criteria: string[] = [];
+  for (const tag of tags) {
+    const match = tag.match(wcagPattern);
+    if (match) criteria.push(`${match[1]}.${match[2]}.${match[3]}`);
+  }
+  return [...new Set(criteria)];
+}

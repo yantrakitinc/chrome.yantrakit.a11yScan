@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filterCriteria, getManualReviewCriteria, mapRuleToWcag, WCAG_CRITERIA } from "../wcag-mapping";
+import { filterCriteria, getManualReviewCriteria, mapRuleToWcag, mapAxeTagsToWcag, WCAG_CRITERIA } from "../wcag-mapping";
 
 describe("WCAG_CRITERIA", () => {
   it("has at least 80 criteria (A + AA + AAA)", () => {
@@ -83,5 +83,44 @@ describe("mapRuleToWcag", () => {
     const result = mapRuleToWcag("link-name");
     expect(result).toContain("2.4.4");
     expect(result).toContain("4.1.2");
+  });
+});
+
+describe("mapAxeTagsToWcag", () => {
+  it("converts a basic single-digit criterion tag", () => {
+    expect(mapAxeTagsToWcag(["wcag111"])).toEqual(["1.1.1"]);
+  });
+
+  it("converts a two-digit final segment for criteria like 1.4.10", () => {
+    expect(mapAxeTagsToWcag(["wcag1410"])).toEqual(["1.4.10"]);
+  });
+
+  it("converts the WCAG 2.2 criteria 2.4.11 / 2.4.13", () => {
+    expect(mapAxeTagsToWcag(["wcag2411"])).toEqual(["2.4.11"]);
+    expect(mapAxeTagsToWcag(["wcag2413"])).toEqual(["2.4.13"]);
+  });
+
+  it("ignores level tags like wcag2aa / wcag21aa / wcag2a", () => {
+    expect(mapAxeTagsToWcag(["wcag2aa", "wcag21aa", "wcag2a"])).toEqual([]);
+  });
+
+  it("ignores non-wcag tags (best-practice, ACT, section508)", () => {
+    expect(mapAxeTagsToWcag(["best-practice", "ACT", "section508"])).toEqual([]);
+  });
+
+  it("returns multiple criteria when multiple wcag tags are present", () => {
+    expect(mapAxeTagsToWcag(["wcag111", "wcag143", "wcag2aa"])).toEqual(["1.1.1", "1.4.3"]);
+  });
+
+  it("deduplicates repeated criteria", () => {
+    expect(mapAxeTagsToWcag(["wcag111", "wcag111", "wcag111"])).toEqual(["1.1.1"]);
+  });
+
+  it("returns an empty array for an empty input", () => {
+    expect(mapAxeTagsToWcag([])).toEqual([]);
+  });
+
+  it("ignores malformed wcag tags (letters in body, missing digits)", () => {
+    expect(mapAxeTagsToWcag(["wcag", "wcag1", "wcag1a1", "wcagAAA"])).toEqual([]);
   });
 });
