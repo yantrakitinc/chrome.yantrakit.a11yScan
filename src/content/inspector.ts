@@ -4,6 +4,7 @@
  */
 
 import type { iInspectorData } from "@shared/types";
+import { escHtml } from "@shared/utils";
 import { lastScanViolations } from "./scan-state";
 
 let active = false;
@@ -127,15 +128,18 @@ function showTooltip(data: iInspectorData, targetEl: Element): void {
   tooltip = document.createElement("div");
   tooltip.style.cssText = TOOLTIP_STYLES;
 
+  // All page-controlled fields (role, accessibleName, ARIA attr names/values)
+  // are escaped before they hit innerHTML — a hostile page can put `<script>`
+  // or quote characters in aria-label, and we render that content here.
   let html = `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#8888aa;margin-bottom:4px">Role</div>`;
-  html += `<div style="margin-bottom:8px">${data.role}</div>`;
+  html += `<div style="margin-bottom:8px">${escHtml(data.role)}</div>`;
   html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#8888aa;margin-bottom:4px">Name</div>`;
-  html += `<div style="margin-bottom:8px">${data.accessibleName || "<none>"}</div>`;
+  html += `<div style="margin-bottom:8px">${data.accessibleName ? escHtml(data.accessibleName) : "&lt;none&gt;"}</div>`;
 
   if (Object.keys(data.ariaAttributes).length > 0) {
     html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#8888aa;margin-bottom:4px">ARIA</div>`;
     for (const [k, v] of Object.entries(data.ariaAttributes)) {
-      html += `<div style="font-size:12px;margin-bottom:2px">${k}="${v}"</div>`;
+      html += `<div style="font-size:12px;margin-bottom:2px">${escHtml(k)}="${escHtml(v)}"</div>`;
     }
   }
 
