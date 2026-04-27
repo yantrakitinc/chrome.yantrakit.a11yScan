@@ -108,14 +108,14 @@ export function renderKeyboardTab(): void {
   const failedIndicators = focusIndicators.filter((fi) => !fi.hasIndicator);
 
   panel.innerHTML = `
-    <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;gap:8px;background:#fafafa">
+    <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;gap:8px;background:var(--ds-zinc-50)">
       <button id="kb-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Analyze</button>
       ${kbAnalyzed ? '<button id="kb-clear" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;background:none">Clear</button>' : ""}
     </div>
     ${!kbAnalyzed ? '<div class="f-1" style="padding:16px;text-align:center;font-size:12px;color:var(--ds-zinc-500)">Click Analyze to scan keyboard navigation.</div>' : ""}
     ${kbAnalyzed ? `<div id="kb-scroll-container" class="f-1" style="overflow-y:auto;min-height:0">
       <details open>
-        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:#18181b;border-bottom:1px solid var(--ds-zinc-200);background:#fafafa;display:flex;align-items:center;gap:8px">
+        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-zinc-900);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-zinc-50);display:flex;align-items:center;gap:8px">
           <span class="f-1">Tab Order \u2014 ${tabOrder.length} elements</span>
           ${tabOrder.length > 0 && (moviePlayState === "idle" || moviePlayState === "complete") ? `
             <button id="movie-play-all" aria-label="Play all - animate through tab order" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
@@ -172,12 +172,12 @@ export function renderKeyboardTab(): void {
         </div>
       </details>
       <details${focusGaps.length > 0 ? " open" : ""}>
-        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-red-700);border-bottom:1px solid var(--ds-zinc-200);background:#fef2f2">Focus Gaps \u2014 ${focusGaps.length} elements</summary>
+        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-red-700);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-red-50)">Focus Gaps \u2014 ${focusGaps.length} elements</summary>
         <div style="padding:${focusGaps.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
           ${focusGaps.length === 0
             ? '<div style="padding:12px;font-size:11px;color:var(--ds-zinc-500);text-align:center">No focus gaps detected.</div>'
             : focusGaps.map((g) => `
-              <div class="kb-gap cur-pointer" role="button" tabindex="0" aria-label="Highlight focus gap: ${escHtml(g.selector)}" data-selector="${escHtml(g.selector)}" style="font-size:11px;padding:8px;border:1px solid var(--ds-red-200);background:#fef2f2;border-radius:4px">
+              <div class="kb-gap cur-pointer" role="button" tabindex="0" aria-label="Highlight focus gap: ${escHtml(g.selector)}" data-selector="${escHtml(g.selector)}" style="font-size:11px;padding:8px;border:1px solid var(--ds-red-200);background:var(--ds-red-50);border-radius:4px">
                 <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(g.selector)}</div>
                 <div style="color:var(--ds-red-700);margin-top:2px">${escHtml(g.reason)}</div>
               </div>
@@ -200,14 +200,14 @@ export function renderKeyboardTab(): void {
         </div>
       </details>
       <details${keyboardTraps.length > 0 ? " open" : ""}>
-        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-red-600);border-bottom:1px solid var(--ds-zinc-200);background:#fef2f2">Keyboard Traps \u2014 ${keyboardTraps.length}</summary>
+        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-red-600);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-red-50)">Keyboard Traps \u2014 ${keyboardTraps.length}</summary>
         <div style="padding:${keyboardTraps.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
           ${tabOrder.length === 0
             ? '<div style="padding:12px;font-size:11px;color:var(--ds-zinc-500);text-align:center">Run Analyze to detect keyboard traps.</div>'
             : keyboardTraps.length === 0
               ? '<div style="padding:12px;font-size:11px;color:var(--ds-green-700);text-align:center">No keyboard traps detected.</div>'
               : keyboardTraps.map((t) => `
-                <div class="kb-trap cur-pointer" role="button" tabindex="0" aria-label="Highlight keyboard trap: ${escHtml(t.selector)}" data-selector="${escHtml(t.selector)}" style="font-size:11px;padding:8px;border:1px solid var(--ds-red-200);background:#fef2f2;border-radius:4px">
+                <div class="kb-trap cur-pointer" role="button" tabindex="0" aria-label="Highlight keyboard trap: ${escHtml(t.selector)}" data-selector="${escHtml(t.selector)}" style="font-size:11px;padding:8px;border:1px solid var(--ds-red-200);background:var(--ds-red-50);border-radius:4px">
                   <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(t.selector)}</div>
                   <div style="color:var(--ds-red-600);margin-top:2px">${escHtml(t.description)}</div>
                 </div>

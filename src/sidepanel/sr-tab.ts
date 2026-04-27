@@ -48,7 +48,7 @@ export function renderScreenReaderTab(): void {
     : `${elements.length} elements in reading order`;
 
   panel.innerHTML = `
-    <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;gap:8px;background:#fafafa">
+    <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;gap:8px;background:var(--ds-zinc-50)">
       <button id="sr-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Analyze</button>
       <button id="sr-inspect" aria-label="Inspect element" aria-pressed="${inspectActive}" class="cur-pointer min-h-24" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid ${inspectActive ? "var(--ds-amber-500)" : "var(--ds-zinc-300)"};border-radius:4px;background:${inspectActive ? "var(--ds-amber-50)" : "none"};color:${inspectActive ? "var(--ds-amber-700)" : "var(--ds-zinc-600)"}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2"/></svg>
