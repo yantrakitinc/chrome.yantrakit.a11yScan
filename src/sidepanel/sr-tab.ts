@@ -369,7 +369,11 @@ function playNext(): void {
 
 const CONTAINER_ROLES = new Set(["navigation", "banner", "contentinfo", "complementary", "region", "article", "form", "list", "group", "main"]);
 
-function elementToSpeechText(el: iScreenReaderElement): string {
+/**
+ * Compose the spoken-text representation of a single screen-reader element:
+ * `<role>, <accessibleName>[, <state1>, <state2>, …]`. Pure; exported for tests.
+ */
+export function elementToSpeechText(el: iScreenReaderElement): string {
   return `${el.role}, ${el.accessibleName}${el.states.length > 0 ? ", " + el.states.join(", ") : ""}`;
 }
 
@@ -419,7 +423,12 @@ function renderSrRow(el: iScreenReaderElement): string {
 }
 
 
-function roleClassFor(role: string): string {
+/**
+ * Map an ARIA role / implicit role to the design-token CSS class for its badge.
+ * Landmarks share a single class; everything unmapped uses the default class.
+ * Pure; exported for tests.
+ */
+export function roleClassFor(role: string): string {
   const map: Record<string, string> = {
     link: "ds-badge--role-link",
     button: "ds-badge--role-button",
