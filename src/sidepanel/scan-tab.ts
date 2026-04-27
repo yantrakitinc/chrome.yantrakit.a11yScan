@@ -1795,7 +1795,10 @@ function buildJsonReport(): import("@shared/types").iJsonReport {
 }
 
 function buildHtmlReport(): string {
-  const r = state.lastScanResult!;
+  // Caller (the export-html / export-pdf click handlers) already gated on
+  // state.lastScanResult; this function is only entered when it's set.
+  const r = state.lastScanResult;
+  if (!r) throw new Error("buildHtmlReport called without a single-page scan result");
   const totalViolationNodes = r.violations.reduce((s, v) => s + v.nodes.length, 0);
   const totalRules = r.violations.length + r.passes.length;
   const passRate = totalRules > 0 ? Math.round((r.passes.length / totalRules) * 100) : 100;
