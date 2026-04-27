@@ -1433,22 +1433,34 @@ function attachScanTabListeners(): void {
     if (!text) return;
     let newUrls: string[] = [];
     if (text.startsWith("<?xml") || text.startsWith("<urlset") || text.startsWith("<sitemapindex")) {
-      // Parse sitemap XML
-      try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, "application/xml");
-        const locs = Array.from(doc.querySelectorAll("loc")).map((el) => el.textContent?.trim() || "").filter(Boolean);
-        newUrls = locs;
-      } catch {
-        newUrls = [];
+      // Parse sitemap XML. parseFromString does NOT throw on bad XML — it
+      // returns a document with a <parsererror> root, so check for that and
+      // fall through to plaintext mode rather than silently swallowing input.
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, "application/xml");
+      const parseFailed = !!doc.querySelector("parsererror");
+      if (!parseFailed) {
+        newUrls = Array.from(doc.querySelectorAll("loc"))
+          .map((el) => el.textContent?.trim() || "")
+          .filter(Boolean);
       }
-    } else {
-      newUrls = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
     }
+    // Fallback: if not XML, or XML produced zero URLs, treat input as plain
+    // line-separated URLs. Preserves the user's input intent rather than
+    // silently dropping it.
+    if (newUrls.length === 0) {
+      newUrls = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith("<"));
+    }
+    let added = 0;
     for (const u of newUrls) {
-      if (!crawlUrlList.includes(u)) crawlUrlList.push(u);
+      if (!crawlUrlList.includes(u)) {
+        crawlUrlList.push(u);
+        added++;
+      }
     }
-    ta.value = "";
+    // Only clear the textarea if we actually pulled URLs out of it. If nothing
+    // was usable (typo'd XML, blank lines), leave the input so the user can fix.
+    if (added > 0) ta.value = "";
     renderScanTab();
   });
 
