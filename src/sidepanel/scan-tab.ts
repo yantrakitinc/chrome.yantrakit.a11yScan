@@ -282,7 +282,7 @@ function renderMvCheckbox(busy: boolean): string {
 function renderCrawlConfig(busy: boolean): string {
   const urlCount = crawlUrlList.length;
   const urlListBtn = _crawlMode === "urllist"
-    ? `<button type="button" id="url-list-open"
+    ? `<button type="button" id="url-list-open" aria-expanded="${urlListPanelOpen}" aria-controls="url-list-panel"
         class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;margin-top:4px">
         ${urlCount === 0 ? "Set up URL list" : `${urlCount} URL${urlCount === 1 ? "" : "s"} \u2014 Edit list`}
       </button>`
