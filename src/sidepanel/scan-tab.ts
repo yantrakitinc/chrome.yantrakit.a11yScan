@@ -1666,16 +1666,35 @@ function attachScanTabListeners(): void {
       win.document.write(html);
       win.document.close();
       setTimeout(() => win.print(), 500);
+    } else {
+      // Popup blocked — surface a transient error in the export-pdf button
+      // text per R-EXPORT error-handling requirements.
+      const btn = document.getElementById("export-pdf");
+      if (btn) {
+        const original = btn.textContent;
+        btn.textContent = "Popup blocked";
+        setTimeout(() => { btn.textContent = original; }, 3000);
+      }
     }
   });
   document.getElementById("export-copy")?.addEventListener("click", async () => {
     if (!hasExportableData()) return;
     const report = buildJsonReport();
-    await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
     const btn = document.getElementById("export-copy");
-    if (btn) {
-      btn.textContent = "Copied!";
-      setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
+      if (btn) {
+        btn.textContent = "Copied!";
+        setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+      }
+    } catch {
+      // Clipboard API can fail on insecure contexts or if permission denied.
+      // Per R-EXPORT: 'If clipboard write fails: button text changes to
+      // Copy failed for 2s'.
+      if (btn) {
+        btn.textContent = "Copy failed";
+        setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+      }
     }
   });
   // Observer export
