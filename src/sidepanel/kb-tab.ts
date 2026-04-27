@@ -3,6 +3,7 @@
  */
 
 import { sendMessage } from "@shared/messages";
+import { state } from "./sidepanel";
 import type { iTabOrderElement, iFocusGap, iFocusIndicator, iKeyboardTrap, iSkipLink } from "@shared/types";
 
 let tabOrder: iTabOrderElement[] = [];
@@ -183,11 +184,11 @@ export function renderKeyboardTab(): void {
       <div style="display:flex;align-items:center;gap:6px;padding:6px 12px">
         <span style="font-size:11px;font-weight:800;color:#52525b">Highlight</span>
         <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#3f3f46;cursor:pointer;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;min-height:24px">
-          <input type="checkbox" id="toggle-tab-order" style="margin:0">
+          <input type="checkbox" id="toggle-tab-order" ${state.tabOrderOverlayOn ? "checked" : ""} style="margin:0">
           Tab order
         </label>
         <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#3f3f46;cursor:pointer;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;min-height:24px">
-          <input type="checkbox" id="toggle-focus-gaps" style="margin:0">
+          <input type="checkbox" id="toggle-focus-gaps" ${state.focusGapsOverlayOn ? "checked" : ""} style="margin:0">
           Focus gaps
         </label>
       </div>
@@ -244,6 +245,15 @@ export function renderKeyboardTab(): void {
     focusIndicators = [];
     keyboardTraps = [];
     kbScrollSetByAnalyze = true;
+    // Hide any overlays the user had toggled on, clear state to match
+    if (state.tabOrderOverlayOn) {
+      state.tabOrderOverlayOn = false;
+      sendMessage({ type: "HIDE_TAB_ORDER" });
+    }
+    if (state.focusGapsOverlayOn) {
+      state.focusGapsOverlayOn = false;
+      sendMessage({ type: "HIDE_FOCUS_GAPS" });
+    }
     skipLinks = [];
     kbAnalyzed = false;
     if (selectedKbTimer) { clearTimeout(selectedKbTimer); selectedKbTimer = null; }
@@ -324,10 +334,12 @@ export function renderKeyboardTab(): void {
   // Overlay toggles
   document.getElementById("toggle-tab-order")?.addEventListener("change", (e) => {
     const checked = (e.target as HTMLInputElement).checked;
+    state.tabOrderOverlayOn = checked;
     sendMessage(checked ? { type: "SHOW_TAB_ORDER" } : { type: "HIDE_TAB_ORDER" });
   });
   document.getElementById("toggle-focus-gaps")?.addEventListener("change", (e) => {
     const checked = (e.target as HTMLInputElement).checked;
+    state.focusGapsOverlayOn = checked;
     sendMessage(checked ? { type: "SHOW_FOCUS_GAPS" } : { type: "HIDE_FOCUS_GAPS" });
   });
 }

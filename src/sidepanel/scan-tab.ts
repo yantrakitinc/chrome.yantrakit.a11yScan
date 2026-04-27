@@ -1337,6 +1337,8 @@ function attachScanTabListeners(): void {
     state.ariaWidgets = [];
     state.manualReview = {};
     state.violationsOverlayOn = false;
+    state.tabOrderOverlayOn = false;
+    state.focusGapsOverlayOn = false;
     updateTabDisabledStates();
     renderScanTab();
     // Remove all overlays and highlights

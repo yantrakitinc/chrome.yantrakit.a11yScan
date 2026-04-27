@@ -61,6 +61,9 @@ export const state = {
   crawlFailed: null as Record<string, string> | null,
   /** Whether the violation-overlay toolbar toggle is currently on. Survives re-render. */
   violationsOverlayOn: false,
+  /** KB-tab overlay toggles. Survive re-render so the checkboxes don't drift. */
+  tabOrderOverlayOn: false,
+  focusGapsOverlayOn: false,
 };
 
 /* ═══════════════════════════════════════════════════════════════════
