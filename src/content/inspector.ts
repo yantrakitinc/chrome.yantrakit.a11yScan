@@ -78,6 +78,12 @@ function onClick(e: MouseEvent): void {
       tooltip.style.border = "2px solid #6c6cff";
       tooltip.style.pointerEvents = "auto";
     }
+    // Notify side panel of the pick so the SR tab (when active) can set its
+    // scope to the picked element. Side panel handler gates on state.topTab.
+    try {
+      const data = collectInspectorData(el);
+      chrome.runtime.sendMessage({ type: "INSPECT_ELEMENT", payload: data });
+    } catch { /* sidepanel may be closed; harmless */ }
   }
 }
 
