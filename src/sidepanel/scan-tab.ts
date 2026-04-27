@@ -962,17 +962,21 @@ function renderToolbar(): string {
 }
 
 function renderToolbarContent(): string {
+  // HTML/PDF reports are single-page only; crawl-only data has no compatible
+  // layout in those formats yet, so disable them when no single-page scan.
+  const singlePageScan = !!state.lastScanResult;
+  const disabledAttr = singlePageScan ? "" : 'disabled aria-disabled="true" title="Run a single-page scan to enable this export"';
   return `
       <div class="toolbar-row">
         <span class="toolbar-label">Export</span>
         <button class="toolbar-btn" id="export-json">JSON</button>
-        <button class="toolbar-btn" id="export-html">HTML</button>
-        <button class="toolbar-btn" id="export-pdf">PDF</button>
+        <button class="toolbar-btn" id="export-html" ${disabledAttr}>HTML</button>
+        <button class="toolbar-btn" id="export-pdf" ${disabledAttr}>PDF</button>
         <button class="toolbar-btn accent" id="export-copy">Copy</button>
       </div>
       <div class="toolbar-row">
         <span class="toolbar-label">Highlight</span>
-        <button class="toolbar-btn${state.violationsOverlayOn ? " active" : ""}" id="toggle-violations" aria-pressed="${state.violationsOverlayOn}">Violations</button>
+        <button class="toolbar-btn${state.violationsOverlayOn ? " active" : ""}" id="toggle-violations" aria-pressed="${state.violationsOverlayOn}" ${state.lastScanResult ? "" : 'disabled aria-disabled="true"'}>Violations</button>
       </div>
   `;
 }
@@ -1568,41 +1572,44 @@ function attachScanTabListeners(): void {
     });
   });
 
-  // Export buttons
+  // Export buttons. Accept either a single-page scan or crawl results — both
+  // produce a valid iJsonReport (single-page populates top-level violations,
+  // crawl-only populates report.crawl with per-page detail).
+  const hasExportableData = (): boolean =>
+    !!state.lastScanResult || !!(state.crawlResults && Object.keys(state.crawlResults).length > 0);
+
   document.getElementById("export-json")?.addEventListener("click", () => {
-    if (state.lastScanResult) {
-      const report = buildJsonReport();
-      const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
-      downloadBlob(blob, `A11y-Scan-Report-${getDomain()}-${getDateStamp()}.json`);
-    }
+    if (!hasExportableData()) return;
+    const report = buildJsonReport();
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    downloadBlob(blob, `A11y-Scan-Report-${getDomain()}-${getDateStamp()}.json`);
   });
   document.getElementById("export-html")?.addEventListener("click", () => {
-    if (state.lastScanResult) {
-      const html = buildHtmlReport();
-      const blob = new Blob([html], { type: "text/html" });
-      downloadBlob(blob, `A11y-Scan-Report-${getDomain()}-${getDateStamp()}.html`);
-    }
+    // HTML/PDF reports render a single-page violation list — crawl-only data
+    // would require a different layout, so for now require a single-page scan.
+    if (!state.lastScanResult) return;
+    const html = buildHtmlReport();
+    const blob = new Blob([html], { type: "text/html" });
+    downloadBlob(blob, `A11y-Scan-Report-${getDomain()}-${getDateStamp()}.html`);
   });
   document.getElementById("export-pdf")?.addEventListener("click", () => {
-    if (state.lastScanResult) {
-      const html = buildHtmlReport();
-      const win = window.open("", "_blank");
-      if (win) {
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => win.print(), 500);
-      }
+    if (!state.lastScanResult) return;
+    const html = buildHtmlReport();
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      setTimeout(() => win.print(), 500);
     }
   });
   document.getElementById("export-copy")?.addEventListener("click", async () => {
-    if (state.lastScanResult) {
-      const report = buildJsonReport();
-      await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
-      const btn = document.getElementById("export-copy");
-      if (btn) {
-        btn.textContent = "Copied!";
-        setTimeout(() => { btn.textContent = "Copy"; }, 2000);
-      }
+    if (!hasExportableData()) return;
+    const report = buildJsonReport();
+    await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
+    const btn = document.getElementById("export-copy");
+    if (btn) {
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = "Copy"; }, 2000);
     }
   });
   // Observer export
@@ -1692,29 +1699,38 @@ function getDateStamp(): string {
    ═══════════════════════════════════════════════════════════════════ */
 
 function buildJsonReport(): import("@shared/types").iJsonReport {
-  const r = state.lastScanResult!;
-  const totalRules = r.violations.length + r.passes.length;
-  const passRate = totalRules > 0 ? Math.round((r.passes.length / totalRules) * 100) : 100;
+  const r = state.lastScanResult;
+  // For crawl-only reports (no single-page scan), top-level fields use the
+  // first crawl page as the metadata anchor and summary aggregates across pages.
+  const firstCrawlPage = !r && state.crawlResults
+    ? Object.values(state.crawlResults)[0] ?? null
+    : null;
+  const anchor = r ?? firstCrawlPage;
+  const violations = r ? r.violations : [];
+  const passes = r ? r.passes : [];
+  const incomplete = r ? r.incomplete : [];
+  const totalRules = violations.length + passes.length;
+  const passRate = totalRules > 0 ? Math.round((passes.length / totalRules) * 100) : 100;
 
   const report: import("@shared/types").iJsonReport = {
     metadata: {
-      url: r.url,
-      title: document.title || r.url,
-      timestamp: r.timestamp,
+      url: anchor?.url ?? "",
+      title: document.title || anchor?.url || "",
+      timestamp: anchor?.timestamp ?? new Date().toISOString(),
       wcagVersion: state.wcagVersion,
       wcagLevel: state.wcagLevel,
       toolVersion: "1.0.0",
-      scanDurationMs: r.scanDurationMs,
+      scanDurationMs: anchor?.scanDurationMs ?? 0,
     },
     summary: {
-      violationCount: r.violations.reduce((s, v) => s + v.nodes.length, 0),
-      passCount: r.passes.length,
-      incompleteCount: r.incomplete.length,
+      violationCount: violations.reduce((s, v) => s + v.nodes.length, 0),
+      passCount: passes.length,
+      incompleteCount: incomplete.length,
       passRate,
     },
-    violations: r.violations,
-    passes: r.passes,
-    incomplete: r.incomplete,
+    violations,
+    passes,
+    incomplete,
   };
 
   // Include manual review in documented shape (F12-AC8)
