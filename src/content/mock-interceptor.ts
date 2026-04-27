@@ -67,17 +67,33 @@ export function deactivateMocks(): void {
 }
 
 function findMatch(url: string, method: string): iMockEndpoint | undefined {
-  return activeMocks.find((mock) => {
-    // URL match: regex or substring
+  return findMatchIn(activeMocks, url, method);
+}
+
+/**
+ * Find the first mock that matches the given URL + method.
+ * Exported for unit testing. URL pattern is treated as a regex if it both
+ * starts and ends with `/` (literal slashes, like `/users\\/\\d+/`); otherwise
+ * it's a substring match. A malformed regex falls back to substring matching
+ * instead of throwing — a typo'd pattern shouldn't break the page's request.
+ */
+export function findMatchIn(
+  mocks: iMockEndpoint[],
+  url: string,
+  method: string,
+): iMockEndpoint | undefined {
+  return mocks.find((mock) => {
     let urlMatch = false;
-    if (mock.urlPattern.startsWith("/") && mock.urlPattern.endsWith("/")) {
-      const regex = new RegExp(mock.urlPattern.slice(1, -1));
-      urlMatch = regex.test(url);
+    if (mock.urlPattern.length >= 2 && mock.urlPattern.startsWith("/") && mock.urlPattern.endsWith("/")) {
+      try {
+        urlMatch = new RegExp(mock.urlPattern.slice(1, -1)).test(url);
+      } catch {
+        urlMatch = url.includes(mock.urlPattern);
+      }
     } else {
       urlMatch = url.includes(mock.urlPattern);
     }
     if (!urlMatch) return false;
-    // Method match (optional)
     if (mock.method && mock.method.toUpperCase() !== method.toUpperCase()) return false;
     return true;
   });
