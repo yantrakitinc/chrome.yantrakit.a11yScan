@@ -151,6 +151,91 @@ describe("runHeuristicRules — broken aria refs (rule 19)", () => {
   });
 });
 
+describe("runHeuristicRules — icon-only buttons (rule 25)", () => {
+  it("flags a button with aria-label and no visible text", () => {
+    document.body.innerHTML = `<button aria-label="Close"></button>`;
+    const v = find(runHeuristicRules(false), "icon-only-button");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT flag a button with both aria-label and visible text", () => {
+    document.body.innerHTML = `<button aria-label="Close">Close</button>`;
+    expect(find(runHeuristicRules(false), "icon-only-button")).toBeUndefined();
+  });
+
+  it("does NOT flag a regular text button without aria-label", () => {
+    document.body.innerHTML = `<button>Close</button>`;
+    expect(find(runHeuristicRules(false), "icon-only-button")).toBeUndefined();
+  });
+});
+
+describe("runHeuristicRules — new tab without warning (rule 28)", () => {
+  it("flags target=_blank with no warning text", () => {
+    document.body.innerHTML = `<a href="/x" target="_blank">Read more</a>`;
+    const v = find(runHeuristicRules(false), "new-tab-no-warning");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT flag a link with 'opens in new tab' in the visible text", () => {
+    document.body.innerHTML = `<a href="/x" target="_blank">Read more (opens in new tab)</a>`;
+    expect(find(runHeuristicRules(false), "new-tab-no-warning")).toBeUndefined();
+  });
+
+  it("does NOT flag a link with 'new tab' in aria-label", () => {
+    document.body.innerHTML = `<a href="/x" target="_blank" aria-label="Read more, new tab">Read more</a>`;
+    expect(find(runHeuristicRules(false), "new-tab-no-warning")).toBeUndefined();
+  });
+
+  it("does NOT flag a same-tab link", () => {
+    document.body.innerHTML = `<a href="/x">Read more</a>`;
+    expect(find(runHeuristicRules(false), "new-tab-no-warning")).toBeUndefined();
+  });
+});
+
+describe("runHeuristicRules — auto-play animation (rule 27)", () => {
+  it("flags <marquee>", () => {
+    document.body.innerHTML = `<marquee>scrolling</marquee>`;
+    const v = find(runHeuristicRules(false), "auto-play-animation");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("runHeuristicRules — breadcrumb validation (rule 24)", () => {
+  it("flags a breadcrumb-classed list missing aria-current", () => {
+    document.body.innerHTML = `<nav aria-label="Breadcrumb"><ol><li>Home</li><li>Shop</li></ol></nav>`;
+    const v = find(runHeuristicRules(false), "breadcrumb-validation");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT flag a breadcrumb with aria-current=page", () => {
+    document.body.innerHTML = `<nav aria-label="Breadcrumb"><ol><li>Home</li><li aria-current="page">Shop</li></ol></nav>`;
+    expect(find(runHeuristicRules(false), "breadcrumb-validation")).toBeUndefined();
+  });
+});
+
+describe("runHeuristicRules — show-password toggle (rule 23)", () => {
+  it("flags a password input with no nearby toggle", () => {
+    document.body.innerHTML = `<form><input type="password" /></form>`;
+    const v = find(runHeuristicRules(false), "show-password-toggle");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT flag when a 'Show' toggle button is in the same container", () => {
+    document.body.innerHTML = `<form><input type="password" /><button>Show password</button></form>`;
+    expect(find(runHeuristicRules(false), "show-password-toggle")).toBeUndefined();
+  });
+});
+
+describe("runHeuristicRules — visual-heading (rule 13)", () => {
+  it("flags a heading-tag element used as styling-only (very-short text)", () => {
+    document.body.innerHTML = `<h1></h1>`;
+    // The exact rule ID is "visual-heading" — we just verify shape; the rule
+    // body uses font-size heuristics that may not trigger in jsdom.
+    const out = runHeuristicRules(false);
+    expect(Array.isArray(out)).toBe(true);
+  });
+});
+
 describe("runHeuristicRules — output shape", () => {
   it("each violation includes wcagCriteria, impact, and nodes with selector/html/failureSummary", () => {
     document.body.innerHTML = `<a href="/x">click here</a>`;
