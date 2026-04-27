@@ -994,11 +994,11 @@ function renderToolbarContent(): string {
   const disabledAttr = singlePageScan ? "" : 'disabled aria-disabled="true" title="Run a single-page scan to enable this export"';
   return `
       <div class="toolbar-row">
-        <span class="toolbar-label">Export</span>
-        <button class="toolbar-btn" id="export-json">JSON</button>
-        <button class="toolbar-btn" id="export-html" ${disabledAttr}>HTML</button>
-        <button class="toolbar-btn" id="export-pdf" ${disabledAttr}>PDF</button>
-        <button class="toolbar-btn accent" id="export-copy">Copy</button>
+        <span class="toolbar-label" id="export-label">Export</span>
+        <button class="toolbar-btn" id="export-json" aria-labelledby="export-label export-json">JSON</button>
+        <button class="toolbar-btn" id="export-html" aria-labelledby="export-label export-html" ${disabledAttr}>HTML</button>
+        <button class="toolbar-btn" id="export-pdf" aria-labelledby="export-label export-pdf" ${disabledAttr}>PDF</button>
+        <button class="toolbar-btn accent" id="export-copy" aria-label="Copy report JSON to clipboard">Copy</button>
       </div>
       <div class="toolbar-row">
         <span class="toolbar-label">Highlight</span>
