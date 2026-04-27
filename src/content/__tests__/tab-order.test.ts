@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { getTabOrder, getFocusGaps, detectSkipLinks } from "../tab-order";
+import { getTabOrder, getFocusGaps, detectSkipLinks, detectFocusIndicators, detectKeyboardTraps } from "../tab-order";
 
 // jsdom lacks CSS.escape — needed by buildElementSelector inside getTabOrder.
 if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS.escape !== "function") {
@@ -122,5 +122,59 @@ describe("detectSkipLinks", () => {
   it("uses aria-label when text content lacks the skip phrase", () => {
     document.body.innerHTML = `<a href="#main" aria-label="Skip nav"><span aria-hidden="true">→</span></a><main id="main"></main>`;
     expect(detectSkipLinks().length).toBe(1);
+  });
+});
+
+describe("detectFocusIndicators", () => {
+  it("returns one entry per visible focusable element", () => {
+    document.body.innerHTML = `<button id="b1">a</button><a href="#" id="a1">b</a><input id="i1" />`;
+    const out = detectFocusIndicators();
+    expect(out.length).toBe(3);
+    expect(out.map((o) => o.selector).sort()).toEqual(["#a1", "#b1", "#i1"]);
+  });
+
+  it("each entry has hasIndicator boolean and optional indicatorType", () => {
+    document.body.innerHTML = `<button id="b1">x</button>`;
+    const [entry] = detectFocusIndicators();
+    expect(typeof entry.hasIndicator).toBe("boolean");
+    expect(entry.indicatorType === undefined || typeof entry.indicatorType === "string").toBe(true);
+  });
+
+  it("excludes hidden elements", () => {
+    document.body.innerHTML = `<button id="b1">a</button><button id="b2" style="display:none">b</button>`;
+    expect(detectFocusIndicators().map((o) => o.selector)).toEqual(["#b1"]);
+  });
+});
+
+describe("detectKeyboardTraps", () => {
+  it("returns an array (possibly empty) for any document", () => {
+    document.body.innerHTML = `<button id="b1">x</button>`;
+    expect(Array.isArray(detectKeyboardTraps())).toBe(true);
+  });
+
+  it("does not flag a normal button as a trap", () => {
+    document.body.innerHTML = `<button id="b1">x</button><button id="b2">y</button>`;
+    expect(detectKeyboardTraps()).toEqual([]);
+  });
+});
+
+describe("getFocusGaps — additional reasons", () => {
+  it("flags a span with onclick but no role/tabindex (some kind of reason text)", () => {
+    document.body.innerHTML = `<span id="s1" onclick="x">click</span>`;
+    const gaps = getFocusGaps();
+    expect(gaps.length).toBe(1);
+    expect(gaps[0].selector).toBe("#s1");
+    expect(typeof gaps[0].reason).toBe("string");
+    expect(gaps[0].reason.length).toBeGreaterThan(0);
+  });
+
+  it("flags a div role=button with aria-hidden using the aria-hidden reason", () => {
+    // role=button is interactive but not focusable (no tabindex), so it falls
+    // into the gap set; aria-hidden is the documented first-priority reason.
+    document.body.innerHTML = `<div role="button" id="d1" aria-hidden="true">x</div>`;
+    const gaps = getFocusGaps();
+    const found = gaps.find((g) => g.selector === "#d1");
+    expect(found).toBeTruthy();
+    expect(found!.reason).toMatch(/aria-hidden/i);
   });
 });

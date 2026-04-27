@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { findMatchIn } from "../mock-interceptor";
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { findMatchIn, activateMocks, deactivateMocks } from "../mock-interceptor";
 import type { iMockEndpoint } from "@shared/types";
 
 function mock(p: Partial<iMockEndpoint>): iMockEndpoint {
@@ -72,5 +73,78 @@ describe("findMatchIn — selection", () => {
 
   it("returns undefined when no mock matches", () => {
     expect(findMatchIn([], "https://x.com/api", "GET")).toBeUndefined();
+  });
+});
+
+describe("activateMocks / deactivateMocks — fetch interception", () => {
+  let originalFetch: typeof fetch;
+
+  beforeEach(() => {
+    originalFetch = window.fetch;
+    // Replace with a tracking stub so we can tell when the patch falls through.
+    (window as unknown as { fetch: typeof fetch }).fetch = (async () => {
+      return new Response("PASSTHROUGH", { status: 418 });
+    }) as typeof fetch;
+  });
+
+  afterEach(() => {
+    deactivateMocks();
+    (window as unknown as { fetch: typeof fetch }).fetch = originalFetch;
+  });
+
+  it("returns the mock body for a matching URL", async () => {
+    activateMocks([{ urlPattern: "/api/users", status: 200, body: { ok: true, list: [1, 2] } }]);
+    const res = await fetch("https://x.com/api/users");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, list: [1, 2] });
+  });
+
+  it("falls through to the original fetch for a non-matching URL", async () => {
+    activateMocks([{ urlPattern: "/api/users", status: 200, body: {} }]);
+    const res = await fetch("https://x.com/other");
+    expect(res.status).toBe(418);
+  });
+
+  it("applies status from the mock", async () => {
+    activateMocks([{ urlPattern: "/x", status: 404, body: { msg: "gone" } }]);
+    const res = await fetch("https://x.com/x");
+    expect(res.status).toBe(404);
+  });
+
+  it("defaults missing status to 200 (per schema default)", async () => {
+    activateMocks([{ urlPattern: "/x", body: {} } as iMockEndpoint]);
+    const res = await fetch("https://x.com/x");
+    expect(res.status).toBe(200);
+  });
+
+  it("filters by method when method is set on the mock", async () => {
+    activateMocks([{ urlPattern: "/x", method: "POST", status: 201, body: {} }]);
+    const get = await fetch("https://x.com/x");
+    expect(get.status).toBe(418); // passes through
+    const post = await fetch("https://x.com/x", { method: "POST" });
+    expect(post.status).toBe(201);
+  });
+
+  it("merges custom headers with Content-Type: application/json", async () => {
+    activateMocks([{ urlPattern: "/h", status: 200, body: {}, headers: { "X-Custom": "yes" } }]);
+    const res = await fetch("https://x.com/h");
+    expect(res.headers.get("X-Custom")).toBe("yes");
+    expect(res.headers.get("Content-Type")).toBe("application/json");
+  });
+
+  it("deactivateMocks restores the original fetch", async () => {
+    activateMocks([{ urlPattern: "/x", status: 200, body: {} }]);
+    deactivateMocks();
+    const res = await fetch("https://x.com/x");
+    expect(res.status).toBe(418); // back to passthrough stub
+  });
+
+  it("activating again replaces the previous mocks (no double-patch)", async () => {
+    activateMocks([{ urlPattern: "/a", status: 201, body: {} }]);
+    activateMocks([{ urlPattern: "/b", status: 202, body: {} }]);
+    const aRes = await fetch("https://x.com/a"); // /a no longer mocked
+    expect(aRes.status).toBe(418);
+    const bRes = await fetch("https://x.com/b");
+    expect(bRes.status).toBe(202);
   });
 });
