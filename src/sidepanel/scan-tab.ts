@@ -1497,6 +1497,10 @@ function attachScanTabListeners(): void {
     state.lastMvResult = null;
     state.mvViewportFilter = null;
     state.mvProgress = null;
+    // Clear crawl results too — Clear is a full reset of result state.
+    state.crawlResults = null;
+    state.crawlFailed = null;
+    state.crawlWaitInfo = null;
     state.accordionExpanded = true;
     state.scanSubTab = "results";
     state.ariaWidgets = [];
