@@ -206,8 +206,11 @@ export function renderScreenReaderTab(): void {
       playState = "playing";
       renderScreenReaderTab();
 
-      // Compute speech text (async — fetches scoped subtree for containers)
+      // Compute speech text (async — fetches scoped subtree for containers).
+      // If the user clicked a different speak button while we were awaiting,
+      // singleSpeakIndex will have changed — abort to avoid out-of-order speech.
       const text = await getSpeakTextForElement(el);
+      if (singleSpeakIndex !== idx) return;
       speakWithVoices(text, () => {
         // Clear when done (only if we're still in single-speak mode for this row)
         if (singleSpeakIndex === idx) {
