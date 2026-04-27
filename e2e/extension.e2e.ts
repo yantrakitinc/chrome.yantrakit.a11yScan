@@ -370,6 +370,36 @@ async function runTests() {
     assert(options.length === 2, `Expected 2 options, got ${options.length}`);
   });
 
+  // ── 11.5. Multi-Viewport ───────────────────────────────────────────────
+  console.log("\n─── Multi-Viewport ───");
+
+  await test("Multi-Viewport checkbox toggle reveals viewport editor", async () => {
+    // Reset state by clicking Crawl off if it's on, then enable MV.
+    await sidepanel.evaluate(() => {
+      const crawlBtn = document.querySelector('[data-mode="crawl"][aria-pressed="true"]') as HTMLElement | null;
+      if (crawlBtn) crawlBtn.click();
+    });
+    await sleep(200);
+    await sidepanel.evaluate(() => {
+      const mv = document.getElementById("mv-check") as HTMLInputElement | null;
+      if (mv && !mv.checked) mv.click();
+    });
+    await sleep(300);
+    const mvButton = await sidepanel.$('button#scan-btn');
+    const text = await mvButton?.evaluate((el) => el.textContent?.trim() ?? "");
+    assert(text === "Scan All Viewports", `Expected 'Scan All Viewports', got '${text}'`);
+  });
+
+  await test("Multi-Viewport chips show default viewports", async () => {
+    const chips = await sidepanel.$$eval(
+      ".accordion-content span",
+      (spans) => spans.filter((s) => /^\d+$/.test(s.textContent?.trim() ?? "")).map((s) => s.textContent?.trim())
+    );
+    assert(chips.includes("375"), "Default viewport 375 should be visible");
+    assert(chips.includes("768"), "Default viewport 768 should be visible");
+    assert(chips.includes("1280"), "Default viewport 1280 should be visible");
+  });
+
   // ── 12. Manual Review ──────────────────────────────────────────────────
   console.log("\n─── Manual Review ───");
 
