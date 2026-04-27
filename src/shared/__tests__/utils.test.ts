@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isScannableUrl, matchesDomain, extractDomain, getViewportBucket } from "../utils";
+import { isScannableUrl, matchesDomain, extractDomain, getViewportBucket, escHtml } from "../utils";
 
 describe("isScannableUrl", () => {
   it("allows http URLs", () => {
@@ -78,5 +78,32 @@ describe("getViewportBucket", () => {
   });
   it("returns ≥1281px for width 1440", () => {
     expect(getViewportBucket(1440, breakpoints)).toBe("≥1281px");
+  });
+});
+
+describe("escHtml", () => {
+  it("escapes ampersand", () => {
+    expect(escHtml("a & b")).toBe("a &amp; b");
+  });
+  it("escapes less-than", () => {
+    expect(escHtml("a < b")).toBe("a &lt; b");
+  });
+  it("escapes greater-than", () => {
+    expect(escHtml("a > b")).toBe("a &gt; b");
+  });
+  it("escapes double quote", () => {
+    expect(escHtml('say "hi"')).toBe("say &quot;hi&quot;");
+  });
+  it("escapes ampersand BEFORE other entities so &lt; becomes &amp;lt; not &lt; (no double-escape regression)", () => {
+    expect(escHtml("&lt;")).toBe("&amp;lt;");
+  });
+  it("escapes a script-tag injection attempt to harmless text", () => {
+    expect(escHtml('<script>alert("x")</script>')).toBe("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;");
+  });
+  it("returns empty string unchanged", () => {
+    expect(escHtml("")).toBe("");
+  });
+  it("leaves single quotes alone (templates use double-quoted attrs)", () => {
+    expect(escHtml("it's fine")).toBe("it's fine");
   });
 });
