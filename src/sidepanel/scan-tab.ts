@@ -1212,6 +1212,15 @@ function attachScanTabListeners(): void {
     if (state.crawl && state.crawlPhase === "idle") {
       state.crawlPhase = "crawling";
       state.accordionExpanded = false;
+      // Crawl navigates to new pages; any overlay from a prior scan is gone.
+      // Reset the toggle state so the toolbar/checkboxes match reality.
+      state.violationsOverlayOn = false;
+      state.tabOrderOverlayOn = false;
+      state.focusGapsOverlayOn = false;
+      sendMessage({ type: "HIDE_VIOLATION_OVERLAY" });
+      sendMessage({ type: "HIDE_TAB_ORDER" });
+      sendMessage({ type: "HIDE_FOCUS_GAPS" });
+      sendMessage({ type: "CLEAR_HIGHLIGHTS" });
       updateTabDisabledStates();
       renderScanTab();
       await sendMessage({ type: "START_CRAWL", payload: {
