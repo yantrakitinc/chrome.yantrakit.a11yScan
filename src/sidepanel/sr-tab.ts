@@ -4,6 +4,7 @@
 
 import { sendMessage } from "@shared/messages";
 import { escHtml } from "@shared/utils";
+import { state } from "./sidepanel";
 import type { iScreenReaderElement } from "@shared/types";
 
 let elements: iScreenReaderElement[] = [];
@@ -294,10 +295,13 @@ function finishPlayback(): void {
 }
 
 function speakWithVoices(text: string, onEnd: () => void): void {
-  // AC7: ensure Chrome voices are loaded before speaking
+  // AC7: ensure Chrome voices are loaded before speaking. Per R-SR test 17,
+  // testConfig.timing.movieSpeed scales the speech rate (1× default).
+  const rate = state.testConfig?.timing?.movieSpeed ?? 1;
   const doSpeak = () => {
     speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = rate;
     utter.onend = onEnd;
     speechSynthesis.speak(utter);
   };
