@@ -157,6 +157,12 @@ function initTabs(): void {
 const TOP_TAB_STORAGE_KEY = "a11yscan_top_tab";
 
 export function switchTab(tabId: iTopTab): void {
+  // Guard against switching to a disabled tab (currently AI Chat is
+  // permanently disabled). Without this, the disabled tab gets
+  // aria-selected=true but the visible disabled style stays — a confusing
+  // intermediate state.
+  const targetButton = document.getElementById(`tab-${tabId}`) as HTMLButtonElement | null;
+  if (targetButton?.disabled) return;
   state.topTab = tabId;
   // Persist so reopening the side panel returns to this tab.
   try { chrome.storage.session.set({ [TOP_TAB_STORAGE_KEY]: tabId }); } catch { /* session storage may not be available in tests */ }
