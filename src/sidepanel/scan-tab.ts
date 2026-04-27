@@ -333,7 +333,7 @@ function openConfigDialog(): void {
   const configJson = state.testConfig ? JSON.stringify(state.testConfig, null, 2) : "";
   content.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:12px;font-weight:800;color:#27272a;text-transform:uppercase;letter-spacing:0.05em">Test Configuration</span>
+      <h2 id="config-dialog-title" style="margin:0;font-size:12px;font-weight:800;color:#27272a;text-transform:uppercase;letter-spacing:0.05em">Test Configuration</h2>
       <button id="config-close-btn" aria-label="Close" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;color:#71717a;border-radius:4px">
         <svg width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
       </button>
