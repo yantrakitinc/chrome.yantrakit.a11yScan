@@ -3,6 +3,7 @@
  */
 
 import { sendMessage } from "@shared/messages";
+import { escHtml } from "@shared/utils";
 import type { iScreenReaderElement } from "@shared/types";
 
 let elements: iScreenReaderElement[] = [];
@@ -382,15 +383,15 @@ function renderSrRow(el: iScreenReaderElement): string {
     singleSpeakIndex !== null ? singleSpeakIndex === rowIdx :
     playState !== "idle" && rowIdx === playIndex ? true :
     selectedRowIndex === rowIdx;
-  const escapedName = escSr(el.accessibleName);
+  const escapedName = escHtml(el.accessibleName);
 
   return `
-    <div class="ds-row sr-row${isHighlighted ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${escSr(el.role)}: ${escapedName}" data-selector="${escSr(el.selector)}" data-index="${rowIdx}">
+    <div class="ds-row sr-row${isHighlighted ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${escHtml(el.role)}: ${escapedName}" data-selector="${escHtml(el.selector)}" data-index="${rowIdx}">
       <span class="ds-row__index">${el.index}</span>
-      <span class="ds-badge ${roleClass} ds-badge--role-min50">${escSr(el.role)}</span>
+      <span class="ds-badge ${roleClass} ds-badge--role-min50">${escHtml(el.role)}</span>
       <span class="ds-row__label">${escapedName}</span>
-      <span class="ds-badge ds-badge--source">${escSr(sourceLabel)}</span>
-      ${el.states.map((s) => `<span class="ds-badge ds-badge--state">${escSr(s)}</span>`).join("")}
+      <span class="ds-badge ds-badge--source">${escHtml(sourceLabel)}</span>
+      ${el.states.map((s) => `<span class="ds-badge ds-badge--state">${escHtml(s)}</span>`).join("")}
       <button class="ds-btn ds-btn--icon ds-btn--ghost sr-speak" data-row-index="${rowIdx}" aria-label="Speak: ${escapedName}">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 4.5h2l3-2.5v8L3 7.5H1V4.5z"/><path d="M8.5 3.5c1 .7 1.5 1.8 1.5 2.5s-.5 1.8-1.5 2.5"/></svg>
       </button>
@@ -398,9 +399,6 @@ function renderSrRow(el: iScreenReaderElement): string {
   `;
 }
 
-function escSr(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
 
 function roleClassFor(role: string): string {
   const map: Record<string, string> = {

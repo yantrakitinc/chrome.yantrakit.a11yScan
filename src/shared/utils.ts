@@ -49,6 +49,16 @@ export function extractDomain(url: string): string {
 /** Default viewport breakpoints — matches sidepanel state.viewports default */
 export const DEFAULT_VIEWPORTS: number[] = [375, 768, 1280];
 
+/**
+ * Escape a string for safe interpolation into innerHTML or attribute values.
+ * Handles &, <, >, " — sufficient for both text content and attribute context
+ * since templates always use double-quoted attributes. Single quotes need no
+ * escape because the templates don't use them as attribute delimiters.
+ */
+export function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 /** Compute breakpoint bucket label for a width given breakpoints */
 export function getViewportBucket(width: number, breakpoints: number[]): string {
   const sorted = [...breakpoints].sort((a, b) => a - b);

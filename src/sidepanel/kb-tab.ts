@@ -3,6 +3,7 @@
  */
 
 import { sendMessage } from "@shared/messages";
+import { escHtml } from "@shared/utils";
 import { state } from "./sidepanel";
 import type { iTabOrderElement, iFocusGap, iFocusIndicator, iKeyboardTrap, iSkipLink } from "@shared/types";
 
@@ -43,11 +44,6 @@ export function onMovieComplete(): void {
     movieCompleteTimer = null;
     renderKeyboardTab();
   }, 2000);
-}
-
-/** Escape page-derived strings for safe innerHTML interpolation. */
-function escKb(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 // Flash a kb-gap/kb-fi/kb-trap item in the panel for 3s on activation.
@@ -124,7 +120,7 @@ export function renderKeyboardTab(): void {
           ${tabOrder.length === 0
             ? '<div style="padding:12px;font-size:11px;color:#71717a;text-align:center">Click Analyze to scan keyboard navigation.</div>'
             : tabOrder.map((el, i) => {
-              const escName = escKb(el.accessibleName);
+              const escName = escHtml(el.accessibleName);
               const roleClass = el.role === "button" ? "ds-badge--role-button"
                 : el.role === "link" ? "ds-badge--role-link"
                 : el.role === "textbox" ? "ds-badge--role-textbox"
@@ -133,9 +129,9 @@ export function renderKeyboardTab(): void {
               const focusLabel = el.hasFocusIndicator ? "Has visible focus indicator" : "Missing visible focus indicator";
               const focusColor = el.hasFocusIndicator ? "var(--ds-green-700)" : "var(--ds-red-700)";
               return `
-              <div class="ds-row kb-row${isActive ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${escKb(el.role)}: ${escName}" data-selector="${escKb(el.selector)}" data-index="${i}">
+              <div class="ds-row kb-row${isActive ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${escHtml(el.role)}: ${escName}" data-selector="${escHtml(el.selector)}" data-index="${i}">
                 <span class="ds-row__index-circle">${el.index}</span>
-                <span class="ds-badge ${roleClass}">${escKb(el.role)}</span>
+                <span class="ds-badge ${roleClass}">${escHtml(el.role)}</span>
                 <span class="ds-row__label">${escName}</span>
                 <span aria-label="${focusLabel}" title="${focusLabel}" style="display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${focusColor}">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
@@ -155,9 +151,9 @@ export function renderKeyboardTab(): void {
           ${focusGaps.length === 0
             ? '<div style="padding:12px;font-size:11px;color:#71717a;text-align:center">No focus gaps detected.</div>'
             : focusGaps.map((g) => `
-              <div class="kb-gap" role="button" tabindex="0" aria-label="Highlight focus gap: ${escKb(g.selector)}" data-selector="${escKb(g.selector)}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
-                <div style="font-family:monospace;font-weight:600;color:#27272a">${escKb(g.selector)}</div>
-                <div style="color:#b91c1c;margin-top:2px">${escKb(g.reason)}</div>
+              <div class="kb-gap" role="button" tabindex="0" aria-label="Highlight focus gap: ${escHtml(g.selector)}" data-selector="${escHtml(g.selector)}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
+                <div style="font-family:monospace;font-weight:600;color:#27272a">${escHtml(g.selector)}</div>
+                <div style="color:#b91c1c;margin-top:2px">${escHtml(g.reason)}</div>
               </div>
             `).join("")}
         </div>
@@ -170,8 +166,8 @@ export function renderKeyboardTab(): void {
             : failedIndicators.length === 0
               ? '<div style="padding:12px;font-size:11px;color:#047857;text-align:center">All focusable elements have visible focus indicators.</div>'
               : failedIndicators.map((fi) => `
-                <div class="kb-fi" role="button" tabindex="0" aria-label="Highlight missing focus indicator: ${escKb(fi.selector)}" data-selector="${escKb(fi.selector)}" style="font-size:11px;padding:8px;border:1px solid #fde68a;background:#fffbeb;border-radius:4px;cursor:pointer">
-                  <div style="font-family:monospace;font-weight:600;color:#27272a">${escKb(fi.selector)}</div>
+                <div class="kb-fi" role="button" tabindex="0" aria-label="Highlight missing focus indicator: ${escHtml(fi.selector)}" data-selector="${escHtml(fi.selector)}" style="font-size:11px;padding:8px;border:1px solid #fde68a;background:#fffbeb;border-radius:4px;cursor:pointer">
+                  <div style="font-family:monospace;font-weight:600;color:#27272a">${escHtml(fi.selector)}</div>
                   <div style="color:#d97706;margin-top:2px">No visible focus indicator detected</div>
                 </div>
               `).join("")}
@@ -185,9 +181,9 @@ export function renderKeyboardTab(): void {
             : keyboardTraps.length === 0
               ? '<div style="padding:12px;font-size:11px;color:#047857;text-align:center">No keyboard traps detected.</div>'
               : keyboardTraps.map((t) => `
-                <div class="kb-trap" role="button" tabindex="0" aria-label="Highlight keyboard trap: ${escKb(t.selector)}" data-selector="${escKb(t.selector)}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
-                  <div style="font-family:monospace;font-weight:600;color:#27272a">${escKb(t.selector)}</div>
-                  <div style="color:#dc2626;margin-top:2px">${escKb(t.description)}</div>
+                <div class="kb-trap" role="button" tabindex="0" aria-label="Highlight keyboard trap: ${escHtml(t.selector)}" data-selector="${escHtml(t.selector)}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
+                  <div style="font-family:monospace;font-weight:600;color:#27272a">${escHtml(t.selector)}</div>
+                  <div style="color:#dc2626;margin-top:2px">${escHtml(t.description)}</div>
                 </div>
               `).join("")}
         </div>
@@ -201,9 +197,9 @@ export function renderKeyboardTab(): void {
               ? '<div style="padding:12px;font-size:11px;color:#d97706;text-align:center">No skip links found. Consider adding a "Skip to main content" link.</div>'
               : skipLinks.map((sl) => `
                 <div style="font-size:11px;padding:8px;border:1px solid ${sl.targetExists ? "#bae6fd" : "#fecaca"};background:${sl.targetExists ? "#f0f9ff" : "#fef2f2"};border-radius:4px">
-                  <div style="font-family:monospace;font-weight:600;color:#27272a">${escKb(sl.selector)}</div>
+                  <div style="font-family:monospace;font-weight:600;color:#27272a">${escHtml(sl.selector)}</div>
                   <div style="margin-top:2px;color:${sl.targetExists ? "#0369a1" : "#dc2626"}">
-                    Target: ${escKb(sl.target)} ${sl.targetExists ? "\u2713 exists" : "\u2717 target not found"}
+                    Target: ${escHtml(sl.target)} ${sl.targetExists ? "\u2713 exists" : "\u2717 target not found"}
                   </div>
                 </div>
               `).join("")}
