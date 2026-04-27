@@ -460,7 +460,7 @@ function renderCrawlProgress(): string {
     <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex;align-items:center;margin-bottom:4px;gap:8px">
         <span style="font-size:11px;font-weight:700;color:#52525b;font-family:monospace;flex-shrink:0">${pageLabel}</span>
-        ${urlDisplay ? `<span style="font-size:10px;color:#71717a;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
+        ${urlDisplay ? `<span class="truncate" style="font-size:10px;color:#71717a;font-family:monospace;flex:1;min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
         <div style="display:flex;gap:4px;flex-shrink:0">
           ${state.crawlPhase === "crawling"
             ? '<button id="pause-crawl" aria-label="Pause crawl" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #d4d4d8;border-radius:4px;background:none;cursor:pointer;color:#52525b"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
@@ -596,7 +596,7 @@ function renderCrawlResults(): string {
             <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:11px">
               <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
               <span style="color:#dc2626;font-weight:700;flex-shrink:0">\u2717</span>
-              <span style="font-family:monospace;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(url)}">${escHtml(url)}</span>
+              <span class="truncate" style="font-family:monospace;color:#27272a;flex:1" title="${escHtml(url)}">${escHtml(url)}</span>
             </summary>
             <div style="padding:4px 8px 8px;font-size:11px;color:#b91c1c">${escHtml(err)}</div>
           </details>
@@ -610,7 +610,7 @@ function renderCrawlResults(): string {
           <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:11px">
             <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
             <span style="color:${hasViolations ? "#dc2626" : "#047857"};font-weight:700;flex-shrink:0">${hasViolations ? "\u2717" : "\u2713"}</span>
-            <span style="font-family:monospace;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(url)}">${escHtml(url)}</span>
+            <span class="truncate" style="font-family:monospace;color:#27272a;flex:1" title="${escHtml(url)}">${escHtml(url)}</span>
             <span style="font-size:10px;font-weight:700;color:${hasViolations ? "#b91c1c" : "#047857"};flex-shrink:0">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
           </summary>
           <div class="scan-detail-body">
@@ -642,7 +642,7 @@ function renderCrawlResults(): string {
           <details class="severity-${entries[0].violation.impact}" style="border-radius:0 4px 4px 0;margin-bottom:4px">
             <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11px;cursor:pointer">
               <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-              <b style="color:#18181b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              <b class="truncate" style="color:#18181b;flex:1">
                 <a href="https://a11yscan.yantrakit.com/wcag/${criterion}" target="_blank" rel="noopener" style="color:#4338ca;text-decoration:underline">${criterion}</a>
               </b>
               <span style="font-size:10px;color:#52525b;flex-shrink:0">${uniquePages.length} page${uniquePages.length === 1 ? "" : "s"}</span>
@@ -653,7 +653,7 @@ function renderCrawlResults(): string {
                 const pageEntries = entries.filter((e) => e.pages[0] === pageUrl);
                 return `
                   <div style="margin-bottom:4px">
-                    <div style="font-size:10px;font-family:monospace;color:#52525b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px" title="${escHtml(pageUrl)}">${escHtml(pageUrl)}</div>
+                    <div class="truncate" style="font-size:10px;font-family:monospace;color:#52525bmargin-bottom:2px" title="${escHtml(pageUrl)}">${escHtml(pageUrl)}</div>
                     ${pageEntries.map((e) => renderViolation(e.violation)).join("")}
                   </div>
                 `;
@@ -728,7 +728,7 @@ function renderResults(result: iScanResult): string {
               <summary style="list-style:none;display:flex;align-items:center;gap:8px;padding:4px 8px;cursor:pointer;font-size:11px">
                 <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
-                <span style="font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.id}</span>
+                <span class="truncate" style="font-weight:600;color:#27272a;flex:1">${p.id}</span>
                 <span style="color:#71717a;flex-shrink:0">${p.wcagCriteria?.join(", ") || ""}</span>
                 <span style="color:#047857;font-weight:700;flex-shrink:0">${p.nodes.length}</span>
               </summary>
@@ -737,7 +737,7 @@ function renderResults(result: iScanResult): string {
                 ${p.nodes.map((n) => `
                   <div style="font-size:11px;font-family:monospace;color:#047857;padding:2px 8px;margin:1px 0;background:#ecfdf5;border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
                     <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0"><path d="M1 4l2 2 4-4"/></svg>
-                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(n.selector)}</span>
+                    <span class="truncate">${escHtml(n.selector)}</span>
                   </div>
                 `).join("")}
               </div>
@@ -758,7 +758,7 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
     <details class="severity-${v.impact} sr-details" style="border-radius:0 4px 4px 0;margin-bottom:4px">
       <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11px;cursor:pointer">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-        <b style="color:#18181b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.wcagCriteria?.join(", ") || v.id}${vpBadge}</b>
+        <b class="truncate" style="color:#18181b;flex:1">${v.wcagCriteria?.join(", ") || v.id}${vpBadge}</b>
         <span style="font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px;flex-shrink:0">${v.impact}</span>
         <span style="color:#52525b;font-family:monospace;font-weight:700;flex-shrink:0">${v.nodes.length}</span>
       </summary>
@@ -767,7 +767,7 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
         ${v.nodes.map((n) => `
           <div style="background:#fff;border:1px solid #e4e4e7;border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
             <div style="display:flex;justify-content:space-between;gap:4px">
-              <span style="font-family:monospace;font-weight:600;color:#27272a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(n.selector)}</span>
+              <span class="truncate" style="font-family:monospace;font-weight:600;color:#27272a">${escHtml(n.selector)}</span>
               <button class="highlight-btn" data-selector="${escHtml(n.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;flex-shrink:0;min-height:24px">Highlight</button>
             </div>
             <div style="color:#b91c1c;margin-top:2px">${escHtml(n.failureSummary)}</div>
@@ -860,7 +860,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
       <summary style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;font-size:11px">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${escHtml(w.role)}</span>
-        <span style="font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(w.label)}</span>
+        <span class="truncate" style="font-weight:600;color:#27272a;flex:1">${escHtml(w.label)}</span>
         <span style="font-weight:700;${pass ? "color:#047857" : "color:#b91c1c"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
       </summary>
       <div class="scan-detail-body">
@@ -929,11 +929,11 @@ function renderObserverListInner(): string {
     <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px;cursor:pointer" class="observer-entry" data-url="${escHtml(entry.url)}">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "#b91c1c" : "#047857"};flex-shrink:0">${entry.violationCount}</span>
-        <span style="font-size:11px;font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(entry.title || entry.url)}</span>
+        <span class="truncate" style="font-size:11px;font-weight:600;color:#27272a;flex:1">${escHtml(entry.title || entry.url)}</span>
         <span style="font-size:10px;color:#71717a;flex-shrink:0">${entry.source === "auto" ? "auto" : "manual"}</span>
         ${entry.viewportBucket ? `<span style="font-size:10px;color:#0369a1;background:#e0f2fe;padding:1px 4px;border-radius:3px;flex-shrink:0">${escHtml(entry.viewportBucket)}</span>` : ""}
       </div>
-      <div style="font-size:10px;color:#71717a;margin-top:2px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(entry.url)}</div>
+      <div class="truncate" style="font-size:10px;color:#71717a;margin-top:2px;font-family:monospace">${escHtml(entry.url)}</div>
       <div style="font-size:10px;color:#71717a;margin-top:1px">${new Date(entry.timestamp).toLocaleString()}</div>
     </div>
   `).join("");
@@ -1847,7 +1847,7 @@ ${r.violations.sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact))
 ${r.passes.map((p) => `<div class="pass">&check; ${escHtml(p.id)} — ${escHtml(p.description)} (${p.nodes.length} elements)</div>`).join("")}
 ${state.ariaWidgets.length > 0 ? `
 <h2>ARIA Widgets (${state.ariaWidgets.length})</h2>
-${state.ariaWidgets.map((w) => `<div class="pass">${w.failCount > 0 ? "&cross;" : "&check;"} ${escHtml(w.role)} — ${escHtml(w.label)} (${w.failCount} issues)</div>`).join("")}
+${state.ariaWidgets.map((w) => `<div class="pass">${w.failCount > 0 ? "&cross" : "&check"} ${escHtml(w.role)} — ${escHtml(w.label)} (${w.failCount} issues)</div>`).join("")}
 ` : ""}
 ${(() => {
   const allCriteria = getManualReviewCriteria(state.wcagVersion, state.wcagLevel);

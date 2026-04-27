@@ -914,6 +914,13 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
 /* <details> body padding (used 4×) */
 .scan-detail-body { padding: 4px 8px 8px; }
 
+/* Single-line truncate with ellipsis (used 12×) */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (min-width: 600px) {
   /* Remove text truncation on violation rule/selector text */
   #scan-content details summary b {
