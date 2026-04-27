@@ -191,13 +191,13 @@ function renderExpandedToggle(busy: boolean): string {
     </select>
     <div style="display:flex;align-items:center;gap:2px">
       <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${state.testConfig ? "var(--ds-amber-600)" : "var(--ds-zinc-500)"}">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
       </button>
       ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:var(--ds-amber-600);background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
     </div>
     <button id="reset-btn" aria-label="Reset all settings" ${busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px">Reset</button>
     <button id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:4px;color:var(--ds-zinc-500);margin-left:auto">
-      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l4-4 4 4"/></svg>
+      <svg aria-hidden="true" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l4-4 4 4"/></svg>
     </button>
   `;
 }
@@ -229,7 +229,7 @@ function renderCollapsedToggle(): string {
     <span style="font-size:11px;font-weight:600;color:var(--ds-zinc-700)">${state.wcagVersion} ${state.wcagLevel}</span>
     ${modeHtml}
     <span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--ds-zinc-500);margin-left:auto">
-      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
+      <svg aria-hidden="true" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
     </span>
   `;
 }
@@ -371,7 +371,7 @@ function openConfigDialog(): void {
     <div style="display:flex;align-items:center;justify-content:space-between">
       <h2 id="config-dialog-title" style="margin:0;font-size:12px;font-weight:800;color:var(--ds-zinc-800);text-transform:uppercase;letter-spacing:0.05em">Test Configuration</h2>
       <button id="config-close-btn" aria-label="Close" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;color:var(--ds-zinc-500);border-radius:4px">
-        <svg width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
+        <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
       </button>
     </div>
     <a href="https://a11yscan.yantrakit.com/tools/test-config-builder" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:var(--ds-indigo-700);text-decoration:none">Open Builder ↗</a>
@@ -485,7 +485,7 @@ function renderScanProgress(): string {
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
         <span class="font-mono" style="font-size:11px;color:var(--ds-zinc-600)">${state.mv ? `viewport ${state.mvProgress ? `${state.mvProgress.current}/${state.mvProgress.total}` : `1/${state.viewports.length}`}` : "analyzing page\u2026"}</span>
         <button id="cancel-scan" aria-label="Cancel scan" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
-          <svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
+          <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
         </button>
       </div>
       <div class="progress-track"><div class="progress-fill" style="width:60%;animation:pulse 1.5s ease infinite"></div></div>
@@ -507,11 +507,11 @@ function renderCrawlProgress(): string {
         ${urlDisplay ? `<span class="truncate f-1 font-mono" style="font-size:10px;color:var(--ds-zinc-500);min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
         <div class="fs-0" style="display:flex;gap:4px">
           ${state.crawlPhase === "crawling"
-            ? '<button id="pause-crawl" aria-label="Pause crawl" class="scan-progress-icon-btn"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
-            : '<button id="resume-crawl" aria-label="Resume crawl" class="scan-progress-icon-btn"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><path d="M0 0l8 5-8 5z"/></svg></button>'
+            ? '<button id="pause-crawl" aria-label="Pause crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
+            : '<button id="resume-crawl" aria-label="Resume crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><path d="M0 0l8 5-8 5z"/></svg></button>'
           }
           <button id="cancel-crawl" aria-label="Cancel crawl" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
-            <svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
+            <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
           </button>
         </div>
       </div>
@@ -557,7 +557,7 @@ function renderContent(): string {
   if (state.scanPhase === "scanning") {
     // Show partial results if available (F01-AC7: results render as soon as they arrive)
     if (state.lastScanResult) return renderResults(state.lastScanResult);
-    return '<div class="scan-pane"><div style="font-size:11px;color:var(--ds-zinc-500);font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="var(--ds-zinc-300)" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="var(--ds-amber-500)" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page\u2026</div></div>';
+    return '<div class="scan-pane"><div style="font-size:11px;color:var(--ds-zinc-500);font-weight:600;display:flex;align-items:center;gap:6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="var(--ds-zinc-300)" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="var(--ds-amber-500)" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page\u2026</div></div>';
   }
 
   // Sub-tab content routing
@@ -765,8 +765,8 @@ function renderResults(result: iScanResult): string {
 
       <details style="margin-top:8px">
         <summary class="cur-pointer" style="list-style:none;font-size:12px;font-weight:700;color:var(--ds-green-700);padding:6px 0;display:flex;align-items:center;gap:6px">
-          <svg class="chevron fs-0" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6l3 3 5-5"/></svg>
+          <svg aria-hidden="true" class="chevron fs-0" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
+          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6l3 3 5-5"/></svg>
           ${result.passes.length} rules passed
         </summary>
         <div>
@@ -774,7 +774,7 @@ function renderResults(result: iScanResult): string {
             <details style="border-bottom:1px solid var(--ds-zinc-100)">
               <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:11px">
                 <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
+                <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
                 <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${p.id}</span>
                 <span class="fs-0" style="color:var(--ds-zinc-500)">${p.wcagCriteria?.join(", ") || ""}</span>
                 <span class="fs-0" style="color:var(--ds-green-700);font-weight:700">${p.nodes.length}</span>
@@ -783,7 +783,7 @@ function renderResults(result: iScanResult): string {
                 <div style="font-size:11px;color:var(--ds-zinc-600);margin-bottom:4px">${escHtml(p.description)}</div>
                 ${p.nodes.map((n) => `
                   <div class="font-mono" style="font-size:11px;color:var(--ds-green-700);padding:2px 8px;margin:1px 0;background:var(--ds-green-50);border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
-                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1 4l2 2 4-4"/></svg>
+                    <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1 4l2 2 4-4"/></svg>
                     <span class="truncate">${escHtml(n.selector)}</span>
                   </div>
                 `).join("")}
