@@ -876,6 +876,44 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
 }
 #scan-content details[open] > summary .chevron { transform: rotate(180deg); }
 
+/* ═══════════════════════════════════════════════════════════════════
+   Scan tab content patterns — extracted from inline styles
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Top-level wrapper for results/manual/aria/observe content (used 6×) */
+.scan-pane { padding: var(--ds-space-6); }
+
+/* Section heading inside scan content (used 3×) — 12px / 700 / zinc-900 */
+.scan-section-title {
+  font-size: var(--ds-text-md);
+  font-weight: 700;
+  color: var(--ds-zinc-900);
+}
+
+/* Caption / metadata label, strong weight (used 5×) — 11px / 600 / zinc-600 */
+.scan-caption-strong {
+  font-size: var(--ds-text-base);
+  font-weight: 600;
+  color: var(--ds-zinc-600);
+}
+
+/* Smaller sublabel (used 3×) — 10px / 600 / zinc-600 */
+.scan-sublabel {
+  font-size: var(--ds-text-sm);
+  font-weight: 600;
+  color: var(--ds-zinc-600);
+}
+
+/* Body text — multiline, comfortable line height (used 3×) — 11px / zinc-600 */
+.scan-body {
+  font-size: var(--ds-text-base);
+  color: var(--ds-zinc-600);
+  line-height: 1.5;
+}
+
+/* <details> body padding (used 4×) */
+.scan-detail-body { padding: 4px 8px 8px; }
+
 @media (min-width: 600px) {
   /* Remove text truncation on violation rule/selector text */
   #scan-content details summary b {

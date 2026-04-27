@@ -258,7 +258,7 @@ function renderCrawlConfig(busy: boolean): string {
 
   return `
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:11px;font-weight:600;color:#52525b">Crawl mode</span>
+      <span class="scan-caption-strong">Crawl mode</span>
       <select id="crawl-mode" aria-label="Crawl mode" ${busy ? "disabled" : ""} style="flex:1;font-size:12px;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600">
         <option value="follow" ${_crawlMode === "follow" ? "selected" : ""}>Follow all links</option>
         <option value="urllist" ${_crawlMode === "urllist" ? "selected" : ""}>URL list</option>
@@ -510,7 +510,7 @@ function renderContent(): string {
   if (state.scanPhase === "scanning") {
     // Show partial results if available (F01-AC7: results render as soon as they arrive)
     if (state.lastScanResult) return renderResults(state.lastScanResult);
-    return '<div style="padding:12px"><div style="font-size:11px;color:#71717a;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="#d4d4d8" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page\u2026</div></div>';
+    return '<div class="scan-pane"><div style="font-size:11px;color:#71717a;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="#d4d4d8" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page\u2026</div></div>';
   }
 
   // Sub-tab content routing
@@ -541,16 +541,16 @@ function renderEmptyState(): string {
       <div style="margin-top:16px">
         <h3 style="font-size:11px;font-weight:800;color:#71717a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Scan modes</h3>
         <div style="padding-left:12px;border-left:2px solid #38bdf8;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:700;color:#18181b">Crawl</div>
-          <div style="font-size:11px;color:#52525b;line-height:1.5">Automatically visits every page on your website and checks each one for issues.</div>
+          <div class="scan-section-title">Crawl</div>
+          <div class="scan-body">Automatically visits every page on your website and checks each one for issues.</div>
         </div>
         <div style="padding-left:12px;border-left:2px solid #34d399;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:700;color:#18181b">Observer</div>
-          <div style="font-size:11px;color:#52525b;line-height:1.5">Watches your browsing and checks every page you visit. Everything stays on your computer.</div>
+          <div class="scan-section-title">Observer</div>
+          <div class="scan-body">Watches your browsing and checks every page you visit. Everything stays on your computer.</div>
         </div>
         <div style="padding-left:12px;border-left:2px solid #a78bfa;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:700;color:#18181b">Movie</div>
-          <div style="font-size:11px;color:#52525b;line-height:1.5">After each scan, shows you how keyboard-only users navigate the page step by step.</div>
+          <div class="scan-section-title">Movie</div>
+          <div class="scan-body">After each scan, shows you how keyboard-only users navigate the page step by step.</div>
         </div>
       </div>
     </div>
@@ -579,9 +579,9 @@ function renderCrawlResults(): string {
   const totalFailed = Object.keys(failed).length;
   const summary = `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px;background:#fafafa;border:1px solid #e4e4e7;border-radius:6px;text-align:center;margin-bottom:8px">
-      <div><div style="font-size:15px;font-weight:800;color:#27272a">${allUrls.length}</div><div style="font-size:10px;font-weight:600;color:#52525b">Pages</div></div>
-      <div><div style="font-size:15px;font-weight:800;color:#b91c1c">${totalViolations}</div><div style="font-size:10px;font-weight:600;color:#52525b">Violations</div></div>
-      <div><div style="font-size:15px;font-weight:800;color:#dc2626">${totalFailed}</div><div style="font-size:10px;font-weight:600;color:#52525b">Failed</div></div>
+      <div><div style="font-size:15px;font-weight:800;color:#27272a">${allUrls.length}</div><div class="scan-sublabel">Pages</div></div>
+      <div><div style="font-size:15px;font-weight:800;color:#b91c1c">${totalViolations}</div><div class="scan-sublabel">Violations</div></div>
+      <div><div style="font-size:15px;font-weight:800;color:#dc2626">${totalFailed}</div><div class="scan-sublabel">Failed</div></div>
     </div>
   `;
 
@@ -613,7 +613,7 @@ function renderCrawlResults(): string {
             <span style="font-family:monospace;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(url)}">${escHtml(url)}</span>
             <span style="font-size:10px;font-weight:700;color:${hasViolations ? "#b91c1c" : "#047857"};flex-shrink:0">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
           </summary>
-          <div style="padding:4px 8px 8px">
+          <div class="scan-detail-body">
             ${r.violations.sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact)).map((v) => renderViolation(v)).join("") || '<div style="font-size:11px;color:#047857;padding:4px 0">No violations found.</div>'}
           </div>
         </details>
@@ -648,7 +648,7 @@ function renderCrawlResults(): string {
               <span style="font-size:10px;color:#52525b;flex-shrink:0">${uniquePages.length} page${uniquePages.length === 1 ? "" : "s"}</span>
               <span style="color:#52525b;font-family:monospace;font-weight:700;flex-shrink:0">${totalNodes}</span>
             </summary>
-            <div style="padding:4px 8px 8px">
+            <div class="scan-detail-body">
               ${uniquePages.map((pageUrl) => {
                 const pageEntries = entries.filter((e) => e.pages[0] === pageUrl);
                 return `
@@ -665,7 +665,7 @@ function renderCrawlResults(): string {
     }
   }
 
-  return `<div style="padding:12px">${toggle}${summary}${body}</div>`;
+  return `<div class="scan-pane">${toggle}${summary}${body}</div>`;
 }
 
 function renderResults(result: iScanResult): string {
@@ -699,13 +699,13 @@ function renderResults(result: iScanResult): string {
   ` : "";
 
   return `
-    <div style="padding:12px">
+    <div class="scan-pane">
       ${mvBanner}
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:10px;background:#fafafa;border:1px solid #e4e4e7;border-radius:8px;text-align:center;margin-bottom:8px">
-        <div><div style="font-size:16px;font-weight:800;color:#b91c1c">${totalViolationNodes}</div><div style="font-size:11px;font-weight:600;color:#52525b">Violations</div></div>
-        <div><div style="font-size:16px;font-weight:800;color:#047857">${result.passes.length}</div><div style="font-size:11px;font-weight:600;color:#52525b">Passes</div></div>
-        <div><div style="font-size:16px;font-weight:800;color:#b45309">${result.incomplete.length}</div><div style="font-size:11px;font-weight:600;color:#52525b">Review</div></div>
-        <div><div style="font-size:16px;font-weight:800;color:#3f3f46">${passRate}%</div><div style="font-size:11px;font-weight:600;color:#52525b">Pass rate</div></div>
+        <div><div style="font-size:16px;font-weight:800;color:#b91c1c">${totalViolationNodes}</div><div class="scan-caption-strong">Violations</div></div>
+        <div><div style="font-size:16px;font-weight:800;color:#047857">${result.passes.length}</div><div class="scan-caption-strong">Passes</div></div>
+        <div><div style="font-size:16px;font-weight:800;color:#b45309">${result.incomplete.length}</div><div class="scan-caption-strong">Review</div></div>
+        <div><div style="font-size:16px;font-weight:800;color:#3f3f46">${passRate}%</div><div class="scan-caption-strong">Pass rate</div></div>
       </div>
 
       ${displayViolations
@@ -762,7 +762,7 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
         <span style="font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px;flex-shrink:0">${v.impact}</span>
         <span style="color:#52525b;font-family:monospace;font-weight:700;flex-shrink:0">${v.nodes.length}</span>
       </summary>
-      <div style="padding:4px 8px 8px">
+      <div class="scan-detail-body">
         ${v.wcagCriteria && v.wcagCriteria.length > 0 ? `<div style="margin-bottom:6px">${v.wcagCriteria.map((c) => `<a href="${getWcagUrl(c)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;color:#4338ca;text-decoration:underline;margin-right:8px">${c} — Learn more \u2197</a>`).join("")}</div>` : ""}
         ${v.nodes.map((n) => `
           <div style="background:#fff;border:1px solid #e4e4e7;border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
@@ -797,7 +797,7 @@ function renderManualReview(): string {
   const reviewed = Object.values(state.manualReview).filter((v) => v !== null).length;
 
   return `
-    <div style="padding:12px">
+    <div class="scan-pane">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px">
         <span style="font-size:11px;color:#52525b;font-weight:600">${filtered.length} criteria need human review</span>
         <span style="font-size:11px;font-weight:700;color:#b45309">${reviewed} of ${filtered.length} reviewed</span>
@@ -841,7 +841,7 @@ function renderAriaResults(): string {
   const compliant = widgets.filter((w) => w.failCount === 0);
 
   return `
-    <div style="padding:12px">
+    <div class="scan-pane">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px">
         <span style="font-size:11px;color:#52525b;font-weight:600">${widgets.length} widgets detected</span>
         <span style="font-size:11px;font-weight:700;color:#b91c1c">${issues.length} issues \u00b7 ${compliant.length} compliant</span>
@@ -863,7 +863,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
         <span style="font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(w.label)}</span>
         <span style="font-weight:700;${pass ? "color:#047857" : "color:#b91c1c"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
       </summary>
-      <div style="padding:4px 8px 8px">
+      <div class="scan-detail-body">
         ${w.checks.filter((c) => !c.pass).map((c) => `
           <div style="font-size:11px;color:#b91c1c;padding:2px 0 2px 8px;border-left:2px solid #fecaca">${escHtml(c.message)}</div>
         `).join("")}
@@ -906,7 +906,7 @@ function renderObserveHistory(): string {
   }
 
   return `
-    <div style="padding:12px">
+    <div class="scan-pane">
       <div style="display:flex;gap:6px;margin-bottom:8px">
         <input id="observer-domain-filter" type="search" placeholder="Filter by domain\u2026" aria-label="Filter by domain" value="${observerFilter}" style="flex:1;font-size:11px;padding:6px 8px;border:1px solid #d4d4d8;border-radius:4px;min-width:0">
         <button id="clear-observer" style="font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:4px 10px;background:none;cursor:pointer;min-height:24px;flex-shrink:0">Clear</button>
