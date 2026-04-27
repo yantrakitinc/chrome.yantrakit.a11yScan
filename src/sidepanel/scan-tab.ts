@@ -1678,7 +1678,7 @@ function showError(message: string): void {
       <div style="padding:16px">
         <div style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px">
           <div style="font-size:12px;font-weight:700;color:#991b1b;margin-bottom:4px">Scan failed</div>
-          <div style="font-size:11px;color:#7f1d1d;word-break:break-all">${message}</div>
+          <div style="font-size:11px;color:#7f1d1d;word-break:break-all">${escHtmlConfig(message)}</div>
         </div>
       </div>
     `;
