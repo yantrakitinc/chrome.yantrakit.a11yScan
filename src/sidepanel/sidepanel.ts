@@ -163,8 +163,10 @@ export function updateTabDisabledStates(): void {
   tabs.forEach((tab) => {
     const tabId = tab.dataset.tab;
     if (tabId === "ai") {
-      tab.disabled = false; // AI Chat never disabled
-    } else if (tabId === "sr" || tabId === "kb") {
+      // AI Chat is permanently disabled (Coming Soon). Do NOT touch its disabled state.
+      return;
+    }
+    if (tabId === "sr" || tabId === "kb") {
       tab.disabled = busy;
     }
   });

@@ -49,56 +49,64 @@ Clicking any row (not the speak button) highlights the element on the page using
 
 ### Speak button
 
-Uses browser `SpeechSynthesis` API to speak the element's accessible name + role + states (e.g., "link, Skip to main content" or "button, Shipping Policy, expanded").
+Uses browser `SpeechSynthesis` API to speak the element's accessible name + role + states.
 
 **Always visible** on every row. Not hidden behind hover.
 
-**States:**
+**Container speak (scoped)** — Clicking the speak button on a container element (navigation, banner, region, contentinfo, complementary, article, form, list, group, main) reads the container's name AND all child elements within that container's subtree only. The scoped reading order is fetched fresh from the content script via `ANALYZE_READING_ORDER` with `scopeSelector` so the speech does NOT continue past the container's boundary.
 
-1. **Idle** — speaker icon (🔊). Click to start speaking.
-2. **Speaking** — icon changes to **Pause** button. The row text changes to show the quoted screen reader output in amber, pulsing. Click to pause speech.
-3. **Paused** — icon changes to **Resume** button. Click to resume. A **Stop** button also appears to cancel entirely.
+Example: speak on `<nav>` containing 4 links reads: *"navigation, Site nav. link, Home. link, About. link, Pricing. link, Contact."*
 
-Only one element can be speaking at a time. Starting speech on a different element stops the current one.
+**Non-container speak** — Clicking speak on a non-container element (link, button, heading, img, etc.) reads only that element's role, name, and states.
 
-**Visual feedback:**
-- Speaking state: row shows quoted text ("role, name, states") in amber with pulse animation
-- The speak button transforms to pause/stop controls
-- Screen reader output is visible even if audio fails
+**Single speak interaction:**
+1. **Click speak button** — speech starts, the clicked row highlights amber, the top toolbar shows Pause + Stop icons with "Speaking element X" status.
+2. **Pause** — speech pauses; toolbar shows Resume + Stop icons with "Paused element X" status; row stays highlighted.
+3. **Resume** — speech continues from where it paused.
+4. **Stop** — speech cancelled, row de-highlighted, toolbar returns to idle Play All button.
+5. **Speech naturally ends** — row de-highlighted, toolbar returns to idle Play All button.
+
+Only one speech is active at a time. Clicking a new speak button cancels any in-progress speech first.
 
 **Voices loading** — Chrome loads voices asynchronously. If `getVoices()` returns empty on first call, listens for `onvoiceschanged` and retries.
 
-### Play All — Playback Controls
+### Top toolbar — single inline bar (no UI bleeping)
 
-"Play All" reads through the entire page sequentially. When playing, the button row transforms into a full playback control bar:
+The toolbar at the top of the elements list is **always present** with the same layout — only its content changes. UI does NOT appear/disappear (WCAG 3.2.2 Predictable):
 
-**Idle state** (before playing):
-- "Play All" button (right-aligned, next to element count)
+| State | Left side (status) | Right side (controls) |
+|---|---|---|
+| Idle | "X elements in reading order" | ▶ Play All |
+| Playing (Play All) | "Playing X of Y" amber | ⏸ Pause + ⏹ Stop |
+| Paused (Play All) | "Paused at X of Y" amber | ▶ Resume + ⏹ Stop |
+| Speaking (single) | "Speaking element X" amber | ⏸ Pause + ⏹ Stop |
+| Paused (single) | "Paused element X" amber | ▶ Resume + ⏹ Stop |
+| Complete | "Complete" green | ▶ Play All |
 
-**Playing state**:
-- **Pause** button — pauses speech and highlighting at the current element
-- **Stop** button — stops playback entirely, returns to idle state
-- **Progress text**: "Playing X of Y" (monospace, shows current element index)
-- Current element row is visually highlighted (amber background) in the list
-
-**Paused state**:
-- **Resume** button — continues from where it paused
-- **Stop** button — stops and returns to idle
-- **Progress text**: "Paused at X of Y"
-
-**Complete state** (reached end):
-- Returns to idle state automatically
-- Brief "Complete" message shown for 2 seconds
+All control buttons are icon-only (▶ ⏸ ⏹) with proper `aria-label`s ("Play all", "Pause speech", "Resume speech", "Stop speech"). Background tint changes to amber `#fffbeb` when speech is active.
 
 Pressing **Escape** at any time stops playback (same as clicking Stop).
+
+### Active row highlighting
+
+The side panel ALWAYS visually shows which row is currently active. Highlighting priority:
+
+1. **Single speak active** → that row highlighted (amber background)
+2. **Play All active** → current `playIndex` row highlighted
+3. **Recent row click** → clicked row highlighted for 3 seconds (matches the F07 page glow duration)
+
+When stop is pressed or playback ends, all highlighting clears.
 
 ### Row interaction
 
 Each element row is **clickable**:
 - Clicking a row highlights the corresponding element on the page (F07 element highlighting — scroll into view, 3-second amber glow).
+- Clicking a row ALSO highlights that row in the side panel for 3 seconds, so you can track what you clicked.
+- Keyboard Enter/Space on a focused row triggers the same action.
 - Hover state: subtle background change (zinc-50) to indicate clickability.
 - Cursor: pointer.
-- During Play All, clicking a row does NOT interrupt playback — it just highlights that element on the page.
+- Each row has `role="button"`, `tabindex="0"`, `aria-label`.
+- During Play All, clicking a row does NOT interrupt playback — it just highlights that element on the page (and the row temporarily).
 
 ### Inspect Element (scope selector)
 

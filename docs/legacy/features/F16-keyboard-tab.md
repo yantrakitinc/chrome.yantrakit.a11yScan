@@ -2,11 +2,10 @@
 
 ## Purpose
 
-A top-level tab for comprehensive keyboard navigation audit. Shows tab order, focus gaps, focus indicators, keyboard traps, skip links, and Movie Mode controls.
+A top-level tab for comprehensive keyboard navigation audit. Shows tab order, focus gaps, focus indicators, keyboard traps, and skip links.
 
 ## Dependencies
 
-- F06 (Movie Mode) — play controls live here
 - F05 (Visual Overlays) — tab order and focus gap overlays
 
 ## Behavior
@@ -61,15 +60,13 @@ Whether the page has skip navigation:
 - Shows where the skip link points.
 - Flags if skip link target doesn't exist.
 
-#### 6. Movie Mode controls
+### Movie Mode
 
-Play button that starts the animated tab order walkthrough (F06):
-- **Play / Pause / Stop** controls
-- **Speed selector** (0.5×, 1×, 2×, 4×) — four options
-- **Progress**: "Element X of Y"
-- When resuming from pause, sends `RESUME_MOVIE_MODE` message (not `START_MOVIE_MODE`)
+Movie Mode controls live at the top of the **Tab Order** section in this Keyboard tab — same UX pattern as Screen Reader's "Play All". Icon-only buttons (▶ play, ⏸ pause, ⏹ stop) with aria-labels.
 
-This is Movie Mode's natural home — the Keyboard tab.
+When idle, "Play All" button shows next to the count "Tab Order — X elements". When playing, transforms into Pause/Stop controls + progress text "Playing X of Y".
+
+Speed is configured via Test Config Builder (Timing section), not in the UI.
 
 ### Overlay toggles
 

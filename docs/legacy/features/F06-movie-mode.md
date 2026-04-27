@@ -17,16 +17,19 @@ Consultants demonstrating keyboard issues to clients, QA verifying tab order mak
 
 ### Activation
 
-Toggled via the "Movie" mode button in the accordion form. Movie Mode is a mode toggle, not a post-scan action.
+Movie Mode controls live in the **Keyboard tab**, at the top of the Tab Order section — same UX pattern as the Screen Reader tab's Play All. Available after Keyboard tab Analyze completes.
 
-When Movie is on:
-- After each scan completes, the movie automatically plays.
-- During crawl: plays on each page before advancing to the next.
-- During observer: plays after each auto-scanned page.
+Controls (icon-only buttons with aria-labels):
+- **Play All** (▶) — starts the animated walkthrough
+- **Pause** (⏸) — appears during playback
+- **Stop** (⏹) — appears during playback
+- Progress text: "Playing X of Y" or "Paused at X of Y"
+
+Movie Mode is a post-analyze action — click Play All to start animating through the tab order.
 
 ### Movie speed
 
-Configurable via dropdown in the accordion form (visible when Movie is on):
+Speed is set via Test Config (not the UI). Configurable via Test Config Builder under Timing options. Default speed: 1× (1 second per element).
 - 0.5× (2 seconds per element)
 - 1× (1 second per element) — default
 - 2× (0.5 seconds per element)

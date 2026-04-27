@@ -10,9 +10,9 @@ let focusGaps: iFocusGap[] = [];
 let focusIndicators: iFocusIndicator[] = [];
 let keyboardTraps: iKeyboardTrap[] = [];
 let skipLinks: iSkipLink[] = [];
-let moviePlaying = false;
-let moviePaused = false;
 let kbAnalyzed = false;
+let moviePlayState: "idle" | "playing" | "paused" | "complete" = "idle";
+let movieIndex = 0;
 
 /** Returns the current tab order for F12 export */
 export function getTabOrder(): iTabOrderElement[] { return tabOrder; }
@@ -34,18 +34,58 @@ export function renderKeyboardTab(): void {
     ${!kbAnalyzed ? '<div style="flex:1;padding:16px;text-align:center;font-size:12px;color:#71717a">Click Analyze to scan keyboard navigation.</div>' : ""}
     ${kbAnalyzed ? `<div style="flex:1;overflow-y:auto;min-height:0">
       <details open>
-        <summary style="padding:8px 12px;font-size:12px;font-weight:800;color:#18181b;cursor:pointer;border-bottom:1px solid #e4e4e7;background:#fafafa">Tab Order \u2014 ${tabOrder.length} elements</summary>
+        <summary style="padding:8px 12px;font-size:12px;font-weight:800;color:#18181b;cursor:pointer;border-bottom:1px solid #e4e4e7;background:#fafafa;display:flex;align-items:center;gap:8px">
+          <span style="flex:1">Tab Order \u2014 ${tabOrder.length} elements</span>
+          ${tabOrder.length > 0 && moviePlayState === "idle" ? `
+            <button id="movie-play-all" aria-label="Play all - animate through tab order" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;color:#b45309">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 1l7 4-7 4z"/></svg>
+            </button>
+          ` : ""}
+          ${moviePlayState === "playing" ? `
+            <button id="movie-pause" aria-label="Pause movie" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;color:#b45309">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>
+            </button>
+            <button id="movie-stop" aria-label="Stop movie" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;cursor:pointer;color:#dc2626">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
+            </button>
+            <span style="font-size:11px;font-family:monospace;color:#92400e;font-weight:600">Playing ${movieIndex + 1} of ${tabOrder.length}</span>
+          ` : ""}
+          ${moviePlayState === "paused" ? `
+            <button id="movie-resume" aria-label="Resume movie" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;color:#b45309">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 1l7 4-7 4z"/></svg>
+            </button>
+            <button id="movie-stop" aria-label="Stop movie" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;cursor:pointer;color:#dc2626">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
+            </button>
+            <span style="font-size:11px;font-family:monospace;color:#92400e;font-weight:600">Paused at ${movieIndex + 1} of ${tabOrder.length}</span>
+          ` : ""}
+        </summary>
         <div>
           ${tabOrder.length === 0
             ? '<div style="padding:12px;font-size:11px;color:#71717a;text-align:center">Click Analyze to scan keyboard navigation.</div>'
-            : tabOrder.map((el) => `
-              <div class="kb-row" role="button" tabindex="0" aria-label="Highlight ${el.role}: ${el.accessibleName.replace(/"/g, "&quot;")}" data-selector="${el.selector}" style="display:flex;align-items:center;gap:8px;padding:4px 12px;border-bottom:1px solid #f4f4f5;cursor:pointer;min-height:30px;transition:background 0.1s">
-                <span style="font-size:11px;font-family:monospace;font-weight:700;color:#fff;background:#1e1b4b;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${el.index}</span>
-                <span style="font-size:11px;font-weight:700;padding:2px 4px;border-radius:3px;flex-shrink:0;${el.role === "button" ? "background:#ede9fe;color:#5b21b6" : el.role === "link" ? "background:#e0f2fe;color:#075985" : "background:#d1fae5;color:#065f46"}">${el.role}</span>
-                <span style="font-size:11px;font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${el.accessibleName}</span>
-                <span style="font-size:11px;font-weight:700;color:${el.hasFocusIndicator ? "#047857" : "#b91c1c"};flex-shrink:0">${el.hasFocusIndicator ? "\u2713" : "\u2717"}</span>
+            : tabOrder.map((el, i) => {
+              const escName = el.accessibleName.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              const roleClass = el.role === "button" ? "ds-badge--role-button"
+                : el.role === "link" ? "ds-badge--role-link"
+                : el.role === "textbox" ? "ds-badge--role-textbox"
+                : "ds-badge--role-default";
+              const isActive = moviePlayState !== "idle" && i === movieIndex;
+              const focusLabel = el.hasFocusIndicator ? "Has visible focus indicator" : "Missing visible focus indicator";
+              const focusColor = el.hasFocusIndicator ? "var(--ds-green-700)" : "var(--ds-red-700)";
+              return `
+              <div class="ds-row kb-row${isActive ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${el.role}: ${escName}" data-selector="${el.selector.replace(/"/g, "&quot;")}" data-index="${i}">
+                <span class="ds-row__index-circle">${el.index}</span>
+                <span class="ds-badge ${roleClass}">${el.role}</span>
+                <span class="ds-row__label">${escName}</span>
+                <span aria-label="${focusLabel}" title="${focusLabel}" style="display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${focusColor}">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="7" cy="7" r="5"/>
+                    <circle cx="7" cy="7" r="2"/>
+                    <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13"/>
+                  </svg>
+                </span>
               </div>
-            `).join("")
+            `;}).join("")
           }
         </div>
       </details>
@@ -109,23 +149,6 @@ export function renderKeyboardTab(): void {
               `).join("")}
         </div>
       </details>
-      <details>
-        <summary style="padding:8px 12px;font-size:12px;font-weight:800;color:#7c3aed;cursor:pointer;border-bottom:1px solid #e4e4e7;background:#f5f3ff">Movie Mode</summary>
-        <div style="padding:12px">
-          <p style="font-size:11px;color:#52525b;margin-bottom:8px">Animated walkthrough of the keyboard tab order.</p>
-          ${moviePlaying ? '<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px;padding:4px 8px;background:#ede9fe;border-radius:4px;display:inline-block">&#9654; Playing\u2026</div>' : ""}
-          <div style="display:flex;align-items:center;gap:8px">
-            <button id="movie-play" style="padding:6px 12px;font-size:11px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px;cursor:pointer;min-height:24px">${moviePlaying ? "Pause" : "Play"}</button>
-            <button id="movie-stop" ${!moviePlaying ? "disabled" : ""} style="padding:6px 12px;font-size:11px;font-weight:700;color:${moviePlaying ? "#dc2626" : "#a1a1aa"};border:1px solid ${moviePlaying ? "#fecaca" : "#e4e4e7"};border-radius:4px;background:none;min-height:24px;cursor:${moviePlaying ? "pointer" : "not-allowed"}">Stop</button>
-            <select id="kb-movie-speed" aria-label="Movie speed" style="font-size:11px;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600;margin-left:auto">
-              <option value="0.5">0.5&times;</option>
-              <option value="1" selected>1&times;</option>
-              <option value="2">2&times;</option>
-              <option value="4">4&times;</option>
-            </select>
-          </div>
-        </div>
-      </details>
     </div>` : ""}
     ${kbAnalyzed ? `<!-- Overlay toggles — Tab order + Focus gaps live here, not in Scan tab -->
     <div style="flex-shrink:0;border-top:2px solid #d4d4d8;background:#f4f4f5">
@@ -179,14 +202,11 @@ export function renderKeyboardTab(): void {
     keyboardTraps = [];
     skipLinks = [];
     kbAnalyzed = false;
-    moviePlaying = false;
     renderKeyboardTab();
   });
 
-  // Row hover + click/keyboard → highlight
+  // Row click/keyboard → highlight (hover handled by CSS :hover)
   document.querySelectorAll<HTMLDivElement>(".kb-row").forEach((row) => {
-    row.addEventListener("mouseenter", () => { row.style.background = "#fafafa"; });
-    row.addEventListener("mouseleave", () => { row.style.background = ""; });
     const activate = () => {
       const selector = row.dataset.selector;
       if (selector) sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector } });
@@ -209,32 +229,33 @@ export function renderKeyboardTab(): void {
     });
   });
 
-  // Movie controls
-  document.getElementById("movie-play")?.addEventListener("click", () => {
-    const speed = parseFloat((document.getElementById("kb-movie-speed") as HTMLSelectElement).value);
-    sendMessage({ type: "SET_MOVIE_SPEED", payload: { speed } });
-    if (moviePlaying) {
-      sendMessage({ type: "PAUSE_MOVIE_MODE" });
-      moviePlaying = false;
-      moviePaused = true;
-    } else {
-      sendMessage(moviePaused ? { type: "RESUME_MOVIE_MODE" } : { type: "START_MOVIE_MODE" });
-      moviePlaying = true;
-      moviePaused = false;
-    }
+  // Movie Mode — Play All pattern (icons only, like Screen Reader)
+  document.getElementById("movie-play-all")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (tabOrder.length === 0) return;
+    moviePlayState = "playing";
+    movieIndex = 0;
+    sendMessage({ type: "START_MOVIE_MODE" });
     renderKeyboardTab();
   });
-  document.getElementById("movie-stop")?.addEventListener("click", () => {
+  document.getElementById("movie-pause")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    moviePlayState = "paused";
+    sendMessage({ type: "PAUSE_MOVIE_MODE" });
+    renderKeyboardTab();
+  });
+  document.getElementById("movie-resume")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    moviePlayState = "playing";
+    sendMessage({ type: "RESUME_MOVIE_MODE" });
+    renderKeyboardTab();
+  });
+  document.getElementById("movie-stop")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    moviePlayState = "idle";
+    movieIndex = 0;
     sendMessage({ type: "STOP_MOVIE_MODE" });
-    moviePlaying = false;
-    moviePaused = false;
     renderKeyboardTab();
-  });
-
-  // Speed change during playback
-  document.getElementById("kb-movie-speed")?.addEventListener("change", () => {
-    const speed = parseFloat((document.getElementById("kb-movie-speed") as HTMLSelectElement).value);
-    sendMessage({ type: "SET_MOVIE_SPEED", payload: { speed } });
   });
 
   // Overlay toggles

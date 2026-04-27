@@ -12,6 +12,12 @@ let scopeSelector: string | null = null;
 let inspectActive = false;
 let srAnalyzed = false;
 
+/** Index of the row currently being highlighted (for individual speak clicks) */
+let singleSpeakIndex: number | null = null;
+/** Index of the row most recently clicked/activated — highlight in panel */
+let selectedRowIndex: number | null = null;
+let selectedRowTimer: ReturnType<typeof setTimeout> | null = null;
+
 /**
  * Sets the SR scope selector from an inspect-mode click and re-analyzes (F15-AC21).
  */
@@ -30,6 +36,7 @@ export function setScopeFromInspect(selector: string): void {
 export function renderScreenReaderTab(): void {
   const panel = document.getElementById("panel-sr");
   if (!panel) return;
+  ensureSrEscapeHandler();
 
   const countLabel = scopeSelector
     ? `${elements.length} elements in scope`
@@ -50,27 +57,40 @@ export function renderScreenReaderTab(): void {
         <button id="sr-clear-scope" style="font-size:10px;font-weight:700;color:#dc2626;border:none;background:none;cursor:pointer;padding:2px 4px">Clear scope</button>
       </div>
     ` : ""}
-    <div style="padding:8px 12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-      <span style="font-size:11px;font-weight:600;color:#52525b;font-family:monospace">${countLabel}</span>
-      ${playState === "idle" && elements.length > 0 ? `
-        <button id="sr-play-all" style="padding:4px 10px;font-size:11px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;min-height:24px">Play All</button>
+    <div style="padding:8px 12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:8px;flex-shrink:0;${playState === "playing" || playState === "paused" ? "background:#fffbeb" : ""}">
+      <span style="font-size:11px;font-weight:600;color:#52525b;font-family:monospace;flex:1">${
+        playState === "complete" ? '<span style="color:#047857;font-weight:700">Complete</span>' :
+        playState === "playing" ? `<span style="color:#92400e;font-weight:700">${
+          singleSpeakIndex !== null ? `Speaking element ${singleSpeakIndex + 1}` : `Playing ${playIndex + 1} of ${elements.length}`
+        }</span>` :
+        playState === "paused" ? `<span style="color:#92400e;font-weight:700">${
+          singleSpeakIndex !== null ? `Paused element ${singleSpeakIndex + 1}` : `Paused at ${playIndex + 1} of ${elements.length}`
+        }</span>` :
+        countLabel
+      }</span>
+      ${elements.length > 0 ? `
+        ${playState === "idle" || playState === "complete" ? `
+          <button id="sr-play-all" aria-label="Play all — read all elements aloud" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;color:#b45309">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M2 1l7 4-7 4z"/></svg>
+          </button>
+        ` : ""}
+        ${playState === "playing" ? `
+          <button id="sr-pause" aria-label="Pause speech" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;color:#b45309">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>
+          </button>
+        ` : ""}
+        ${playState === "paused" ? `
+          <button id="sr-resume" aria-label="Resume speech" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;color:#b45309">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M2 1l7 4-7 4z"/></svg>
+          </button>
+        ` : ""}
+        ${playState === "playing" || playState === "paused" ? `
+          <button id="sr-stop" aria-label="Stop speech" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;cursor:pointer;color:#dc2626">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="8" height="8"/></svg>
+          </button>
+        ` : ""}
       ` : ""}
     </div>
-    ${playState === "complete" ? `
-      <div style="padding:6px 12px;background:#d1fae5;border-bottom:1px solid #6ee7b7;display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <span style="font-size:11px;font-weight:700;color:#047857">Complete</span>
-      </div>
-    ` : playState !== "idle" ? `
-      <div style="padding:6px 12px;background:#fffbeb;border-bottom:1px solid #fde68a;display:flex;align-items:center;gap:8px;flex-shrink:0">
-        ${playState === "playing" ? `
-          <button id="sr-pause" style="padding:4px 10px;font-size:11px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;min-height:24px">Pause</button>
-        ` : `
-          <button id="sr-resume" style="padding:4px 10px;font-size:11px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;min-height:24px">Resume</button>
-        `}
-        <button id="sr-stop" style="padding:4px 10px;font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;background:none;cursor:pointer;min-height:24px">Stop</button>
-        <span style="font-size:11px;font-family:monospace;color:#92400e;margin-left:auto">${playState === "paused" ? "Paused at" : "Playing"} ${playIndex + 1} of ${elements.length}</span>
-      </div>
-    ` : ""}
     <div id="sr-list" style="flex:1;overflow-y:auto">
       ${elements.length === 0
         ? '<div style="padding:16px;text-align:center;font-size:12px;color:#71717a">Click Analyze to scan the page reading order.</div>'
@@ -99,6 +119,10 @@ export function renderScreenReaderTab(): void {
     elements = [];
     scopeSelector = null;
     srAnalyzed = false;
+    if (inspectActive) {
+      inspectActive = false;
+      sendMessage({ type: "EXIT_INSPECT_MODE" });
+    }
     stopPlayback();
     renderScreenReaderTab();
   });
@@ -125,24 +149,25 @@ export function renderScreenReaderTab(): void {
     renderScreenReaderTab();
   });
 
-  // Row hover effects (no inline handlers — CSP)
-  document.querySelectorAll<HTMLDivElement>(".sr-row").forEach((row) => {
-    row.addEventListener("mouseenter", () => { row.style.background = "#fafafa"; });
-    row.addEventListener("mouseleave", () => {
-      const idx = parseInt(row.dataset.index || "-1");
-      row.style.background = (playState !== "idle" && idx === playIndex) ? "#fef3c7" : "";
-    });
-  });
-  document.querySelectorAll<HTMLButtonElement>(".sr-speak").forEach((btn) => {
-    btn.addEventListener("mouseenter", () => { btn.style.color = "#b45309"; btn.style.background = "#fffbeb"; });
-    btn.addEventListener("mouseleave", () => { btn.style.color = "#71717a"; btn.style.background = ""; });
-  });
+  // Row + button hover handled by CSS :hover — no JS handlers
 
-  // Row click/keyboard → highlight on page
+  // Row click/keyboard → highlight on page AND in panel
   document.querySelectorAll<HTMLDivElement>(".sr-row").forEach((row) => {
     const activate = () => {
       const selector = row.dataset.selector;
+      const idx = parseInt(row.dataset.index || "-1");
       if (selector) sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector } });
+      // Also highlight the row in the panel — clear after 3s (matches page highlight duration)
+      if (idx >= 0) {
+        if (selectedRowTimer) clearTimeout(selectedRowTimer);
+        selectedRowIndex = idx;
+        renderScreenReaderTab();
+        selectedRowTimer = setTimeout(() => {
+          selectedRowIndex = null;
+          selectedRowTimer = null;
+          renderScreenReaderTab();
+        }, 3000);
+      }
     };
     row.addEventListener("click", activate);
     row.addEventListener("keydown", (e) => {
@@ -153,14 +178,33 @@ export function renderScreenReaderTab(): void {
     });
   });
 
-  // Speak buttons (icon click only — speaks without highlighting)
+  // Speak buttons — highlight row + speak element (or container subtree)
   document.querySelectorAll<HTMLButtonElement>(".sr-speak").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const text = btn.dataset.text || "";
-      if ("speechSynthesis" in window) {
-        speakWithVoices(text, () => { /* no-op */ });
-      }
+      if (!("speechSynthesis" in window)) return;
+      const idx = parseInt(btn.dataset.rowIndex || "-1");
+      if (idx < 0 || idx >= elements.length) return;
+      const el = elements[idx];
+
+      // Cancel any in-progress speech
+      speechSynthesis.cancel();
+
+      // Set playing state so toolbar shows Pause/Stop controls
+      singleSpeakIndex = idx;
+      playState = "playing";
+      renderScreenReaderTab();
+
+      // Compute speech text (async — fetches scoped subtree for containers)
+      const text = await getSpeakTextForElement(el);
+      speakWithVoices(text, () => {
+        // Clear when done (only if we're still in single-speak mode for this row)
+        if (singleSpeakIndex === idx) {
+          singleSpeakIndex = null;
+          playState = "idle";
+          renderScreenReaderTab();
+        }
+      });
     });
   });
 
@@ -193,22 +237,29 @@ export function renderScreenReaderTab(): void {
     renderScreenReaderTab();
   });
 
-  // Escape key stops playback
-  if (playState !== "idle") {
-    const escHandler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && playState !== "idle") {
-        stopPlayback();
-        renderScreenReaderTab();
-        document.removeEventListener("keydown", escHandler);
-      }
-    };
-    document.addEventListener("keydown", escHandler);
-  }
+  // Escape handler is attached ONCE globally, see srEscapeHandler below
+}
+
+let srEscapeHandlerAttached = false;
+function ensureSrEscapeHandler(): void {
+  if (srEscapeHandlerAttached) return;
+  srEscapeHandlerAttached = true;
+  document.addEventListener("keydown", (e) => {
+    // Only act if SR tab is active AND playback is not idle
+    const srTabActive = document.getElementById("panel-sr")?.hasAttribute("hidden") === false;
+    if (e.key === "Escape" && playState !== "idle" && srTabActive) {
+      stopPlayback();
+      renderScreenReaderTab();
+    }
+  });
 }
 
 function stopPlayback(): void {
   playState = "idle";
   playIndex = 0;
+  singleSpeakIndex = null;
+  selectedRowIndex = null;
+  if (selectedRowTimer) { clearTimeout(selectedRowTimer); selectedRowTimer = null; }
   if ("speechSynthesis" in window) speechSynthesis.cancel();
   sendMessage({ type: "CLEAR_HIGHLIGHTS" });
 }
@@ -263,8 +314,8 @@ function playNext(): void {
   });
   // Scroll row into view in panel
   rows[playIndex]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  // Speak
-  const text = getSpeakTextForElement(el);
+  // Speak — for Play All, speak each element individually (children are separate rows)
+  const text = elementToSpeechText(el);
   if ("speechSynthesis" in window) {
     speakWithVoices(text, () => {
       if (playState !== "playing") return;
@@ -286,45 +337,68 @@ function playNext(): void {
 
 const CONTAINER_ROLES = new Set(["navigation", "banner", "contentinfo", "complementary", "region", "article", "form", "list", "group", "main"]);
 
-function getSpeakTextForElement(el: iScreenReaderElement): string {
-  const base = `${el.role}, ${el.accessibleName}${el.states.length > 0 ? ", " + el.states.join(", ") : ""}`;
-  if (CONTAINER_ROLES.has(el.role)) {
-    // Find child elements that belong to this container
-    const idx = elements.indexOf(el);
-    if (idx === -1) return base;
-    const children: string[] = [];
-    for (let i = idx + 1; i < elements.length; i++) {
-      const child = elements[i];
-      // Stop when we hit a sibling container or an element at the same/higher level
-      if (CONTAINER_ROLES.has(child.role)) break;
-      children.push(`${child.role}, ${child.accessibleName}`);
+function elementToSpeechText(el: iScreenReaderElement): string {
+  return `${el.role}, ${el.accessibleName}${el.states.length > 0 ? ", " + el.states.join(", ") : ""}`;
+}
+
+/** For a container element, fetch its scoped reading order from content script and build full speech */
+async function getSpeakTextForElement(el: iScreenReaderElement): Promise<string> {
+  const base = elementToSpeechText(el);
+  if (!CONTAINER_ROLES.has(el.role)) return base;
+
+  // Fetch scoped reading order for just this container's subtree
+  try {
+    const result = await sendMessage({ type: "ANALYZE_READING_ORDER", payload: { scopeSelector: el.selector } });
+    if (result && (result as { type: string }).type === "READING_ORDER_RESULT") {
+      const scoped = (result as { payload: iScreenReaderElement[] }).payload;
+      // The container itself appears in scoped[0]; skip it. The rest are children.
+      const childTexts = scoped
+        .filter((c) => c.selector !== el.selector)
+        .map((c) => elementToSpeechText(c));
+      if (childTexts.length > 0) return `${base}. ${childTexts.join(". ")}.`;
     }
-    if (children.length > 0) return `${base}. ${children.join(". ")}.`;
-  }
+  } catch { /* fall through */ }
   return base;
 }
 
 function renderSrRow(el: iScreenReaderElement): string {
-  const roleColors: Record<string, string> = {
-    link: "background:#e0f2fe;color:#075985", button: "background:#ede9fe;color:#5b21b6",
-    heading: "background:#fef3c7;color:#92400e", img: "background:#fce7f3;color:#9d174d",
-    textbox: "background:#d1fae5;color:#065f46", navigation: "background:#e0e7ff;color:#3730a3",
-    banner: "background:#e0e7ff;color:#3730a3", contentinfo: "background:#e0e7ff;color:#3730a3",
-  };
-  const rc = roleColors[el.role] || "background:#f4f4f5;color:#3f3f46";
-  const speakText = getSpeakTextForElement(el);
+  const roleClass = roleClassFor(el.role);
   const sourceLabel = el.nameSource === "contents" ? "text" : el.nameSource;
+  const rowIdx = el.index - 1;
+  // Highlight priority: single speak > Play All current > recently clicked
+  const isHighlighted =
+    singleSpeakIndex !== null ? singleSpeakIndex === rowIdx :
+    playState !== "idle" && rowIdx === playIndex ? true :
+    selectedRowIndex === rowIdx;
+  const escapedName = el.accessibleName.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   return `
-    <div class="sr-row" role="button" tabindex="0" aria-label="Highlight ${el.role}: ${el.accessibleName.replace(/"/g, "&quot;")}" data-selector="${el.selector}" data-index="${el.index - 1}" style="display:flex;align-items:center;gap:8px;padding:4px 12px;border-bottom:1px solid #f4f4f5;cursor:pointer;min-height:30px;transition:background 0.1s${playState !== "idle" && (el.index - 1) === playIndex ? ";background:#fef3c7" : ""}">
-      <span style="font-size:11px;font-family:monospace;color:#71717a;width:16px;text-align:right;flex-shrink:0">${el.index}</span>
-      <span style="font-size:11px;font-weight:700;padding:2px 4px;border-radius:3px;min-width:50px;text-align:center;flex-shrink:0;${rc}">${el.role}</span>
-      <span style="font-size:11px;font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${el.accessibleName}</span>
-      <span style="font-size:9px;font-weight:600;color:#52525b;background:#e4e4e7;border-radius:2px;padding:1px 3px;flex-shrink:0;font-family:monospace">${sourceLabel}</span>
-      ${el.states.map((s) => `<span style="font-size:11px;font-weight:600;color:#52525b;background:#e4e4e7;border-radius:3px;padding:1px 4px;flex-shrink:0">${s}</span>`).join("")}
-      <button class="sr-speak" data-text="${speakText.replace(/"/g, "&quot;")}" aria-label="Speak: ${el.accessibleName.replace(/"/g, "&quot;")}" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:#52525b;flex-shrink:0;border-radius:4px">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.5h2l3-2.5v8L3 7.5H1V4.5z"/><path d="M8.5 3.5c1 .7 1.5 1.8 1.5 2.5s-.5 1.8-1.5 2.5"/></svg>
+    <div class="ds-row sr-row${isHighlighted ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${el.role}: ${escapedName}" data-selector="${el.selector.replace(/"/g, "&quot;")}" data-index="${rowIdx}">
+      <span class="ds-row__index">${el.index}</span>
+      <span class="ds-badge ${roleClass} ds-badge--role-min50">${el.role}</span>
+      <span class="ds-row__label">${escapedName}</span>
+      <span class="ds-badge ds-badge--source">${sourceLabel}</span>
+      ${el.states.map((s) => `<span class="ds-badge ds-badge--state">${s}</span>`).join("")}
+      <button class="ds-btn ds-btn--icon ds-btn--ghost sr-speak" data-row-index="${rowIdx}" aria-label="Speak: ${escapedName}">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 4.5h2l3-2.5v8L3 7.5H1V4.5z"/><path d="M8.5 3.5c1 .7 1.5 1.8 1.5 2.5s-.5 1.8-1.5 2.5"/></svg>
       </button>
     </div>
   `;
+}
+
+function roleClassFor(role: string): string {
+  const map: Record<string, string> = {
+    link: "ds-badge--role-link",
+    button: "ds-badge--role-button",
+    heading: "ds-badge--role-heading",
+    img: "ds-badge--role-img",
+    textbox: "ds-badge--role-textbox",
+    navigation: "ds-badge--role-landmark",
+    banner: "ds-badge--role-landmark",
+    contentinfo: "ds-badge--role-landmark",
+    main: "ds-badge--role-landmark",
+    region: "ds-badge--role-landmark",
+    complementary: "ds-badge--role-landmark",
+  };
+  return map[role] || "ds-badge--role-default";
 }

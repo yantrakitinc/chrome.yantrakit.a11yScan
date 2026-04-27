@@ -74,7 +74,7 @@ Top to bottom:
 
 5. **Content area** (scrollable): results, manual review, ARIA, observer history. This div has `flex:1; overflow-y:auto; min-height:0` so it takes remaining vertical space and scrolls internally.
 
-6. **Bottom toolbar** (conditional, pinned): Export (JSON/HTML/PDF/Copy) + Highlight (Violations only — Tab order and Focus gaps overlays moved to Keyboard tab). The toolbar has `flex-shrink:0` and is a sibling of the content area (NOT inside it), so it stays pinned at the bottom while content scrolls above it.
+6. **Bottom toolbar** (conditional, pinned): Export (JSON/HTML/PDF/Copy) + Highlight (Violations only). Tab order and Focus gaps overlays + Movie Mode all live in the Keyboard tab. The toolbar has `flex-shrink:0` and is a sibling of the content area (NOT inside it), so it stays pinned at the bottom while content scrolls above it.
 
 ### Flex layout chain (critical for toolbar pinning)
 

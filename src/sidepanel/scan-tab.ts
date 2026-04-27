@@ -348,31 +348,32 @@ function openConfigDialog(): void {
   attachConfigDialogListeners(dialog);
 }
 
+let configDialogGlobalListenersAttached = false;
 function attachConfigDialogListeners(dialog: HTMLDialogElement): void {
-  // Close button
+  // Close button — re-rendered each open so this listener attaches to a fresh element each time
   document.getElementById("config-close-btn")?.addEventListener("click", () => {
     dialog.close();
   });
 
-  // Close on backdrop click
-  dialog.addEventListener("click", (e) => {
-    if (e.target === dialog) {
-      dialog.close();
-    }
-  });
-
-  // Close on Escape is handled natively by <dialog>
-  dialog.addEventListener("close", () => {
-    configPanelOpen = false;
-    renderScanTab();
-    // Restore focus to the element that opened the dialog
-    if (dialogReturnFocus && document.contains(dialogReturnFocus)) {
-      dialogReturnFocus.focus();
-    } else {
-      document.getElementById("settings-btn")?.focus();
-    }
-    dialogReturnFocus = null;
-  });
+  // Backdrop + close listeners attach ONCE at first open (avoid stacking across opens)
+  if (!configDialogGlobalListenersAttached) {
+    configDialogGlobalListenersAttached = true;
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) {
+        dialog.close();
+      }
+    });
+    dialog.addEventListener("close", () => {
+      configPanelOpen = false;
+      renderScanTab();
+      if (dialogReturnFocus && document.contains(dialogReturnFocus)) {
+        dialogReturnFocus.focus();
+      } else {
+        document.getElementById("settings-btn")?.focus();
+      }
+      dialogReturnFocus = null;
+    });
+  }
 
   // Apply (F13-AC1, AC3, AC4, AC5)
   document.getElementById("config-apply-btn")?.addEventListener("click", () => {
@@ -1199,7 +1200,6 @@ function attachScanTabListeners(): void {
         const result = state.mv
           ? await sendMessage({ type: "MULTI_VIEWPORT_SCAN", payload: { viewports: state.testConfig?.viewports ?? state.viewports, testConfig: state.testConfig ?? undefined } })
           : await sendMessage({ type: "SCAN_REQUEST", payload: { testConfig: state.testConfig ?? undefined } });
-        console.log("[A11y Scan] Scan response:", result);
         const resType = (result as { type: string })?.type;
         if (resType === "SCAN_RESULT") {
           state.lastScanResult = (result as { payload: iScanResult }).payload;
