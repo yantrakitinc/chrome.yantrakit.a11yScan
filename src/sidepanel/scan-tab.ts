@@ -308,9 +308,9 @@ function renderUrlListPanel(): string {
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
       <input type="text" readonly value="${escHtml(url)}"
         class="f-1 font-mono" style="font-size:11px;padding:3px 6px;border:1px solid #e4e4e7;border-radius:3px;background:#fafafa;color:#27272a;min-width:0">
-      <button type="button" class="url-remove-btn" data-index="${i}"
+      <button type="button" class="url-remove-btn fs-0 cur-pointer min-h-24" data-index="${i}"
         aria-label="Remove URL"
-        class="fs-0 cur-pointer min-h-24" style="font-size:12px;font-weight:700;color:#b91c1c;background:none;border:none;padding:0 4px">&times;</button>
+        style="font-size:12px;font-weight:700;color:#b91c1c;background:none;border:none;padding:0 4px">&times;</button>
     </div>
   `).join("");
 
