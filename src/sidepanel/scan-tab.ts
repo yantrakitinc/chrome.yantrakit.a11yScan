@@ -914,7 +914,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
         ${w.checks.filter((c) => c.pass).map((c) => `
           <div style="font-size:11px;color:#047857;padding:2px 0 2px 8px;border-left:2px solid #a7f3d0">${escHtml(c.message)}</div>
         `).join("")}
-        <button class="aria-highlight cur-pointer min-h-24" data-selector="${escHtml(w.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;margin-top:4px">Highlight on page</button>
+        <button class="aria-highlight cur-pointer min-h-24" data-selector="${escHtml(w.selector)}" aria-label="Highlight ${escHtml(w.role)} ${escHtml(w.label)} on the page" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;margin-top:4px">Highlight on page</button>
       </div>
     </details>
   `;
