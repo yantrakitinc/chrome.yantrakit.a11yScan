@@ -14,6 +14,40 @@ import { uuid, isoNow, getViewportBucket, escHtml } from "@shared/utils";
 /** Tracks whether the config panel (F13) is currently expanded */
 let configPanelOpen = false;
 
+/* ═══════════════════════════════════════════════════════════════════
+   Manual review per-page persistence (R-MANUAL)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/** Compute storage key for manual review state. Per-URL granularity so two
+   different pages on the same site don't share review status. Matches the
+   key format documented in R-MANUAL-review.md. */
+function manualReviewKey(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return `manualReview_${u.origin}${u.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
+/** Load saved manual review for the given URL, or {} if none saved. */
+function loadManualReviewFor(url: string): void {
+  const key = manualReviewKey(url);
+  if (!key) { state.manualReview = {}; return; }
+  chrome.storage.local.get(key, (result) => {
+    const stored = result?.[key] as Record<string, iManualReviewStatus> | undefined;
+    state.manualReview = stored && typeof stored === "object" ? stored : {};
+    renderScanTab();
+  });
+}
+
+/** Persist current manual review state for the given URL. */
+function saveManualReviewFor(url: string): void {
+  const key = manualReviewKey(url);
+  if (!key) return;
+  chrome.storage.local.set({ [key]: state.manualReview });
+}
+
 /** Tracks whether the viewport editor (F02) is currently open */
 let viewportEditing = false;
 
@@ -1268,6 +1302,8 @@ function attachScanTabListeners(): void {
         if (resType === "SCAN_RESULT") {
           state.lastScanResult = (result as { payload: iScanResult }).payload;
           state.scanPhase = "results";
+          // Restore manual review for this URL — or reset to {} if none saved (R-MANUAL)
+          loadManualReviewFor(state.lastScanResult.url);
         } else if (resType === "MULTI_VIEWPORT_RESULT") {
           // MV scan: store full result and build merged view from shared + all viewport-specific violations
           const mvResult = (result as { payload: import("@shared/types").iMultiViewportResult }).payload;
@@ -1578,6 +1614,8 @@ function attachScanTabListeners(): void {
       const newStatus = btn.dataset.status as iManualReviewStatus;
       // Toggle: click same button again → deselect
       state.manualReview[id] = state.manualReview[id] === newStatus ? null : newStatus;
+      // Persist per-page (R-MANUAL) so reload restores the same status
+      if (state.lastScanResult?.url) saveManualReviewFor(state.lastScanResult.url);
       renderScanTab();
     });
   });
