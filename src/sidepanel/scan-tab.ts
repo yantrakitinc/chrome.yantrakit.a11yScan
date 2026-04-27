@@ -1366,6 +1366,10 @@ function attachScanTabListeners(): void {
   document.getElementById("settings-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     configPanelOpen = true;
+    // Update aria-expanded directly — no re-render before opening the dialog,
+    // and we don't want the button to flicker. The dialog 'close' listener
+    // sets it back via renderScanTab.
+    (e.currentTarget as HTMLElement).setAttribute("aria-expanded", "true");
     openConfigDialog();
   });
 
