@@ -50,7 +50,7 @@ export function renderScreenReaderTab(): void {
   panel.innerHTML = `
     <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid #e4e4e7;display:flex;gap:8px;background:#fafafa">
       <button id="sr-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px">Analyze</button>
-      <button id="sr-inspect" aria-label="Inspect element" class="cur-pointer min-h-24" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid ${inspectActive ? "#f59e0b" : "#d4d4d8"};border-radius:4px;background:${inspectActive ? "#fffbeb" : "none"};color:${inspectActive ? "#b45309" : "#52525b"}">
+      <button id="sr-inspect" aria-label="Inspect element" aria-pressed="${inspectActive}" class="cur-pointer min-h-24" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid ${inspectActive ? "#f59e0b" : "#d4d4d8"};border-radius:4px;background:${inspectActive ? "#fffbeb" : "none"};color:${inspectActive ? "#b45309" : "#52525b"}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2"/></svg>
       </button>
       ${srAnalyzed ? '<button id="sr-clear" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;background:none">Clear</button>' : ""}
