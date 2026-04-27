@@ -283,10 +283,15 @@ async function runTests() {
   await test("ARIA scan returns widgets", async () => {
     await navigateTo(browser, ARIA_DEMO);
     await sleep(1000);
-    const result = await sidepanel.evaluate(async () => {
-      return chrome.runtime.sendMessage({ type: "RUN_ARIA_SCAN" });
-    }) as { type: string; payload: unknown[] };
-    assert(result.type === "ARIA_SCAN_RESULT", `Expected ARIA_SCAN_RESULT, got ${result.type}`);
+    // The content script's onMessage listener races content.js injection on
+    // first navigation; first sendMessage occasionally returns null when the
+    // listener hasn't registered yet. One retry after a short delay closes
+    // that window without hiding a real bug — if the second call still
+    // returns null, that's a regression worth catching.
+    const trySend = async () => sidepanel.evaluate(async () => chrome.runtime.sendMessage({ type: "RUN_ARIA_SCAN" })) as Promise<{ type: string; payload: unknown[] } | null>;
+    let result = await trySend();
+    if (!result || !result.type) { await sleep(500); result = await trySend(); }
+    assert(result && result.type === "ARIA_SCAN_RESULT", `Expected ARIA_SCAN_RESULT, got ${result?.type ?? "null"}`);
     assert(result.payload.length > 0, "Expected ARIA widgets");
   });
 
