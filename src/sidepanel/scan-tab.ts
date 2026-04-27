@@ -236,7 +236,7 @@ function renderCollapsedToggle(): string {
 
 function renderModeToggles(busy: boolean): string {
   return `
-    <div class="mode-row">
+    <div class="mode-row" role="group" aria-label="Scan mode">
       <button class="mode-btn mode-crawl" aria-pressed="${state.crawl}" ${busy ? "disabled" : ""} data-mode="crawl">Crawl</button>
       <button class="mode-btn mode-observe" disabled aria-disabled="true" aria-label="Observe mode — coming soon" style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">Observe<span aria-hidden="true" style="font-size:8px;font-weight:800;color:var(--ds-amber-700);position:absolute;top:-2px;right:-2px;background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:3px;padding:0 3px;line-height:1.4">SOON</span></button>
       <button class="mode-btn mode-movie" aria-pressed="${state.movie}" ${busy ? "disabled" : ""} data-mode="movie">Movie</button>
