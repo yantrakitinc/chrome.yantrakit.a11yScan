@@ -119,7 +119,11 @@ export function renderScanTab(): void {
     ${state.crawlPhase === "wait" ? renderPageRuleWait() : ""}
     ${showSubTabs ? renderSubTabs() : ""}
 
-    <div id="scan-content" role="region" aria-label="Scan results" aria-live="polite" style="flex:1;overflow-y:auto;min-height:0">
+    <div id="scan-content" ${
+      state.scanSubTab && showSubTabs
+        ? `role="tabpanel" aria-labelledby="subtab-${state.scanSubTab}"`
+        : `role="region" aria-label="Scan results"`
+    } aria-live="polite" style="flex:1;overflow-y:auto;min-height:0">
       ${renderContent()}
     </div>
 
@@ -511,7 +515,7 @@ function renderSubTabs(): string {
       ${tabs.map((t) => {
         const label = t === "results" ? "Results" : t === "manual" ? "Manual" : t === "aria" ? "ARIA" : "Observe";
         const isActive = t === state.scanSubTab;
-        return `<button role="tab" id="subtab-${t}" aria-selected="${isActive}" aria-controls="subpanel-${t}" tabindex="${isActive ? "0" : "-1"}" class="sub-tab ${isActive ? "active" : ""}" data-subtab="${t}">${label}</button>`;
+        return `<button role="tab" id="subtab-${t}" aria-selected="${isActive}" aria-controls="scan-content" tabindex="${isActive ? "0" : "-1"}" class="sub-tab ${isActive ? "active" : ""}" data-subtab="${t}">${label}</button>`;
       }).join("")}
     </div>
   `;
@@ -1183,13 +1187,31 @@ function attachScanTabListeners(): void {
     state.wcagLevel = (e.target as HTMLSelectElement).value;
   });
 
-  // Sub-tab switching (F01-AC17)
-  document.querySelectorAll<HTMLButtonElement>(".sub-tab").forEach((btn) => {
+  // Sub-tab switching (F01-AC17) — click + ARIA tablist arrow keys
+  const subTabs = Array.from(document.querySelectorAll<HTMLButtonElement>(".sub-tab"));
+  subTabs.forEach((btn, i) => {
     btn.addEventListener("click", () => {
       const subtab = btn.dataset.subtab as typeof state.scanSubTab;
       if (subtab) {
         state.scanSubTab = subtab;
         renderScanTab();
+      }
+    });
+    btn.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "Home" || e.key === "End") {
+        e.preventDefault();
+        const next = e.key === "ArrowRight" ? (i + 1) % subTabs.length
+          : e.key === "ArrowLeft" ? (i - 1 + subTabs.length) % subTabs.length
+          : e.key === "Home" ? 0
+          : subTabs.length - 1;
+        const target = subTabs[next];
+        const subtab = target.dataset.subtab as typeof state.scanSubTab;
+        if (subtab) {
+          state.scanSubTab = subtab;
+          renderScanTab();
+          // Restore focus on the now-rendered tab
+          document.getElementById(`subtab-${subtab}`)?.focus();
+        }
       }
     });
   });
