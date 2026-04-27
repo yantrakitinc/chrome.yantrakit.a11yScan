@@ -20,6 +20,11 @@ let movieIndex = 0;
 let selectedKbIndex: number | null = null;
 let selectedKbTimer: ReturnType<typeof setTimeout> | null = null;
 
+/** Escape page-derived strings for safe innerHTML interpolation. */
+function escKb(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 // Flash a kb-gap/kb-fi/kb-trap item in the panel for 3s on activation.
 // Direct DOM manipulation — no re-render needed, won't fight inline styles.
 const kbFlashTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
@@ -124,9 +129,9 @@ export function renderKeyboardTab(): void {
           ${focusGaps.length === 0
             ? '<div style="padding:12px;font-size:11px;color:#71717a;text-align:center">No focus gaps detected.</div>'
             : focusGaps.map((g) => `
-              <div class="kb-gap" role="button" tabindex="0" aria-label="Highlight focus gap: ${g.selector.replace(/"/g, "&quot;")}" data-selector="${g.selector}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
-                <div style="font-family:monospace;font-weight:600;color:#27272a">${g.selector}</div>
-                <div style="color:#b91c1c;margin-top:2px">${g.reason}</div>
+              <div class="kb-gap" role="button" tabindex="0" aria-label="Highlight focus gap: ${escKb(g.selector)}" data-selector="${escKb(g.selector)}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
+                <div style="font-family:monospace;font-weight:600;color:#27272a">${escKb(g.selector)}</div>
+                <div style="color:#b91c1c;margin-top:2px">${escKb(g.reason)}</div>
               </div>
             `).join("")}
         </div>
@@ -139,8 +144,8 @@ export function renderKeyboardTab(): void {
             : failedIndicators.length === 0
               ? '<div style="padding:12px;font-size:11px;color:#047857;text-align:center">All focusable elements have visible focus indicators.</div>'
               : failedIndicators.map((fi) => `
-                <div class="kb-fi" role="button" tabindex="0" aria-label="Highlight missing focus indicator: ${fi.selector.replace(/"/g, "&quot;")}" data-selector="${fi.selector}" style="font-size:11px;padding:8px;border:1px solid #fde68a;background:#fffbeb;border-radius:4px;cursor:pointer">
-                  <div style="font-family:monospace;font-weight:600;color:#27272a">${fi.selector}</div>
+                <div class="kb-fi" role="button" tabindex="0" aria-label="Highlight missing focus indicator: ${escKb(fi.selector)}" data-selector="${escKb(fi.selector)}" style="font-size:11px;padding:8px;border:1px solid #fde68a;background:#fffbeb;border-radius:4px;cursor:pointer">
+                  <div style="font-family:monospace;font-weight:600;color:#27272a">${escKb(fi.selector)}</div>
                   <div style="color:#d97706;margin-top:2px">No visible focus indicator detected</div>
                 </div>
               `).join("")}
@@ -154,9 +159,9 @@ export function renderKeyboardTab(): void {
             : keyboardTraps.length === 0
               ? '<div style="padding:12px;font-size:11px;color:#047857;text-align:center">No keyboard traps detected.</div>'
               : keyboardTraps.map((t) => `
-                <div class="kb-trap" role="button" tabindex="0" aria-label="Highlight keyboard trap: ${t.selector.replace(/"/g, "&quot;")}" data-selector="${t.selector}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
-                  <div style="font-family:monospace;font-weight:600;color:#27272a">${t.selector}</div>
-                  <div style="color:#dc2626;margin-top:2px">${t.description}</div>
+                <div class="kb-trap" role="button" tabindex="0" aria-label="Highlight keyboard trap: ${escKb(t.selector)}" data-selector="${escKb(t.selector)}" style="font-size:11px;padding:8px;border:1px solid #fecaca;background:#fef2f2;border-radius:4px;cursor:pointer">
+                  <div style="font-family:monospace;font-weight:600;color:#27272a">${escKb(t.selector)}</div>
+                  <div style="color:#dc2626;margin-top:2px">${escKb(t.description)}</div>
                 </div>
               `).join("")}
         </div>
@@ -170,9 +175,9 @@ export function renderKeyboardTab(): void {
               ? '<div style="padding:12px;font-size:11px;color:#d97706;text-align:center">No skip links found. Consider adding a "Skip to main content" link.</div>'
               : skipLinks.map((sl) => `
                 <div style="font-size:11px;padding:8px;border:1px solid ${sl.targetExists ? "#bae6fd" : "#fecaca"};background:${sl.targetExists ? "#f0f9ff" : "#fef2f2"};border-radius:4px">
-                  <div style="font-family:monospace;font-weight:600;color:#27272a">${sl.selector}</div>
+                  <div style="font-family:monospace;font-weight:600;color:#27272a">${escKb(sl.selector)}</div>
                   <div style="margin-top:2px;color:${sl.targetExists ? "#0369a1" : "#dc2626"}">
-                    Target: ${sl.target} ${sl.targetExists ? "\u2713 exists" : "\u2717 target not found"}
+                    Target: ${escKb(sl.target)} ${sl.targetExists ? "\u2713 exists" : "\u2717 target not found"}
                   </div>
                 </div>
               `).join("")}
