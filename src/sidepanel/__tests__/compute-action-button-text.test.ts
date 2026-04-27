@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { computeActionButtonText, manualReviewKey } from "../scan-tab";
+import { computeActionButtonText, manualReviewKey, formatDateStamp, computeReportSummary } from "../scan-tab";
 
 type S = Parameters<typeof computeActionButtonText>[0];
 
@@ -82,5 +82,42 @@ describe("manualReviewKey", () => {
   it("returns null when the input is not a parseable URL", () => {
     expect(manualReviewKey("not a url")).toBeNull();
     expect(manualReviewKey("")).toBeNull();
+  });
+});
+
+describe("formatDateStamp", () => {
+  it("zero-pads single-digit month/day/hour/minute", () => {
+    // 2026-04-09 03:07 local time
+    expect(formatDateStamp(new Date(2026, 3, 9, 3, 7))).toBe("2026-04-09_03-07");
+  });
+  it("renders two-digit values without extra padding", () => {
+    expect(formatDateStamp(new Date(2026, 11, 31, 23, 59))).toBe("2026-12-31_23-59");
+  });
+});
+
+describe("computeReportSummary", () => {
+  function v(nodeCount: number) { return { nodes: new Array(nodeCount).fill({}) }; }
+
+  it("counts violations × nodes (not violation rules)", () => {
+    const out = computeReportSummary([v(3), v(2)], [], []);
+    expect(out.violationCount).toBe(5);
+  });
+
+  it("computes pass-rate as passes / (passes + violations) %", () => {
+    const out = computeReportSummary([v(1)], [{}, {}, {}], []);
+    expect(out.passRate).toBe(75); // 3 passes / (1 violation rule + 3 passes) = 75%
+  });
+
+  it("returns passRate=100 when there are zero rules total", () => {
+    expect(computeReportSummary([], [], []).passRate).toBe(100);
+  });
+
+  it("counts incomplete entries verbatim", () => {
+    expect(computeReportSummary([], [], [{}, {}]).incompleteCount).toBe(2);
+  });
+
+  it("rounds passRate to the nearest integer", () => {
+    // 1 violation, 2 passes — 2/3 = 66.667% → rounds to 67
+    expect(computeReportSummary([v(1)], [{}, {}], []).passRate).toBe(67);
   });
 });

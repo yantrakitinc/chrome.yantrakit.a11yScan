@@ -1729,8 +1729,36 @@ function getDomain(): string {
 }
 
 function getDateStamp(): string {
-  const d = new Date();
+  return formatDateStamp(new Date());
+}
+
+/**
+ * Format a Date as YYYY-MM-DD_HH-mm for filename suffixes. Pure;
+ * exported for tests so the formatter can be exercised on fixed Dates.
+ */
+export function formatDateStamp(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}_${String(d.getHours()).padStart(2, "0")}-${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/**
+ * Compute the summary block of a JSON / HTML report from scan arrays.
+ * `passRate` is the percent of rules that fully passed (out of violations +
+ * passes). When totalRules is 0 (e.g., empty crawl), passRate is 100.
+ *
+ * Pure; exported for tests. Used by buildJsonReport / buildHtmlReport.
+ */
+export function computeReportSummary(
+  violations: { nodes: unknown[] }[],
+  passes: unknown[],
+  incomplete: unknown[],
+): { violationCount: number; passCount: number; incompleteCount: number; passRate: number } {
+  const totalRules = violations.length + passes.length;
+  return {
+    violationCount: violations.reduce((s, v) => s + v.nodes.length, 0),
+    passCount: passes.length,
+    incompleteCount: incomplete.length,
+    passRate: totalRules > 0 ? Math.round((passes.length / totalRules) * 100) : 100,
+  };
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1748,8 +1776,6 @@ function buildJsonReport(): import("@shared/types").iJsonReport {
   const violations = r ? r.violations : [];
   const passes = r ? r.passes : [];
   const incomplete = r ? r.incomplete : [];
-  const totalRules = violations.length + passes.length;
-  const passRate = totalRules > 0 ? Math.round((passes.length / totalRules) * 100) : 100;
 
   const report: import("@shared/types").iJsonReport = {
     metadata: {
@@ -1761,12 +1787,7 @@ function buildJsonReport(): import("@shared/types").iJsonReport {
       toolVersion: "1.0.0",
       scanDurationMs: anchor?.scanDurationMs ?? 0,
     },
-    summary: {
-      violationCount: violations.reduce((s, v) => s + v.nodes.length, 0),
-      passCount: passes.length,
-      incompleteCount: incomplete.length,
-      passRate,
-    },
+    summary: computeReportSummary(violations, passes, incomplete),
     violations,
     passes,
     incomplete,
