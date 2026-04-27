@@ -375,7 +375,7 @@ function openConfigDialog(): void {
       </button>
     </div>
     <a href="https://a11yscan.yantrakit.com/tools/test-config-builder" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:var(--ds-indigo-700);text-decoration:none">Open Builder ↗</a>
-    <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "var(--ds-amber-300)" : "var(--ds-zinc-300)"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:var(--ds-zinc-800);line-height:1.5">${escHtml(configJson)}</textarea>
+    <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. { "wcag": { "version": "2.1", "level": "AA" } }' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "var(--ds-amber-300)" : "var(--ds-zinc-300)"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:var(--ds-zinc-800);line-height:1.5">${escHtml(configJson)}</textarea>
     <div id="config-error" role="alert" aria-live="polite" style="font-size:11px;color:var(--ds-red-700);display:none"></div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       <button id="config-apply-btn" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Apply</button>
