@@ -136,6 +136,50 @@ describe("validateTestConfig — mocks", () => {
       mocks: [{ urlPattern: "/api", status: 200, headers: "x" }],
     }))).toThrow(/headers must be an object/);
   });
+  it("rejects status outside the 100–599 range", () => {
+    expect(() => validateTestConfig(JSON.stringify({ mocks: [{ urlPattern: "/api", status: 99 }] }))).toThrow(/integer between 100 and 599/);
+    expect(() => validateTestConfig(JSON.stringify({ mocks: [{ urlPattern: "/api", status: 600 }] }))).toThrow(/integer between 100 and 599/);
+  });
+  it("rejects non-integer status (e.g., 200.5)", () => {
+    expect(() => validateTestConfig(JSON.stringify({ mocks: [{ urlPattern: "/api", status: 200.5 }] }))).toThrow(/integer between 100 and 599/);
+  });
+  it("rejects unknown HTTP methods", () => {
+    expect(() => validateTestConfig(JSON.stringify({
+      mocks: [{ urlPattern: "/api", status: 200, method: "TRACE" }],
+    }))).toThrow(/must be one of 'GET'/);
+  });
+  it("accepts the documented HTTP methods (case-insensitive)", () => {
+    for (const m of ["GET", "POST", "PUT", "DELETE", "PATCH", "get", "Post"]) {
+      expect(() => validateTestConfig(JSON.stringify({
+        mocks: [{ urlPattern: "/api", status: 200, method: m }],
+      }))).not.toThrow();
+    }
+  });
+});
+
+describe("validateTestConfig — auth.gatedUrls", () => {
+  it("accepts mode 'none' / 'list' / 'prefix' / 'regex' with patterns", () => {
+    for (const mode of ["none", "list", "prefix", "regex"] as const) {
+      expect(() => validateTestConfig(JSON.stringify({
+        auth: { gatedUrls: { mode, patterns: ["x"] } },
+      }))).not.toThrow();
+    }
+  });
+  it("rejects an unknown gatedUrls.mode", () => {
+    expect(() => validateTestConfig(JSON.stringify({
+      auth: { gatedUrls: { mode: "everything", patterns: [] } },
+    }))).toThrow(/gatedUrls\.mode must be/);
+  });
+  it("rejects non-array patterns", () => {
+    expect(() => validateTestConfig(JSON.stringify({
+      auth: { gatedUrls: { mode: "list", patterns: "x" } },
+    }))).toThrow(/patterns must be an array/);
+  });
+  it("rejects non-string entries in patterns", () => {
+    expect(() => validateTestConfig(JSON.stringify({
+      auth: { gatedUrls: { mode: "list", patterns: [1] } },
+    }))).toThrow(/patterns entries must be strings/);
+  });
 });
 
 describe("validateTestConfig — enrichment", () => {

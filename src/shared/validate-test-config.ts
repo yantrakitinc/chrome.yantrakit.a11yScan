@@ -135,6 +135,35 @@ export function validateTestConfig(jsonText: string): iTestConfig {
     }
   }
 
+  // auth
+  if ("auth" in obj && obj.auth !== undefined) {
+    if (typeof obj.auth !== "object" || obj.auth === null || Array.isArray(obj.auth)) {
+      throw new Error("auth must be an object. Got: " + JSON.stringify(obj.auth));
+    }
+    const auth = obj.auth as Record<string, unknown>;
+    if ("gatedUrls" in auth && auth.gatedUrls !== undefined) {
+      if (typeof auth.gatedUrls !== "object" || auth.gatedUrls === null || Array.isArray(auth.gatedUrls)) {
+        throw new Error("auth.gatedUrls must be an object. Got: " + JSON.stringify(auth.gatedUrls));
+      }
+      const gu = auth.gatedUrls as Record<string, unknown>;
+      if ("mode" in gu && gu.mode !== undefined) {
+        if (!["none", "list", "prefix", "regex"].includes(gu.mode as string)) {
+          throw new Error("auth.gatedUrls.mode must be 'none', 'list', 'prefix', or 'regex'. Got: '" + String(gu.mode) + "'");
+        }
+      }
+      if ("patterns" in gu && gu.patterns !== undefined) {
+        if (!Array.isArray(gu.patterns)) {
+          throw new Error("auth.gatedUrls.patterns must be an array of strings. Got: " + JSON.stringify(gu.patterns));
+        }
+        for (const p of gu.patterns as unknown[]) {
+          if (typeof p !== "string") {
+            throw new Error("auth.gatedUrls.patterns entries must be strings. Got: " + JSON.stringify(p));
+          }
+        }
+      }
+    }
+  }
+
   // pageRules
   if ("pageRules" in obj && obj.pageRules !== undefined) {
     if (!Array.isArray(obj.pageRules)) {
@@ -170,11 +199,16 @@ export function validateTestConfig(jsonText: string): iTestConfig {
       if (typeof mock.urlPattern !== "string") {
         throw new Error("mocks[].urlPattern is required and must be a string. Got: " + JSON.stringify(mock.urlPattern));
       }
-      if (typeof mock.status !== "number" || !Number.isFinite(mock.status)) {
-        throw new Error("mocks[].status is required and must be a number. Got: " + JSON.stringify(mock.status));
+      if (typeof mock.status !== "number" || !Number.isInteger(mock.status) || mock.status < 100 || mock.status > 599) {
+        throw new Error("mocks[].status is required and must be an integer between 100 and 599. Got: " + JSON.stringify(mock.status));
       }
-      if ("method" in mock && mock.method !== undefined && typeof mock.method !== "string") {
-        throw new Error("mocks[].method must be a string when present. Got: " + JSON.stringify(mock.method));
+      if ("method" in mock && mock.method !== undefined) {
+        if (typeof mock.method !== "string") {
+          throw new Error("mocks[].method must be a string when present. Got: " + JSON.stringify(mock.method));
+        }
+        if (!["GET", "POST", "PUT", "DELETE", "PATCH"].includes(mock.method.toUpperCase())) {
+          throw new Error("mocks[].method must be one of 'GET', 'POST', 'PUT', 'DELETE', 'PATCH'. Got: '" + String(mock.method) + "'");
+        }
       }
       if ("headers" in mock && mock.headers !== undefined) {
         if (typeof mock.headers !== "object" || mock.headers === null || Array.isArray(mock.headers)) {
