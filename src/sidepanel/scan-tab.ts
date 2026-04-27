@@ -1059,6 +1059,13 @@ function validateTestConfig(jsonText: string): iTestConfig {
         }
       }
     }
+    // R-CONFIG-test-configuration.md AC: reject configs that try to use BOTH
+    // include and exclude. They're mutually exclusive — the background applies
+    // include-only first and silently ignores exclude when both are present,
+    // which would surprise users who don't know that.
+    if ("include" in rules && rules.include !== undefined && "exclude" in rules && rules.exclude !== undefined) {
+      throw new Error("rules.include and rules.exclude are mutually exclusive — pick one.");
+    }
   }
 
   // crawl.mode
