@@ -127,7 +127,7 @@ export function renderKeyboardTab(): void {
             <button id="movie-pause" aria-label="Pause movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>
             </button>
-            <button id="movie-stop" aria-label="Stop movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
+            <button id="movie-stop" aria-label="Stop movie" title="Stop movie (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
             </button>
             <span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:var(--ds-amber-800);font-weight:600">Playing ${movieIndex + 1} of ${tabOrder.length}</span>
@@ -136,7 +136,7 @@ export function renderKeyboardTab(): void {
             <button id="movie-resume" aria-label="Resume movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 1l7 4-7 4z"/></svg>
             </button>
-            <button id="movie-stop" aria-label="Stop movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
+            <button id="movie-stop" aria-label="Stop movie" title="Stop movie (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
             </button>
             <span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:var(--ds-amber-800);font-weight:600">Paused at ${movieIndex + 1} of ${tabOrder.length}</span>
