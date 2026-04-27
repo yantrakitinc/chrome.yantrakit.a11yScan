@@ -312,6 +312,10 @@ function initMessageListener(): void {
           state.crawlResults = (msg.payload.results as Record<string, iScanResult>) ?? null;
           state.crawlFailed = (msg.payload.failed as Record<string, string>) ?? null;
         }
+        // Clear page-rule wait info whenever we leave the "wait" phase.
+        if (msg.payload.status !== "wait") {
+          state.crawlWaitInfo = null;
+        }
         updateTabDisabledStates();
         renderScanTab();
         break;
