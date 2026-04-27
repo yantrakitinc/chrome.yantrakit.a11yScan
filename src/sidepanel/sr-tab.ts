@@ -334,8 +334,14 @@ function playNext(): void {
       if (playState !== "playing") return;
       playIndex++;
       if (playIndex < elements.length) {
-        // Update progress
+        // Update progress (active class moves to the new playIndex via render)
         renderScreenReaderTab();
+        // Scroll the now-active row into view IMMEDIATELY after render so the
+        // user sees the highlight move smoothly. Otherwise the 300ms gap
+        // between render and the next playNext call leaves the active row
+        // off-screen and the previous row no longer highlighted.
+        document.querySelectorAll<HTMLDivElement>(".sr-row")[playIndex]
+          ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
         setTimeout(playNext, 300);
       } else {
         // Done
