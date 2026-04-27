@@ -69,27 +69,42 @@ let _crawlMode: "follow" | "urllist" = "follow";
  * Source of truth: F19 Chart 1.
  */
 function getActionButtonText(): string {
-  const crawling = state.crawlPhase === "crawling" || state.crawlPhase === "wait";
-  const scanning = state.scanPhase === "scanning";
+  return computeActionButtonText({
+    crawlPhase: state.crawlPhase,
+    scanPhase: state.scanPhase,
+    observer: state.observer,
+    crawl: state.crawl,
+    mv: state.mv,
+  });
+}
+
+/**
+ * Compute the scan action button label from mode flags + phase.
+ * Source of truth: R-SCAN AC4. Exported for unit testing.
+ */
+export function computeActionButtonText(s: {
+  crawlPhase: "idle" | "crawling" | "wait" | "paused" | "complete";
+  scanPhase: "idle" | "scanning" | "results";
+  observer: boolean;
+  crawl: boolean;
+  mv: boolean;
+}): string {
+  const crawling = s.crawlPhase === "crawling" || s.crawlPhase === "wait";
+  const scanning = s.scanPhase === "scanning";
 
   if (crawling) return "Crawling\u2026";
   if (scanning) return "Scanning\u2026";
 
-  const paused = state.crawlPhase === "paused";
-  const idle = state.crawlPhase === "idle" && state.scanPhase === "idle";
-  const results = state.scanPhase === "results" || state.crawlPhase === "complete";
+  const paused = s.crawlPhase === "paused";
+  const idle = s.crawlPhase === "idle" && s.scanPhase === "idle";
+  const results = s.scanPhase === "results" || s.crawlPhase === "complete";
 
-  // Paused phase — Observer+Crawl or Crawl+Movie: "Scan This Page" only when Observer is on
-  if (paused) {
-    return state.observer ? "Scan This Page" : "Scan Page";
-  }
+  if (paused) return s.observer ? "Scan This Page" : "Scan Page";
 
-  // Idle or Results — determine by active mode combination.
-  // Precedence: crawl > observer > multi-viewport > default (per R-SCAN AC4).
   if (idle || results) {
-    if (state.crawl) return "Start Crawl";
-    if (state.observer) return "Scan This Page";
-    if (state.mv) return "Scan All Viewports";
+    if (s.crawl) return "Start Crawl";
+    if (s.observer) return "Scan This Page";
+    if (s.mv) return "Scan All Viewports";
     return "Scan Page";
   }
 
