@@ -14,6 +14,11 @@ let kbAnalyzed = false;
 let moviePlayState: "idle" | "playing" | "paused" | "complete" = "idle";
 let movieIndex = 0;
 
+// Tracks the row the user clicked/activated so the panel highlights it for 3s
+// (matches the page-element highlight duration). Mirrors SR tab pattern.
+let selectedKbIndex: number | null = null;
+let selectedKbTimer: ReturnType<typeof setTimeout> | null = null;
+
 /** Returns the current tab order for F12 export */
 export function getTabOrder(): iTabOrderElement[] { return tabOrder; }
 
@@ -69,7 +74,7 @@ export function renderKeyboardTab(): void {
                 : el.role === "link" ? "ds-badge--role-link"
                 : el.role === "textbox" ? "ds-badge--role-textbox"
                 : "ds-badge--role-default";
-              const isActive = moviePlayState !== "idle" && i === movieIndex;
+              const isActive = (moviePlayState !== "idle" && i === movieIndex) || (selectedKbIndex === i);
               const focusLabel = el.hasFocusIndicator ? "Has visible focus indicator" : "Missing visible focus indicator";
               const focusColor = el.hasFocusIndicator ? "var(--ds-green-700)" : "var(--ds-red-700)";
               return `
@@ -202,6 +207,8 @@ export function renderKeyboardTab(): void {
     keyboardTraps = [];
     skipLinks = [];
     kbAnalyzed = false;
+    if (selectedKbTimer) { clearTimeout(selectedKbTimer); selectedKbTimer = null; }
+    selectedKbIndex = null;
     renderKeyboardTab();
   });
 
@@ -209,7 +216,20 @@ export function renderKeyboardTab(): void {
   document.querySelectorAll<HTMLDivElement>(".kb-row").forEach((row) => {
     const activate = () => {
       const selector = row.dataset.selector;
+      const idx = parseInt(row.dataset.index || "-1");
       if (selector) sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector } });
+      // Highlight the row in the panel for 3s (matches page highlight duration).
+      // Skip during Movie Mode — Movie Mode owns the active row.
+      if (idx >= 0 && moviePlayState === "idle") {
+        if (selectedKbTimer) clearTimeout(selectedKbTimer);
+        selectedKbIndex = idx;
+        renderKeyboardTab();
+        selectedKbTimer = setTimeout(() => {
+          selectedKbIndex = null;
+          selectedKbTimer = null;
+          renderKeyboardTab();
+        }, 3000);
+      }
     };
     row.addEventListener("click", activate);
     row.addEventListener("keydown", (e) => {
@@ -233,6 +253,9 @@ export function renderKeyboardTab(): void {
   document.getElementById("movie-play-all")?.addEventListener("click", (e) => {
     e.stopPropagation();
     if (tabOrder.length === 0) return;
+    // Clear click-highlight — Movie Mode owns the active row from here
+    if (selectedKbTimer) { clearTimeout(selectedKbTimer); selectedKbTimer = null; }
+    selectedKbIndex = null;
     moviePlayState = "playing";
     movieIndex = 0;
     sendMessage({ type: "START_MOVIE_MODE" });
