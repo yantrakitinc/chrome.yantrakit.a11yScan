@@ -940,6 +940,18 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   padding: var(--ds-space-8);
 }
 
+/* Stats grid — summary card with N stat columns. Used 2× (3-col crawl, 4-col single-page) */
+.scan-stats-grid {
+  display: grid;
+  gap: 4px;
+  background: var(--ds-zinc-50);
+  border: 1px solid var(--ds-zinc-200);
+  text-align: center;
+  margin-bottom: var(--ds-space-4);
+}
+.scan-stats-grid--3 { grid-template-columns: repeat(3, 1fr); padding: var(--ds-space-4); border-radius: 6px; }
+.scan-stats-grid--4 { grid-template-columns: repeat(4, 1fr); padding: var(--ds-space-5); border-radius: 8px; }
+
 /* Single-property utilities — high-frequency single-property inline styles
    in scan-tab.ts. Each one earns its place by 15+ occurrences. */
 .fs-0 { flex-shrink: 0; }

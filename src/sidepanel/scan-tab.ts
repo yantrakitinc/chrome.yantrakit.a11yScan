@@ -578,7 +578,7 @@ function renderCrawlResults(): string {
   const totalViolations = Object.values(results).reduce((sum, r) => sum + r.violations.reduce((s, v) => s + v.nodes.length, 0), 0);
   const totalFailed = Object.keys(failed).length;
   const summary = `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px;background:#fafafa;border:1px solid #e4e4e7;border-radius:6px;text-align:center;margin-bottom:8px">
+    <div class="scan-stats-grid scan-stats-grid--3">
       <div><div style="font-size:15px;font-weight:800;color:#27272a">${allUrls.length}</div><div class="scan-sublabel">Pages</div></div>
       <div><div style="font-size:15px;font-weight:800;color:#b91c1c">${totalViolations}</div><div class="scan-sublabel">Violations</div></div>
       <div><div style="font-size:15px;font-weight:800;color:#dc2626">${totalFailed}</div><div class="scan-sublabel">Failed</div></div>
@@ -701,7 +701,7 @@ function renderResults(result: iScanResult): string {
   return `
     <div class="scan-pane">
       ${mvBanner}
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:10px;background:#fafafa;border:1px solid #e4e4e7;border-radius:8px;text-align:center;margin-bottom:8px">
+      <div class="scan-stats-grid scan-stats-grid--4">
         <div><div style="font-size:16px;font-weight:800;color:#b91c1c">${totalViolationNodes}</div><div class="scan-caption-strong">Violations</div></div>
         <div><div style="font-size:16px;font-weight:800;color:#047857">${result.passes.length}</div><div class="scan-caption-strong">Passes</div></div>
         <div><div style="font-size:16px;font-weight:800;color:#b45309">${result.incomplete.length}</div><div class="scan-caption-strong">Review</div></div>
