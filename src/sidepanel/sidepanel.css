@@ -24,6 +24,7 @@
   --ds-red-50: #fef2f2;
   --ds-red-100: #fee2e2;
   --ds-red-200: #fecaca;
+  --ds-red-300: #fca5a5;
   --ds-red-600: #dc2626;
   --ds-red-700: #b91c1c;
   --ds-red-900: #7f1d1d;
@@ -506,8 +507,8 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
    ═══════════════════════════════════════════════════════════════════ */
 
 #confirm-clear-bar {
-  background: #fef2f2;
-  border-bottom: 1px solid #fca5a5;
+  background: var(--ds-red-50);
+  border-bottom: 1px solid var(--ds-red-300);
   padding: 8px 12px;
   display: flex;
   flex-direction: column;

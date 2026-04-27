@@ -26,6 +26,7 @@ Single source of design values used by the entire sidepanel. All colors, spacing
 ### Red (destructive, errors, critical violations)
 - `--ds-red-50`: `#fef2f2` — error region background
 - `--ds-red-200`: `#fecaca` — destructive button border ("Reset", "Stop", "Clear", "Cancel")
+- `--ds-red-300`: `#fca5a5` — confirm-clear-bar / config-error toast bottom border
 - `--ds-red-600`: `#dc2626` — destructive text and icon color
 - `--ds-red-700`: `#b91c1c` — emphasized destructive text (error messages)
 - `--ds-red-800`: `#991b1b` — severity:critical body text in HTML report header

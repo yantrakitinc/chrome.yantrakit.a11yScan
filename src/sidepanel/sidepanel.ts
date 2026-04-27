@@ -361,7 +361,7 @@ function initMessageListener(): void {
             toast.setAttribute("role", "alert");
             toast.setAttribute("aria-live", "assertive");
             toast.textContent = "Element not found on page";
-            toast.style.cssText = "position:sticky;top:0;z-index:100;padding:8px 12px;background:#fef2f2;border-bottom:1px solid #fca5a5;color:#b91c1c;font-size:11px;font-weight:700;text-align:center";
+            toast.style.cssText = "position:sticky;top:0;z-index:100;padding:8px 12px;background:var(--ds-red-50);border-bottom:1px solid var(--ds-red-300);color:var(--ds-red-700);font-size:11px;font-weight:700;text-align:center";
             activePanel.prepend(toast);
             setTimeout(() => toast.remove(), 3000);
           }
