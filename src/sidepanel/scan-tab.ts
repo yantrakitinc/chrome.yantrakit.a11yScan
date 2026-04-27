@@ -59,10 +59,23 @@ function getActionButtonText(): string {
   return "Scan Page";
 }
 
+/** Per-sub-tab scroll positions so re-renders don't yank the user back to top. */
+const scanScrollMemory: Record<string, number> = {};
+/** Tracks which sub-tab was last rendered so we attribute scroll to the correct
+   key — state.scanSubTab is updated BEFORE renderScanTab() runs on tab switch. */
+let lastRenderedSubTab: string | null = null;
+
 /** Render the entire Scan tab content */
 export function renderScanTab(): void {
   const panel = document.getElementById("panel-scan");
   if (!panel) return;
+
+  // Save scroll for whichever sub-tab was last rendered (the DOM still shows
+  // that tab's content at this moment). Restore for the now-active sub-tab.
+  const prevScrollEl = document.getElementById("scan-content");
+  if (prevScrollEl && lastRenderedSubTab) {
+    scanScrollMemory[lastRenderedSubTab] = prevScrollEl.scrollTop;
+  }
 
   const busy = state.scanPhase === "scanning" || state.crawlPhase === "crawling" || state.crawlPhase === "wait";
   const showClear = state.crawlPhase === "paused" || state.crawlPhase === "wait" || state.crawlPhase === "complete" || state.scanPhase === "results";
@@ -112,6 +125,14 @@ export function renderScanTab(): void {
 
     ${showToolbar ? renderToolbar() : ""}
   `;
+
+  // Restore scroll for the now-active sub-tab.
+  const nextScrollEl = document.getElementById("scan-content");
+  if (nextScrollEl && state.scanSubTab) {
+    const remembered = scanScrollMemory[state.scanSubTab];
+    if (remembered) nextScrollEl.scrollTop = remembered;
+  }
+  lastRenderedSubTab = state.scanSubTab || null;
 
   // Attach event listeners
   attachScanTabListeners();
