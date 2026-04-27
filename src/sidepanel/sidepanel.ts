@@ -64,6 +64,9 @@ export const state = {
   /** KB-tab overlay toggles. Survive re-render so the checkboxes don't drift. */
   tabOrderOverlayOn: false,
   focusGapsOverlayOn: false,
+  /** Page-rule wait info — set when CRAWL_WAITING_FOR_USER fires, used by
+     renderPageRuleWait() to show the matched URL + rule description (R-RULES). */
+  crawlWaitInfo: null as { url: string; waitType: string; description: string } | null,
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -315,6 +318,13 @@ function initMessageListener(): void {
 
       case "CRAWL_WAITING_FOR_USER":
         state.crawlPhase = "wait";
+        // Capture the matched-rule context so the wait UI can show the URL
+        // and the rule's description (R-RULES).
+        state.crawlWaitInfo = {
+          url: msg.payload.url,
+          waitType: msg.payload.waitType,
+          description: msg.payload.description,
+        };
         updateTabDisabledStates();
         renderScanTab();
         break;

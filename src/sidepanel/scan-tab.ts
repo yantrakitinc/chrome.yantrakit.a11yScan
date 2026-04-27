@@ -519,9 +519,12 @@ function renderCrawlProgress(): string {
 }
 
 function renderPageRuleWait(): string {
+  const info = state.crawlWaitInfo;
   return `
     <div role="alert" aria-live="assertive" class="fs-0" style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:#fffbeb">
       <div style="font-size:11px;font-weight:700;color:#78350f;margin-bottom:6px">\u26a0 Page rule triggered</div>
+      ${info?.description ? `<div style="font-size:11px;color:var(--ds-zinc-800);margin-bottom:4px">${escHtml(info.description)}</div>` : ""}
+      ${info?.url ? `<div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-500);margin-bottom:6px" title="${escHtml(info.url)}">${escHtml(info.url)}</div>` : ""}
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button id="continue-crawl" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Continue</button>
         <button id="scan-then-continue" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px">Scan page, then continue</button>
@@ -1587,7 +1590,10 @@ function attachScanTabListeners(): void {
     updateTabDisabledStates();
     renderScanTab();
   });
-  document.getElementById("continue-crawl")?.addEventListener("click", () => sendMessage({ type: "USER_CONTINUE" }));
+  document.getElementById("continue-crawl")?.addEventListener("click", () => {
+    state.crawlWaitInfo = null;
+    sendMessage({ type: "USER_CONTINUE" });
+  });
   document.getElementById("scan-then-continue")?.addEventListener("click", async () => {
     // Scan the current page first, then continue crawl
     const result = await sendMessage({ type: "SCAN_REQUEST" });
@@ -1595,10 +1601,14 @@ function attachScanTabListeners(): void {
       state.lastScanResult = (result as { payload: iScanResult }).payload;
       state.scanSubTab = "results";
     }
+    state.crawlWaitInfo = null;
     sendMessage({ type: "USER_CONTINUE" });
     renderScanTab();
   });
-  document.getElementById("cancel-wait")?.addEventListener("click", () => sendMessage({ type: "CANCEL_CRAWL" }));
+  document.getElementById("cancel-wait")?.addEventListener("click", () => {
+    state.crawlWaitInfo = null;
+    sendMessage({ type: "CANCEL_CRAWL" });
+  });
 
   // Violation overlay toggle — state-tracked so the button reflects reality
   // across re-renders (manual review marks, sub-tab switches, etc.)
