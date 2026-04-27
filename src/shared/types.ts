@@ -335,6 +335,8 @@ export interface iTestConfig {
   timing?: {
     pageLoadTimeout?: number;
     delayBetweenPages?: number;
+    /** Movie Mode playback speed multiplier. Default 1. (R-KB-keyboard.md) */
+    movieSpeed?: number;
   };
   auth?: iCrawlAuth;
   rules?: {

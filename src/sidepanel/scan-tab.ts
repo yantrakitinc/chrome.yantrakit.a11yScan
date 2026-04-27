@@ -104,7 +104,6 @@ export function renderScanTab(): void {
             ${renderModeToggles(busy)}
             ${renderMvCheckbox(busy)}
             ${state.crawl ? renderCrawlConfig(busy) : ""}
-            ${state.movie ? renderMovieSpeed() : ""}
           </div>
         </div>
       </div>
@@ -314,20 +313,6 @@ function renderUrlListPanel(): string {
 
       <button type="button" id="url-list-done"
         style="width:100%;margin-top:8px;font-size:11px;font-weight:800;padding:5px;min-height:24px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000;cursor:pointer">Done</button>
-    </div>
-  `;
-}
-
-function renderMovieSpeed(): string {
-  return `
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:11px;font-weight:600;color:#52525b">Movie speed</span>
-      <select id="movie-speed" aria-label="Movie playback speed" style="font-size:12px;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600">
-        <option value="0.5">0.5&times;</option>
-        <option value="1" selected>1&times;</option>
-        <option value="2">2&times;</option>
-        <option value="4">4&times;</option>
-      </select>
     </div>
   `;
 }
@@ -1052,6 +1037,11 @@ function validateTestConfig(jsonText: string): iTestConfig {
         }
       }
     }
+    if ("movieSpeed" in timing && timing.movieSpeed !== undefined) {
+      if (typeof timing.movieSpeed !== "number" || !Number.isFinite(timing.movieSpeed) || timing.movieSpeed <= 0) {
+        throw new Error("timing.movieSpeed must be a positive number. Got: " + JSON.stringify(timing.movieSpeed));
+      }
+    }
   }
 
   // rules
@@ -1304,10 +1294,11 @@ function attachScanTabListeners(): void {
               observerLoaded = false;
             });
           }
-          // Auto-play Movie Mode after scan (F06-AC5)
+          // Auto-play Movie Mode after scan (F06-AC5).
+          // Speed comes from testConfig.timing.movieSpeed only — no UI dropdown
+          // (per R-KB-keyboard.md). Defaults to 1 if unset.
           if (state.movie) {
-            const speedEl = document.getElementById("movie-speed") as HTMLSelectElement | null;
-            const speed = speedEl ? parseFloat(speedEl.value) : 1;
+            const speed = state.testConfig?.timing?.movieSpeed ?? 1;
             sendMessage({ type: "SET_MOVIE_SPEED", payload: { speed } });
             sendMessage({ type: "START_MOVIE_MODE" });
           }
@@ -1649,11 +1640,6 @@ function attachScanTabListeners(): void {
     if (listEl) listEl.innerHTML = renderObserverListInner();
   });
 
-  // Movie speed change (F06-AC4)
-  document.getElementById("movie-speed")?.addEventListener("change", (e) => {
-    const speed = parseFloat((e.target as HTMLSelectElement).value);
-    sendMessage({ type: "SET_MOVIE_SPEED", payload: { speed } });
-  });
 }
 
 /**
