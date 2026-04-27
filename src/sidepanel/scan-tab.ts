@@ -248,10 +248,10 @@ function renderMvCheckbox(busy: boolean): string {
       ? `<div style="padding-left:24px;margin-top:4px">
           <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:4px">
             ${state.viewports.map((v, i) => `
-              <input type="number" min="320" value="${v}" data-index="${i}" class="vp-input" aria-label="Viewport ${i + 1} width in pixels"
-                class="font-mono min-h-24" style="width:60px;font-size:11px;font-weight:600;padding:2px 4px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;box-sizing:border-box">
-              <button type="button" class="vp-remove" data-index="${i}" aria-label="Remove ${v}px viewport"
-                class="cur-pointer min-h-24" style="font-size:12px;font-weight:700;line-height:1;padding:2px 5px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#52525b"
+              <input type="number" min="320" value="${v}" data-index="${i}" class="vp-input font-mono min-h-24" aria-label="Viewport ${i + 1} width in pixels"
+                style="width:60px;font-size:11px;font-weight:600;padding:2px 4px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;box-sizing:border-box">
+              <button type="button" class="vp-remove cur-pointer min-h-24" data-index="${i}" aria-label="Remove ${v}px viewport"
+                style="font-size:12px;font-weight:700;line-height:1;padding:2px 5px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#52525b"
                 ${state.viewports.length <= 1 ? "disabled" : ""}>×</button>
             `).join("")}
           </div>
