@@ -72,6 +72,8 @@ export const state = {
 
 /** chrome.storage.local key for persisting active test config (F13) */
 export const TEST_CONFIG_STORAGE_KEY = "a11yscan_test_config";
+/** Timestamp of the last successful Apply — companion to TEST_CONFIG_STORAGE_KEY (R-CONFIG). */
+export const TEST_CONFIG_TIMESTAMP_KEY = "a11yscan_test_config_timestamp";
 
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();

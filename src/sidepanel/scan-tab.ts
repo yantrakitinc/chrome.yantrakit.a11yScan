@@ -3,7 +3,7 @@
  * Source of truth: F01, F02, F03, F04, F09, F10, F12, F19
  */
 
-import { state, updateTabDisabledStates, switchTab, TEST_CONFIG_STORAGE_KEY } from "./sidepanel";
+import { state, updateTabDisabledStates, switchTab, TEST_CONFIG_STORAGE_KEY, TEST_CONFIG_TIMESTAMP_KEY } from "./sidepanel";
 import { getTabOrder, getFocusGaps } from "./kb-tab";
 import { openAiChatWithContext } from "./ai-tab";
 import { sendMessage } from "@shared/messages";
@@ -401,7 +401,10 @@ function attachConfigDialogListeners(dialog: HTMLDialogElement): void {
     try {
       const config = validateTestConfig(text);
       state.testConfig = config;
-      chrome.storage.local.set({ [TEST_CONFIG_STORAGE_KEY]: config });
+      chrome.storage.local.set({
+        [TEST_CONFIG_STORAGE_KEY]: config,
+        [TEST_CONFIG_TIMESTAMP_KEY]: new Date().toISOString(),
+      });
       errorEl.style.display = "none";
       dialog.close();
     } catch (err) {
@@ -429,7 +432,7 @@ function attachConfigDialogListeners(dialog: HTMLDialogElement): void {
   // Clear Config (F13-AC7)
   document.getElementById("config-clear-btn")?.addEventListener("click", () => {
     state.testConfig = null;
-    chrome.storage.local.remove(TEST_CONFIG_STORAGE_KEY);
+    chrome.storage.local.remove([TEST_CONFIG_STORAGE_KEY, TEST_CONFIG_TIMESTAMP_KEY]);
     dialog.close();
   });
 }
@@ -1382,7 +1385,7 @@ function attachScanTabListeners(): void {
     state.mv = false;
     // Also clear test config on Reset (F13-AC7)
     state.testConfig = null;
-    chrome.storage.local.remove(TEST_CONFIG_STORAGE_KEY);
+    chrome.storage.local.remove([TEST_CONFIG_STORAGE_KEY, TEST_CONFIG_TIMESTAMP_KEY]);
     configPanelOpen = false;
     renderScanTab();
   });
