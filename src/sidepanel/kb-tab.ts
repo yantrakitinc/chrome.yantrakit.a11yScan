@@ -175,7 +175,7 @@ export function renderKeyboardTab(): void {
         <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-red-700);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-red-50)">Focus Gaps \u2014 ${focusGaps.length} elements</summary>
         <div style="padding:${focusGaps.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
           ${focusGaps.length === 0
-            ? '<div style="padding:12px;font-size:11px;color:var(--ds-zinc-500);text-align:center">No focus gaps detected.</div>'
+            ? '<div class="ds-empty" style="padding:12px">No focus gaps detected.</div>'
             : focusGaps.map((g) => `
               <div class="kb-gap cur-pointer" role="button" tabindex="0" aria-label="Highlight focus gap: ${escHtml(g.selector)}" data-selector="${escHtml(g.selector)}" style="font-size:11px;padding:8px;border:1px solid var(--ds-red-200);background:var(--ds-red-50);border-radius:4px">
                 <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(g.selector)}</div>
@@ -188,7 +188,7 @@ export function renderKeyboardTab(): void {
         <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-amber-600);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-amber-50)">Focus Indicators \u2014 ${failedIndicators.length} missing</summary>
         <div style="padding:${failedIndicators.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
           ${focusIndicators.length === 0
-            ? '<div style="padding:12px;font-size:11px;color:var(--ds-zinc-500);text-align:center">Run Analyze to check focus indicators.</div>'
+            ? '<div class="ds-empty" style="padding:12px">Run Analyze to check focus indicators.</div>'
             : failedIndicators.length === 0
               ? '<div style="padding:12px;font-size:11px;color:var(--ds-green-700);text-align:center">All focusable elements have visible focus indicators.</div>'
               : failedIndicators.map((fi) => `
@@ -203,7 +203,7 @@ export function renderKeyboardTab(): void {
         <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-red-600);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-red-50)">Keyboard Traps \u2014 ${keyboardTraps.length}</summary>
         <div style="padding:${keyboardTraps.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
           ${tabOrder.length === 0
-            ? '<div style="padding:12px;font-size:11px;color:var(--ds-zinc-500);text-align:center">Run Analyze to detect keyboard traps.</div>'
+            ? '<div class="ds-empty" style="padding:12px">Run Analyze to detect keyboard traps.</div>'
             : keyboardTraps.length === 0
               ? '<div style="padding:12px;font-size:11px;color:var(--ds-green-700);text-align:center">No keyboard traps detected.</div>'
               : keyboardTraps.map((t) => `
@@ -218,7 +218,7 @@ export function renderKeyboardTab(): void {
         <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-sky-700);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-blue-50)">Skip Links \u2014 ${skipLinks.length}</summary>
         <div style="padding:${skipLinks.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
           ${tabOrder.length === 0
-            ? '<div style="padding:12px;font-size:11px;color:var(--ds-zinc-500);text-align:center">Run Analyze to detect skip links.</div>'
+            ? '<div class="ds-empty" style="padding:12px">Run Analyze to detect skip links.</div>'
             : skipLinks.length === 0
               ? '<div style="padding:12px;font-size:11px;color:var(--ds-amber-600);text-align:center">No skip links found. Consider adding a "Skip to main content" link.</div>'
               : skipLinks.map((sl) => `
