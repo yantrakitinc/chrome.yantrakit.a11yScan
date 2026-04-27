@@ -897,8 +897,10 @@ function renderAriaResults(): string {
 }
 
 function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
+  // Per R-ARIA: 'Passing widgets are collapsed by default; failing are open
+  // by default'. So issues are open, compliant are closed.
   return `
-    <details style="border:1px solid ${pass ? "#a7f3d0" : "#fecaca"};border-radius:4px;background:${pass ? "#ecfdf5" : "#fef2f2"};margin-bottom:4px">
+    <details${pass ? "" : " open"} style="border:1px solid ${pass ? "#a7f3d0" : "#fecaca"};border-radius:4px;background:${pass ? "#ecfdf5" : "#fef2f2"};margin-bottom:4px">
       <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;font-size:11px">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${escHtml(w.role)}</span>
