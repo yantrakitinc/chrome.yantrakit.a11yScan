@@ -27,6 +27,10 @@ export function onMovieTick(currentIndex: number): void {
   if (moviePlayState !== "playing") return;
   movieIndex = currentIndex;
   renderKeyboardTab();
+  // Scroll the now-active row into view so the user can follow which element
+  // the page is focusing without manually scrolling the panel.
+  document.querySelectorAll<HTMLDivElement>(".kb-row")[currentIndex]
+    ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 /** Receives MOVIE_COMPLETE from the content script — drops controls back
