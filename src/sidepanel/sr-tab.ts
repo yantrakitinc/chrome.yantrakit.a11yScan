@@ -11,6 +11,8 @@ let playIndex = 0;
 let scopeSelector: string | null = null;
 let inspectActive = false;
 let srAnalyzed = false;
+/** Set true only on Analyze/Clear/scope-change so the next render scrolls to top. */
+let srShouldScrollTop = false;
 
 /** Index of the row currently being highlighted (for individual speak clicks) */
 let singleSpeakIndex: number | null = null;
@@ -29,6 +31,7 @@ export function setScopeFromInspect(selector: string): void {
     if (result && (result as { type: string }).type === "READING_ORDER_RESULT") {
       elements = (result as { payload: iScreenReaderElement[] }).payload;
     }
+    srShouldScrollTop = true;
     renderScreenReaderTab();
   });
 }
@@ -99,8 +102,11 @@ export function renderScreenReaderTab(): void {
     </div>
   `;
 
-  // Scroll list to top after render — but NOT during playback (would fight scrollIntoView)
-  if (playState === "idle") {
+  // Scroll-to-top only on the first render after Analyze produces a fresh list.
+  // Subsequent re-renders (row click, speak click, scope change) preserve scroll
+  // so the user isn't yanked to the top. Playback uses scrollIntoView per-row.
+  if (srShouldScrollTop) {
+    srShouldScrollTop = false;
     document.getElementById("sr-list")?.scrollTo(0, 0);
   }
 
@@ -112,6 +118,7 @@ export function renderScreenReaderTab(): void {
     if (result && (result as { type: string }).type === "READING_ORDER_RESULT") {
       elements = (result as { payload: iScreenReaderElement[] }).payload;
       srAnalyzed = true;
+      srShouldScrollTop = true;
       renderScreenReaderTab();
     }
   });
@@ -126,6 +133,7 @@ export function renderScreenReaderTab(): void {
       sendMessage({ type: "EXIT_INSPECT_MODE" });
     }
     stopPlayback();
+    srShouldScrollTop = true;
     renderScreenReaderTab();
   });
 
@@ -148,6 +156,7 @@ export function renderScreenReaderTab(): void {
     if (result && (result as { type: string }).type === "READING_ORDER_RESULT") {
       elements = (result as { payload: iScreenReaderElement[] }).payload;
     }
+    srShouldScrollTop = true;
     renderScreenReaderTab();
   });
 

@@ -39,9 +39,18 @@ export function getTabOrder(): iTabOrderElement[] { return tabOrder; }
 /** Returns the current focus gaps for F12 export */
 export function getFocusGaps(): iFocusGap[] { return focusGaps; }
 
+/** Preserves scroll position across re-renders so row-clicks/state changes
+   don't yank the user back to the top of the analyzed list. */
+let kbSavedScroll = 0;
+let kbScrollSetByAnalyze = false;
+
 export function renderKeyboardTab(): void {
   const panel = document.getElementById("panel-kb");
   if (!panel) return;
+
+  // Save current scroll before innerHTML replacement.
+  const prevScroll = document.getElementById("kb-scroll-container")?.scrollTop ?? null;
+  if (prevScroll !== null) kbSavedScroll = prevScroll;
 
   const failedIndicators = focusIndicators.filter((fi) => !fi.hasIndicator);
 
@@ -51,7 +60,7 @@ export function renderKeyboardTab(): void {
       ${kbAnalyzed ? '<button id="kb-clear" style="padding:4px 10px;font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;background:none;cursor:pointer;min-height:24px">Clear</button>' : ""}
     </div>
     ${!kbAnalyzed ? '<div style="flex:1;padding:16px;text-align:center;font-size:12px;color:#71717a">Click Analyze to scan keyboard navigation.</div>' : ""}
-    ${kbAnalyzed ? `<div style="flex:1;overflow-y:auto;min-height:0">
+    ${kbAnalyzed ? `<div id="kb-scroll-container" style="flex:1;overflow-y:auto;min-height:0">
       <details open>
         <summary style="padding:8px 12px;font-size:12px;font-weight:800;color:#18181b;cursor:pointer;border-bottom:1px solid #e4e4e7;background:#fafafa;display:flex;align-items:center;gap:8px">
           <span style="flex:1">Tab Order \u2014 ${tabOrder.length} elements</span>
@@ -185,6 +194,20 @@ export function renderKeyboardTab(): void {
     </div>` : ""}
   `;
 
+  // Restore scroll. Analyze/Clear set kbScrollSetByAnalyze=true to start at top
+  // for the freshly-loaded list; everything else (row clicks, movie state changes)
+  // restores the previous scroll position.
+  const sc = document.getElementById("kb-scroll-container");
+  if (sc) {
+    if (kbScrollSetByAnalyze) {
+      sc.scrollTop = 0;
+      kbSavedScroll = 0;
+      kbScrollSetByAnalyze = false;
+    } else if (kbSavedScroll > 0) {
+      sc.scrollTop = kbSavedScroll;
+    }
+  }
+
   // Analyze — fetch all keyboard data
   document.getElementById("kb-analyze")?.addEventListener("click", async () => {
     const [tabResult, gapResult, fiResult, trapResult, slResult] = await Promise.all([
@@ -210,6 +233,7 @@ export function renderKeyboardTab(): void {
       skipLinks = (slResult as { payload: iSkipLink[] }).payload;
     }
     kbAnalyzed = true;
+    kbScrollSetByAnalyze = true;
     renderKeyboardTab();
   });
 
@@ -219,6 +243,7 @@ export function renderKeyboardTab(): void {
     focusGaps = [];
     focusIndicators = [];
     keyboardTraps = [];
+    kbScrollSetByAnalyze = true;
     skipLinks = [];
     kbAnalyzed = false;
     if (selectedKbTimer) { clearTimeout(selectedKbTimer); selectedKbTimer = null; }
