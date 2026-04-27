@@ -614,10 +614,10 @@ function renderCrawlResults(): string {
   const allUrls = [...Object.keys(results), ...Object.keys(failed).filter((u) => !(u in results))];
 
   const toggle = `
-    <div style="display:flex;gap:0;border:1px solid var(--ds-zinc-300);border-radius:4px;overflow:hidden;margin-bottom:8px">
-      <button type="button" id="crawl-view-page"
+    <div role="group" aria-label="Group crawl results by" style="display:flex;gap:0;border:1px solid var(--ds-zinc-300);border-radius:4px;overflow:hidden;margin-bottom:8px">
+      <button type="button" id="crawl-view-page" aria-pressed="${crawlViewMode === "page"}"
         class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;background:${crawlViewMode === "page" ? "var(--ds-amber-100)" : "#fff"};color:${crawlViewMode === "page" ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">By page</button>
-      <button type="button" id="crawl-view-wcag"
+      <button type="button" id="crawl-view-wcag" aria-pressed="${crawlViewMode === "wcag"}"
         class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;border-left:1px solid var(--ds-zinc-300);background:${crawlViewMode === "wcag" ? "var(--ds-amber-100)" : "#fff"};color:${crawlViewMode === "wcag" ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">By WCAG</button>
     </div>
   `;
