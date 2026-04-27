@@ -154,13 +154,13 @@ function renderExpandedToggle(busy: boolean): string {
       <option ${state.wcagLevel === "AAA" ? "selected" : ""}>AAA</option>
     </select>
     <div style="display:flex;align-items:center;gap:2px">
-      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "#fef3c7" : "none"};cursor:pointer;border-radius:4px;color:${state.testConfig ? "#d97706" : "#71717a"}">
+      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "#fef3c7" : "none"};border-radius:4px;color:${state.testConfig ? "#d97706" : "#71717a"}">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
       </button>
       ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:#d97706;background:#fef3c7;border:1px solid #fcd34d;border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
     </div>
-    <button id="reset-btn" aria-label="Reset all settings" ${busy ? "disabled" : ""} style="font-size:11px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px;cursor:pointer;min-height:24px;padding:4px 10px">Reset</button>
-    <button id="collapse-btn" aria-label="Collapse settings" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:4px;color:#71717a;margin-left:auto">
+    <button id="reset-btn" aria-label="Reset all settings" ${busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px;padding:4px 10px">Reset</button>
+    <button id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:4px;color:#71717a;margin-left:auto">
       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l4-4 4 4"/></svg>
     </button>
   `;
@@ -215,30 +215,30 @@ function renderMvCheckbox(busy: boolean): string {
           <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:4px">
             ${state.viewports.map((v, i) => `
               <input type="number" min="320" value="${v}" data-index="${i}" class="vp-input" aria-label="Viewport ${i + 1} width in pixels"
-                class="font-mono" style="width:60px;font-size:11px;font-weight:600;padding:2px 4px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;min-height:24px;box-sizing:border-box">
+                class="font-mono min-h-24" style="width:60px;font-size:11px;font-weight:600;padding:2px 4px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;box-sizing:border-box">
               <button type="button" class="vp-remove" data-index="${i}" aria-label="Remove ${v}px viewport"
-                style="font-size:12px;font-weight:700;line-height:1;padding:2px 5px;min-height:24px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#52525b;cursor:pointer"
+                class="cur-pointer min-h-24" style="font-size:12px;font-weight:700;line-height:1;padding:2px 5px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#52525b"
                 ${state.viewports.length <= 1 ? "disabled" : ""}>×</button>
             `).join("")}
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             <button type="button" id="vp-add"
-              style="font-size:11px;font-weight:700;padding:2px 8px;min-height:24px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;cursor:pointer"
+              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a"
               ${state.viewports.length >= 6 ? "disabled" : ""}>+ add</button>
             <button type="button" id="vp-done"
-              style="font-size:11px;font-weight:700;padding:2px 8px;min-height:24px;border:1px solid #d97706;border-radius:4px;background:#fef3c7;color:#92400e;cursor:pointer">done</button>
+              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid #d97706;border-radius:4px;background:#fef3c7;color:#92400e">done</button>
           </div>
         </div>`
       : `<div style="display:flex;align-items:center;gap:4px;padding-left:24px;flex-wrap:wrap">
           ${state.viewports.map((v) => `<span class="font-mono" style="font-size:11px;font-weight:600;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px;padding:2px 6px">${v}</span>`).join("")}
           <button type="button" id="vp-edit"
-            style="font-size:11px;font-weight:700;padding:1px 6px;min-height:24px;border:none;background:none;color:#4338ca;cursor:pointer;text-decoration:underline">edit</button>
+            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:1px 6px;border:none;background:none;color:#4338ca;text-decoration:underline">edit</button>
         </div>`
     : "";
 
   return `
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;${busy ? "opacity:0.4;pointer-events:none" : ""}">
-      <input type="checkbox" id="mv-check" ${state.mv ? "checked" : ""} ${busy ? "disabled" : ""} style="width:16px;height:16px;accent-color:#d97706;cursor:pointer">
+    <label class="cur-pointer" style="display:flex;align-items:center;gap:6px;${busy ? "opacity:0.4;pointer-events:none" : ""}">
+      <input type="checkbox" id="mv-check" ${state.mv ? "checked" : ""} ${busy ? "disabled" : ""} class="cur-pointer" style="width:16px;height:16px;accent-color:#d97706">
       <span style="font-size:12px;font-weight:600;color:#27272a">Multi-Viewport</span>
     </label>
     ${chipsRow}
@@ -249,7 +249,7 @@ function renderCrawlConfig(busy: boolean): string {
   const urlCount = crawlUrlList.length;
   const urlListBtn = _crawlMode === "urllist"
     ? `<button type="button" id="url-list-open"
-        style="font-size:11px;font-weight:700;padding:3px 10px;min-height:24px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;cursor:pointer;margin-top:4px">
+        class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;margin-top:4px">
         ${urlCount === 0 ? "Set up URL list" : `${urlCount} URL${urlCount === 1 ? "" : "s"} \u2014 Edit list`}
       </button>`
     : "";
@@ -276,7 +276,7 @@ function renderUrlListPanel(): string {
         class="f-1 font-mono" style="font-size:11px;padding:3px 6px;border:1px solid #e4e4e7;border-radius:3px;background:#fafafa;color:#27272a;min-width:0">
       <button type="button" class="url-remove-btn" data-index="${i}"
         aria-label="Remove URL"
-        class="fs-0" style="font-size:12px;font-weight:700;color:#b91c1c;background:none;border:none;cursor:pointer;min-height:24px;padding:0 4px">&times;</button>
+        class="fs-0 cur-pointer min-h-24" style="font-size:12px;font-weight:700;color:#b91c1c;background:none;border:none;padding:0 4px">&times;</button>
     </div>
   `).join("");
 
@@ -293,8 +293,8 @@ function renderUrlListPanel(): string {
           class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:6px;border:1px solid #d4d4d8;border-radius:4px;resize:vertical;background:#fff;color:#27272a"></textarea>
         <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
           <button type="button" id="url-paste-add"
-            style="font-size:11px;font-weight:700;padding:3px 10px;min-height:24px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000;cursor:pointer">Add from textarea</button>
-          <label style="font-size:11px;font-weight:700;padding:3px 10px;min-height:24px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#3f3f46;cursor:pointer;display:flex;align-items:center">
+            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000">Add from textarea</button>
+          <label class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#3f3f46;display:flex;align-items:center">
             Upload .txt
             <input type="file" id="url-file-input" accept=".txt,text/plain" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0)">
           </label>
@@ -305,14 +305,14 @@ function renderUrlListPanel(): string {
         <input type="url" id="url-manual-input" aria-label="Add URL to crawl list" placeholder="https://example.com/page"
           class="f-1" style="font-size:11px;padding:4px 6px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;min-width:0">
         <button type="button" id="url-manual-add"
-          class="fs-0" style="font-size:11px;font-weight:700;padding:3px 10px;min-height:24px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000;cursor:pointer">Add</button>
+          class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000">Add</button>
       </div>
 
       ${summary}
       <div id="url-list-rows" style="max-height:160px;overflow-y:auto">${listRows}</div>
 
       <button type="button" id="url-list-done"
-        style="width:100%;margin-top:8px;font-size:11px;font-weight:800;padding:5px;min-height:24px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000;cursor:pointer">Done</button>
+        class="cur-pointer min-h-24" style="width:100%;margin-top:8px;font-size:11px;font-weight:800;padding:5px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000">Done</button>
     </div>
   `;
 }
@@ -334,7 +334,7 @@ function openConfigDialog(): void {
   content.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:12px;font-weight:800;color:#27272a;text-transform:uppercase;letter-spacing:0.05em">Test Configuration</span>
-      <button id="config-close-btn" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:#71717a;border-radius:4px">
+      <button id="config-close-btn" aria-label="Close" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;color:#71717a;border-radius:4px">
         <svg width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
       </button>
     </div>
@@ -342,12 +342,12 @@ function openConfigDialog(): void {
     <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "#fcd34d" : "#d4d4d8"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:#27272a;line-height:1.5">${escHtml(configJson)}</textarea>
     <div id="config-error" role="alert" aria-live="polite" style="font-size:11px;color:#b91c1c;display:none"></div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <button id="config-apply-btn" class="f-1" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px;cursor:pointer;min-height:24px">Apply</button>
-      <label id="config-upload-label" style="padding:4px 10px;font-size:11px;font-weight:700;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px;cursor:pointer;min-height:24px;display:flex;align-items:center">
+      <button id="config-apply-btn" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px">Apply</button>
+      <label id="config-upload-label" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px;display:flex;align-items:center">
         Upload .json
         <input type="file" id="config-file-input" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap" aria-label="Upload JSON config file">
       </label>
-      ${state.testConfig ? '<button id="config-clear-btn" style="padding:4px 10px;font-size:11px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px;cursor:pointer;min-height:24px">Clear Config</button>' : ""}
+      ${state.testConfig ? '<button id="config-clear-btn" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px">Clear Config</button>' : ""}
     </div>
   `;
 
@@ -481,9 +481,9 @@ function renderPageRuleWait(): string {
     <div class="fs-0" style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:#fffbeb">
       <div style="font-size:11px;font-weight:700;color:#78350f;margin-bottom:6px">\u26a0 Page rule triggered</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button id="continue-crawl" style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a1000;background:#f59e0b;border:none;border-radius:4px;cursor:pointer;min-height:24px">Continue</button>
-        <button id="scan-then-continue" style="padding:4px 10px;font-size:11px;font-weight:700;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px;cursor:pointer;min-height:24px">Scan page, then continue</button>
-        <button id="cancel-wait" style="font-size:11px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px;cursor:pointer;margin-left:auto;padding:4px 10px;min-height:24px">Cancel</button>
+        <button id="continue-crawl" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a1000;background:#f59e0b;border:none;border-radius:4px">Continue</button>
+        <button id="scan-then-continue" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px">Scan page, then continue</button>
+        <button id="cancel-wait" class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px;margin-left:auto;padding:4px 10px">Cancel</button>
       </div>
     </div>
   `;
@@ -569,9 +569,9 @@ function renderCrawlResults(): string {
   const toggle = `
     <div style="display:flex;gap:0;border:1px solid #d4d4d8;border-radius:4px;overflow:hidden;margin-bottom:8px">
       <button type="button" id="crawl-view-page"
-        class="f-1" style="padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;border:none;min-height:24px;background:${crawlViewMode === "page" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "page" ? "#92400e" : "#52525b"}">By page</button>
+        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;background:${crawlViewMode === "page" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "page" ? "#92400e" : "#52525b"}">By page</button>
       <button type="button" id="crawl-view-wcag"
-        class="f-1" style="padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;border:none;border-left:1px solid #d4d4d8;min-height:24px;background:${crawlViewMode === "wcag" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "wcag" ? "#92400e" : "#52525b"}">By WCAG</button>
+        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;border-left:1px solid #d4d4d8;background:${crawlViewMode === "wcag" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "wcag" ? "#92400e" : "#52525b"}">By WCAG</button>
     </div>
   `;
 
@@ -693,8 +693,8 @@ function renderResults(result: iScanResult): string {
       Multi-Viewport: ${mvResult.shared.length} shared &middot; ${mvResult.viewportSpecific.length} viewport-specific
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
-      <button class="mv-filter-chip" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;min-height:24px;border:1px solid ${mvFilter === null ? "#d97706" : "#d4d4d8"};background:${mvFilter === null ? "#fef3c7" : "#fff"};color:${mvFilter === null ? "#92400e" : "#52525b"}">All</button>
-      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip font-mono" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;min-height:24px;border:1px solid ${mvFilter === vp ? "#d97706" : "#d4d4d8"};background:${mvFilter === vp ? "#fef3c7" : "#fff"};color:${mvFilter === vp ? "#92400e" : "#52525b"}">${vp}px</button>`).join("")}
+      <button class="mv-filter-chip cur-pointer min-h-24" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === null ? "#d97706" : "#d4d4d8"};background:${mvFilter === null ? "#fef3c7" : "#fff"};color:${mvFilter === null ? "#92400e" : "#52525b"}">All</button>
+      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip font-mono cur-pointer min-h-24" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === vp ? "#d97706" : "#d4d4d8"};background:${mvFilter === vp ? "#fef3c7" : "#fff"};color:${mvFilter === vp ? "#92400e" : "#52525b"}">${vp}px</button>`).join("")}
     </div>
   ` : "";
 
@@ -717,7 +717,7 @@ function renderResults(result: iScanResult): string {
         .join("")}
 
       <details style="margin-top:8px">
-        <summary style="list-style:none;font-size:12px;font-weight:700;color:#047857;cursor:pointer;padding:6px 0;display:flex;align-items:center;gap:6px">
+        <summary class="cur-pointer" style="list-style:none;font-size:12px;font-weight:700;color:#047857;padding:6px 0;display:flex;align-items:center;gap:6px">
           <svg class="chevron fs-0" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6l3 3 5-5"/></svg>
           ${result.passes.length} rules passed
@@ -725,7 +725,7 @@ function renderResults(result: iScanResult): string {
         <div>
           ${result.passes.map((p) => `
             <details style="border-bottom:1px solid #f4f4f5">
-              <summary style="list-style:none;display:flex;align-items:center;gap:8px;padding:4px 8px;cursor:pointer;font-size:11px">
+              <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:11px">
                 <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
                 <span class="truncate f-1" style="font-weight:600;color:#27272a">${p.id}</span>
@@ -768,10 +768,10 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
           <div style="background:#fff;border:1px solid #e4e4e7;border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
             <div style="display:flex;justify-content:space-between;gap:4px">
               <span class="truncate font-mono" style="font-weight:600;color:#27272a">${escHtml(n.selector)}</span>
-              <button class="highlight-btn fs-0" data-selector="${escHtml(n.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;min-height:24px">Highlight</button>
+              <button class="highlight-btn fs-0 cur-pointer min-h-24" data-selector="${escHtml(n.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none">Highlight</button>
             </div>
             <div style="color:#b91c1c;margin-top:2px">${escHtml(n.failureSummary)}</div>
-            <button class="explain-btn" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:11px;font-weight:700;color:#4338ca;background:none;border:none;cursor:pointer;margin-top:4px;min-height:24px">Chat about it \u2192</button>
+            <button class="explain-btn cur-pointer min-h-24" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:11px;font-weight:700;color:#4338ca;background:none;border:none;margin-top:4px">Chat about it \u2192</button>
           </div>
         `).join("")}
       </div>
@@ -809,9 +809,9 @@ function renderManualReview(): string {
             <div style="display:flex;align-items:center;gap:8px">
               <span class="f-1" style="font-size:11px;font-weight:700;color:#27272a;min-width:0">${c.id} ${c.name}</span>
               <div class="fs-0" style="display:flex;gap:2px">
-                <button class="manual-btn" data-id="${c.id}" data-status="pass" aria-pressed="${status === "pass"}" aria-label="Mark ${c.id} ${c.name} as Pass" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;cursor:pointer;min-height:24px;min-width:24px;border:none;${status === "pass" ? "background:#047857;color:#fff" : "background:#f4f4f5;color:#52525b"}">Pass</button>
-                <button class="manual-btn" data-id="${c.id}" data-status="fail" aria-pressed="${status === "fail"}" aria-label="Mark ${c.id} ${c.name} as Fail" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;cursor:pointer;min-height:24px;min-width:24px;border:none;${status === "fail" ? "background:#b91c1c;color:#fff" : "background:#f4f4f5;color:#52525b"}">Fail</button>
-                <button class="manual-btn" data-id="${c.id}" data-status="na" aria-pressed="${status === "na"}" aria-label="Mark ${c.id} ${c.name} as Not Applicable" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;cursor:pointer;min-height:24px;min-width:24px;border:none;${status === "na" ? "background:#3f3f46;color:#fff" : "background:#f4f4f5;color:#52525b"}">N/A</button>
+                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="pass" aria-pressed="${status === "pass"}" aria-label="Mark ${c.id} ${c.name} as Pass" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "pass" ? "background:#047857;color:#fff" : "background:#f4f4f5;color:#52525b"}">Pass</button>
+                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="fail" aria-pressed="${status === "fail"}" aria-label="Mark ${c.id} ${c.name} as Fail" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "fail" ? "background:#b91c1c;color:#fff" : "background:#f4f4f5;color:#52525b"}">Fail</button>
+                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="na" aria-pressed="${status === "na"}" aria-label="Mark ${c.id} ${c.name} as Not Applicable" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "na" ? "background:#3f3f46;color:#fff" : "background:#f4f4f5;color:#52525b"}">N/A</button>
               </div>
             </div>
             <div style="font-size:11px;color:#52525b;line-height:1.5;margin-top:4px">${c.manualCheck}</div>
@@ -832,7 +832,7 @@ function renderAriaResults(): string {
     return `
       <div style="padding:16px;text-align:center">
         <div style="font-size:12px;color:#71717a">No ARIA widgets scanned yet.</div>
-        <button id="run-aria-scan" style="margin-top:8px;padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px;cursor:pointer;min-height:24px">Scan ARIA Patterns</button>
+        <button id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:8px;padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px">Scan ARIA Patterns</button>
       </div>
     `;
   }
@@ -857,7 +857,7 @@ function renderAriaResults(): string {
 function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
   return `
     <details style="border:1px solid ${pass ? "#a7f3d0" : "#fecaca"};border-radius:4px;background:${pass ? "#ecfdf5" : "#fef2f2"};margin-bottom:4px">
-      <summary style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;font-size:11px">
+      <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;font-size:11px">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${escHtml(w.role)}</span>
         <span class="truncate f-1" style="font-weight:600;color:#27272a">${escHtml(w.label)}</span>
@@ -870,7 +870,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
         ${w.checks.filter((c) => c.pass).map((c) => `
           <div style="font-size:11px;color:#047857;padding:2px 0 2px 8px;border-left:2px solid #a7f3d0">${escHtml(c.message)}</div>
         `).join("")}
-        <button class="aria-highlight" data-selector="${escHtml(w.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;margin-top:4px;min-height:24px">Highlight on page</button>
+        <button class="aria-highlight cur-pointer min-h-24" data-selector="${escHtml(w.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;margin-top:4px">Highlight on page</button>
       </div>
     </details>
   `;
@@ -909,8 +909,8 @@ function renderObserveHistory(): string {
     <div class="scan-pane">
       <div style="display:flex;gap:6px;margin-bottom:8px">
         <input id="observer-domain-filter" type="search" placeholder="Filter by domain\u2026" aria-label="Filter by domain" value="${observerFilter}" class="f-1" style="font-size:11px;padding:6px 8px;border:1px solid #d4d4d8;border-radius:4px;min-width:0">
-        <button id="clear-observer" class="fs-0" style="font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:4px 10px;background:none;cursor:pointer;min-height:24px">Clear</button>
-        <button id="export-observer" class="fs-0" style="font-size:11px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;padding:4px 10px;background:none;cursor:pointer;min-height:24px">Export</button>
+        <button id="clear-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:4px 10px;background:none">Clear</button>
+        <button id="export-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;padding:4px 10px;background:none">Export</button>
       </div>
       <div id="observer-list-content">${renderObserverListInner()}</div>
     </div>
@@ -926,7 +926,7 @@ function renderObserverListInner(): string {
     : observerEntries;
   if (filtered.length === 0) return '<div class="scan-empty">No entries match that domain.</div>';
   return filtered.map((entry) => `
-    <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px;cursor:pointer" class="observer-entry" data-url="${escHtml(entry.url)}">
+    <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px" class="observer-entry cur-pointer" data-url="${escHtml(entry.url)}">
       <div style="display:flex;align-items:center;gap:6px">
         <span class="fs-0" style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "#b91c1c" : "#047857"}">${entry.violationCount}</span>
         <span class="truncate f-1" style="font-size:11px;font-weight:600;color:#27272a">${escHtml(entry.title || entry.url)}</span>
