@@ -109,7 +109,7 @@ export function renderKeyboardTab(): void {
 
   panel.innerHTML = `
     <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;gap:8px;background:#fafafa">
-      <button id="kb-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Analyze</button>
+      <button id="kb-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Analyze</button>
       ${kbAnalyzed ? '<button id="kb-clear" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;background:none">Clear</button>' : ""}
     </div>
     ${!kbAnalyzed ? '<div class="f-1" style="padding:16px;text-align:center;font-size:12px;color:var(--ds-zinc-500)">Click Analyze to scan keyboard navigation.</div>' : ""}

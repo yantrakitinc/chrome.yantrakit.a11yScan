@@ -327,7 +327,7 @@ function renderUrlListPanel(): string {
           class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:6px;border:1px solid var(--ds-zinc-300);border-radius:4px;resize:vertical;background:#fff;color:var(--ds-zinc-800)"></textarea>
         <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
           <button type="button" id="url-paste-add"
-            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:var(--ds-amber-500);color:#1a1000">Add from textarea</button>
+            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:var(--ds-amber-500);color:var(--ds-amber-cta-fg)">Add from textarea</button>
           <label class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-700);display:flex;align-items:center">
             Upload .txt
             <input type="file" id="url-file-input" accept=".txt,text/plain" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0)">
@@ -339,14 +339,14 @@ function renderUrlListPanel(): string {
         <input type="url" id="url-manual-input" aria-label="Add URL to crawl list" placeholder="https://example.com/page"
           class="f-1" style="font-size:11px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800);min-width:0">
         <button type="button" id="url-manual-add"
-          class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:var(--ds-amber-500);color:#1a1000">Add</button>
+          class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:var(--ds-amber-500);color:var(--ds-amber-cta-fg)">Add</button>
       </div>
 
       ${summary}
       <div id="url-list-rows" style="max-height:160px;overflow-y:auto">${listRows}</div>
 
       <button type="button" id="url-list-done"
-        class="cur-pointer min-h-24" style="width:100%;margin-top:8px;font-size:11px;font-weight:800;padding:5px;border:none;border-radius:4px;background:var(--ds-amber-500);color:#1a1000">Done</button>
+        class="cur-pointer min-h-24" style="width:100%;margin-top:8px;font-size:11px;font-weight:800;padding:5px;border:none;border-radius:4px;background:var(--ds-amber-500);color:var(--ds-amber-cta-fg)">Done</button>
     </div>
   `;
 }
@@ -376,7 +376,7 @@ function openConfigDialog(): void {
     <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "var(--ds-amber-300)" : "var(--ds-zinc-300)"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:#27272a;line-height:1.5">${escHtml(configJson)}</textarea>
     <div id="config-error" role="alert" aria-live="polite" style="font-size:11px;color:var(--ds-red-700);display:none"></div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <button id="config-apply-btn" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Apply</button>
+      <button id="config-apply-btn" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Apply</button>
       <label id="config-upload-label" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px;display:flex;align-items:center">
         Upload .json
         <input type="file" id="config-file-input" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap" aria-label="Upload JSON config file">
@@ -526,7 +526,7 @@ function renderPageRuleWait(): string {
       ${info?.description ? `<div style="font-size:11px;color:var(--ds-zinc-800);margin-bottom:4px">${escHtml(info.description)}</div>` : ""}
       ${info?.url ? `<div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-500);margin-bottom:6px" title="${escHtml(info.url)}">${escHtml(info.url)}</div>` : ""}
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button id="continue-crawl" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Continue</button>
+        <button id="continue-crawl" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Continue</button>
         <button id="scan-then-continue" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px">Scan page, then continue</button>
         <button id="cancel-wait" class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;margin-left:auto;padding:4px 10px">Cancel</button>
       </div>
@@ -877,7 +877,7 @@ function renderAriaResults(): string {
     return `
       <div style="padding:16px;text-align:center">
         <div style="font-size:12px;color:var(--ds-zinc-500)">No ARIA widgets scanned yet.</div>
-        <button id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:8px;padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Scan ARIA Patterns</button>
+        <button id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:8px;padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Scan ARIA Patterns</button>
       </div>
     `;
   }
