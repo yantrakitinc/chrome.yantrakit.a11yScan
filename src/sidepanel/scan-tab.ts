@@ -515,7 +515,7 @@ function renderCrawlProgress(): string {
 
 function renderPageRuleWait(): string {
   return `
-    <div class="fs-0" style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:#fffbeb">
+    <div role="alert" aria-live="assertive" class="fs-0" style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:#fffbeb">
       <div style="font-size:11px;font-weight:700;color:#78350f;margin-bottom:6px">\u26a0 Page rule triggered</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button id="continue-crawl" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a1000;background:#f59e0b;border:none;border-radius:4px">Continue</button>
