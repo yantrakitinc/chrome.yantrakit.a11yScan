@@ -124,7 +124,7 @@ export function renderKeyboardTab(): void {
           ${tabOrder.length === 0
             ? '<div style="padding:12px;font-size:11px;color:#71717a;text-align:center">Click Analyze to scan keyboard navigation.</div>'
             : tabOrder.map((el, i) => {
-              const escName = el.accessibleName.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              const escName = escKb(el.accessibleName);
               const roleClass = el.role === "button" ? "ds-badge--role-button"
                 : el.role === "link" ? "ds-badge--role-link"
                 : el.role === "textbox" ? "ds-badge--role-textbox"
@@ -133,9 +133,9 @@ export function renderKeyboardTab(): void {
               const focusLabel = el.hasFocusIndicator ? "Has visible focus indicator" : "Missing visible focus indicator";
               const focusColor = el.hasFocusIndicator ? "var(--ds-green-700)" : "var(--ds-red-700)";
               return `
-              <div class="ds-row kb-row${isActive ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${el.role}: ${escName}" data-selector="${el.selector.replace(/"/g, "&quot;")}" data-index="${i}">
+              <div class="ds-row kb-row${isActive ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${escKb(el.role)}: ${escName}" data-selector="${escKb(el.selector)}" data-index="${i}">
                 <span class="ds-row__index-circle">${el.index}</span>
-                <span class="ds-badge ${roleClass}">${el.role}</span>
+                <span class="ds-badge ${roleClass}">${escKb(el.role)}</span>
                 <span class="ds-row__label">${escName}</span>
                 <span aria-label="${focusLabel}" title="${focusLabel}" style="display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${focusColor}">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
