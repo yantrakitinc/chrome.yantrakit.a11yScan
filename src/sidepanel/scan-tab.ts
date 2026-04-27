@@ -188,7 +188,7 @@ function renderExpandedToggle(busy: boolean): string {
       <option ${state.wcagLevel === "AAA" ? "selected" : ""}>AAA</option>
     </select>
     <div style="display:flex;align-items:center;gap:2px">
-      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "#fef3c7" : "none"};border-radius:4px;color:${state.testConfig ? "#d97706" : "#71717a"}">
+      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${state.testConfig ? "#d97706" : "var(--ds-zinc-500)"}">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
       </button>
       ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:#d97706;background:var(--ds-amber-100);border:1px solid #fcd34d;border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
@@ -373,7 +373,7 @@ function openConfigDialog(): void {
       </button>
     </div>
     <a href="https://a11yscan.yantrakit.com/tools/test-config-builder" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:#4338ca;text-decoration:none">Open Builder ↗</a>
-    <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "#fcd34d" : "#d4d4d8"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:#27272a;line-height:1.5">${escHtml(configJson)}</textarea>
+    <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "#fcd34d" : "var(--ds-zinc-300)"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:#27272a;line-height:1.5">${escHtml(configJson)}</textarea>
     <div id="config-error" role="alert" aria-live="polite" style="font-size:11px;color:var(--ds-red-700);display:none"></div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       <button id="config-apply-btn" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Apply</button>
@@ -552,7 +552,7 @@ function renderContent(): string {
   if (state.scanPhase === "scanning") {
     // Show partial results if available (F01-AC7: results render as soon as they arrive)
     if (state.lastScanResult) return renderResults(state.lastScanResult);
-    return '<div class="scan-pane"><div style="font-size:11px;color:var(--ds-zinc-500);font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="#d4d4d8" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page\u2026</div></div>';
+    return '<div class="scan-pane"><div style="font-size:11px;color:var(--ds-zinc-500);font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="var(--ds-zinc-300)" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="var(--ds-amber-500)" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page\u2026</div></div>';
   }
 
   // Sub-tab content routing
@@ -611,9 +611,9 @@ function renderCrawlResults(): string {
   const toggle = `
     <div style="display:flex;gap:0;border:1px solid var(--ds-zinc-300);border-radius:4px;overflow:hidden;margin-bottom:8px">
       <button type="button" id="crawl-view-page"
-        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;background:${crawlViewMode === "page" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "page" ? "#92400e" : "#52525b"}">By page</button>
+        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;background:${crawlViewMode === "page" ? "var(--ds-amber-100)" : "#fff"};color:${crawlViewMode === "page" ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">By page</button>
       <button type="button" id="crawl-view-wcag"
-        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;border-left:1px solid var(--ds-zinc-300);background:${crawlViewMode === "wcag" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "wcag" ? "#92400e" : "#52525b"}">By WCAG</button>
+        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;border-left:1px solid var(--ds-zinc-300);background:${crawlViewMode === "wcag" ? "var(--ds-amber-100)" : "#fff"};color:${crawlViewMode === "wcag" ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">By WCAG</button>
     </div>
   `;
 
@@ -648,12 +648,12 @@ function renderCrawlResults(): string {
       const passCount = r.passes.length;
       const hasViolations = violationCount > 0;
       return `
-        <details style="border:1px solid ${hasViolations ? "#fecaca" : "#a7f3d0"};border-radius:4px;margin-bottom:4px;background:${hasViolations ? "#fef2f2" : "#ecfdf5"}">
+        <details style="border:1px solid ${hasViolations ? "var(--ds-red-200)" : "var(--ds-green-200)"};border-radius:4px;margin-bottom:4px;background:${hasViolations ? "var(--ds-red-50)" : "var(--ds-green-50)"}">
           <summary class="scan-detail-summary">
             <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-            <span class="fs-0" style="color:${hasViolations ? "#dc2626" : "#047857"};font-weight:700">${hasViolations ? "\u2717" : "\u2713"}</span>
+            <span class="fs-0" style="color:${hasViolations ? "var(--ds-red-600)" : "var(--ds-green-700)"};font-weight:700">${hasViolations ? "\u2717" : "\u2713"}</span>
             <span class="truncate f-1 font-mono" style="color:var(--ds-zinc-800)" title="${escHtml(url)}">${escHtml(url)}</span>
-            <span class="fs-0" style="font-size:10px;font-weight:700;color:${hasViolations ? "#b91c1c" : "#047857"}">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
+            <span class="fs-0" style="font-size:10px;font-weight:700;color:${hasViolations ? "var(--ds-red-700)" : "var(--ds-green-700)"}">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
           </summary>
           <div class="scan-detail-body">
             ${r.violations.sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact)).map((v) => renderViolation(v)).join("") || '<div style="font-size:11px;color:var(--ds-green-700);padding:4px 0">No violations found.</div>'}
@@ -735,8 +735,8 @@ function renderResults(result: iScanResult): string {
       Multi-Viewport: ${mvResult.shared.length} shared &middot; ${mvResult.viewportSpecific.length} viewport-specific
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
-      <button class="mv-filter-chip cur-pointer min-h-24" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === null ? "#d97706" : "#d4d4d8"};background:${mvFilter === null ? "#fef3c7" : "#fff"};color:${mvFilter === null ? "#92400e" : "#52525b"}">All</button>
-      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip font-mono cur-pointer min-h-24" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === vp ? "#d97706" : "#d4d4d8"};background:${mvFilter === vp ? "#fef3c7" : "#fff"};color:${mvFilter === vp ? "#92400e" : "#52525b"}">${vp}px</button>`).join("")}
+      <button class="mv-filter-chip cur-pointer min-h-24" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === null ? "#d97706" : "var(--ds-zinc-300)"};background:${mvFilter === null ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === null ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">All</button>
+      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip font-mono cur-pointer min-h-24" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === vp ? "#d97706" : "var(--ds-zinc-300)"};background:${mvFilter === vp ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === vp ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">${vp}px</button>`).join("")}
     </div>
   ` : "";
 
@@ -900,7 +900,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
   // Per R-ARIA: 'Passing widgets are collapsed by default; failing are open
   // by default'. So issues are open, compliant are closed.
   return `
-    <details${pass ? "" : " open"} style="border:1px solid ${pass ? "#a7f3d0" : "#fecaca"};border-radius:4px;background:${pass ? "#ecfdf5" : "#fef2f2"};margin-bottom:4px">
+    <details${pass ? "" : " open"} style="border:1px solid ${pass ? "var(--ds-green-200)" : "var(--ds-red-200)"};border-radius:4px;background:${pass ? "var(--ds-green-50)" : "var(--ds-red-50)"};margin-bottom:4px">
       <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;font-size:11px">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${escHtml(w.role)}</span>
@@ -972,7 +972,7 @@ function renderObserverListInner(): string {
   return filtered.map((entry) => `
     <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid var(--ds-zinc-200);border-radius:4px;background:#fff;margin-bottom:4px" class="observer-entry cur-pointer" data-url="${escHtml(entry.url)}">
       <div style="display:flex;align-items:center;gap:6px">
-        <span class="fs-0" style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "#b91c1c" : "#047857"}">${entry.violationCount}</span>
+        <span class="fs-0" style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "var(--ds-red-700)" : "var(--ds-green-700)"}">${entry.violationCount}</span>
         <span class="truncate f-1" style="font-size:11px;font-weight:600;color:var(--ds-zinc-800)">${escHtml(entry.title || entry.url)}</span>
         <span class="fs-0" style="font-size:10px;color:var(--ds-zinc-500)">${entry.source === "auto" ? "auto" : "manual"}</span>
         ${entry.viewportBucket ? `<span class="fs-0" style="font-size:10px;color:#0369a1;background:#e0f2fe;padding:1px 4px;border-radius:3px">${escHtml(entry.viewportBucket)}</span>` : ""}
