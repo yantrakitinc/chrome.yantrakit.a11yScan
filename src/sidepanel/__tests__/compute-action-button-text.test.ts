@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { computeActionButtonText } from "../scan-tab";
+import { computeActionButtonText, manualReviewKey } from "../scan-tab";
 
 type S = Parameters<typeof computeActionButtonText>[0];
 
@@ -63,5 +63,24 @@ describe("computeActionButtonText — results phase parity with idle", () => {
   });
   it("crawlPhase=complete is treated like results for label purposes", () => {
     expect(computeActionButtonText(s({ crawlPhase: "complete", mv: true }))).toBe("Scan All Viewports");
+  });
+});
+
+describe("manualReviewKey", () => {
+  it("returns origin + pathname-prefixed key for a normal http URL", () => {
+    expect(manualReviewKey("https://example.com/about")).toBe("manualReview_https://example.com/about");
+  });
+  it("strips fragments — same key for /page and /page#section", () => {
+    expect(manualReviewKey("https://x.com/p#a")).toBe(manualReviewKey("https://x.com/p#b"));
+  });
+  it("strips query strings — same key for /search?q=a and /search?q=b", () => {
+    expect(manualReviewKey("https://x.com/s?q=a")).toBe(manualReviewKey("https://x.com/s?q=b"));
+  });
+  it("differs between origins for the same pathname", () => {
+    expect(manualReviewKey("https://a.com/x")).not.toBe(manualReviewKey("https://b.com/x"));
+  });
+  it("returns null when the input is not a parseable URL", () => {
+    expect(manualReviewKey("not a url")).toBeNull();
+    expect(manualReviewKey("")).toBeNull();
   });
 });

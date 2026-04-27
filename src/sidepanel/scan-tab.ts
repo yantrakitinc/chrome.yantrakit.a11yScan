@@ -22,7 +22,15 @@ let configPanelOpen = false;
 /** Compute storage key for manual review state. Per-URL granularity so two
    different pages on the same site don't share review status. Matches the
    key format documented in R-MANUAL-review.md. */
-function manualReviewKey(url: string): string | null {
+/**
+ * Storage key for per-page manual review state. The key intentionally drops
+ * the URL hash and query string — manual-review notes follow the page's
+ * conceptual identity (origin + pathname), not the navigation state. Returns
+ * null when the input isn't a parseable URL (e.g., chrome://, about:, "").
+ *
+ * Exported for unit testing.
+ */
+export function manualReviewKey(url: string): string | null {
   try {
     const u = new URL(url);
     return `manualReview_${u.origin}${u.pathname}`;
