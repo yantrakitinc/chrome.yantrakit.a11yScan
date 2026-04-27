@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filterCriteria, getManualReviewCriteria, mapRuleToWcag, mapAxeTagsToWcag, WCAG_CRITERIA } from "../wcag-mapping";
+import { filterCriteria, getManualReviewCriteria, mapRuleToWcag, mapAxeTagsToWcag, getWcagUrl, WCAG_CRITERIA, WCAG_SLUG_MAP } from "../wcag-mapping";
 
 describe("WCAG_CRITERIA", () => {
   it("has at least 80 criteria (A + AA + AAA)", () => {
@@ -83,6 +83,23 @@ describe("mapRuleToWcag", () => {
     const result = mapRuleToWcag("link-name");
     expect(result).toContain("2.4.4");
     expect(result).toContain("4.1.2");
+  });
+});
+
+describe("getWcagUrl", () => {
+  it("returns the slug-specific URL for a known criterion", () => {
+    expect(getWcagUrl("1.4.3")).toBe("https://a11yscan.yantrakit.com/wcag/1-4-3-contrast-minimum");
+  });
+  it("returns the WCAG-2.2 criterion URL for 2.4.11", () => {
+    expect(getWcagUrl("2.4.11")).toBe("https://a11yscan.yantrakit.com/wcag/2-4-11-focus-not-obscured");
+  });
+  it("falls back to the index page for an unknown criterion id", () => {
+    expect(getWcagUrl("99.99.99")).toBe("https://a11yscan.yantrakit.com/wcag");
+  });
+  it("every WCAG criterion in the database has a slug entry", () => {
+    for (const c of WCAG_CRITERIA) {
+      expect(WCAG_SLUG_MAP[c.id], `missing slug for ${c.id}`).toBeTruthy();
+    }
   });
 });
 

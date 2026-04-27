@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { isScannableUrl, matchesDomain, extractDomain, getViewportBucket, escHtml, buildElementSelector } from "../utils";
+import { isScannableUrl, matchesDomain, extractDomain, getViewportBucket, escHtml, buildElementSelector, uuid, isoNow, DEFAULT_VIEWPORTS } from "../utils";
 
 // jsdom doesn't include CSS.escape; polyfill the spec algorithm so
 // buildElementSelector tests can exercise the same code path real browsers do.
@@ -136,6 +136,37 @@ describe("escHtml", () => {
   });
   it("leaves single quotes alone (templates use double-quoted attrs)", () => {
     expect(escHtml("it's fine")).toBe("it's fine");
+  });
+});
+
+describe("uuid", () => {
+  it("returns a v4 UUID matching the canonical 8-4-4-4-12 hex pattern", () => {
+    expect(uuid()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  });
+  it("returns a different value on each call (collision-free in practice)", () => {
+    const a = uuid();
+    const b = uuid();
+    expect(a).not.toBe(b);
+  });
+});
+
+describe("isoNow", () => {
+  it("returns a string parseable by Date back to the same instant", () => {
+    const before = Date.now();
+    const s = isoNow();
+    const after = Date.now();
+    const parsed = Date.parse(s);
+    expect(parsed).toBeGreaterThanOrEqual(before);
+    expect(parsed).toBeLessThanOrEqual(after);
+  });
+  it("ends with Z (UTC) and matches ISO 8601 shape", () => {
+    expect(isoNow()).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  });
+});
+
+describe("DEFAULT_VIEWPORTS", () => {
+  it("matches the documented default breakpoints (375 / 768 / 1280)", () => {
+    expect(DEFAULT_VIEWPORTS).toEqual([375, 768, 1280]);
   });
 });
 

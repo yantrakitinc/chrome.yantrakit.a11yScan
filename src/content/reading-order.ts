@@ -135,7 +135,7 @@ function getAccessibleNameWithSource(el: HTMLElement): { name: string; source: i
   if (el instanceof HTMLImageElement && el.alt) return { name: el.alt, source: "alt" };
 
   if (el instanceof HTMLInputElement && el.id) {
-    const label = document.querySelector(`label[for="${el.id}"]`);
+    const label = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
     if (label) return { name: label.textContent?.trim() || "", source: "label" };
   }
 

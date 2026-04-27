@@ -157,6 +157,73 @@ describe("validateTestConfig — mocks", () => {
   });
 });
 
+describe("validateTestConfig — crawl", () => {
+  it("accepts mode 'follow' or 'urllist'", () => {
+    expect(() => validateTestConfig('{"crawl":{"mode":"follow"}}')).not.toThrow();
+    expect(() => validateTestConfig('{"crawl":{"mode":"urllist"}}')).not.toThrow();
+  });
+  it("rejects an unknown crawl.mode", () => {
+    expect(() => validateTestConfig('{"crawl":{"mode":"random"}}')).toThrow(/crawl\.mode must be/);
+  });
+  it("rejects non-object crawl root", () => {
+    expect(() => validateTestConfig('{"crawl":"x"}')).toThrow(/crawl must be an object/);
+  });
+  it("accepts crawl.scope as a string", () => {
+    expect(() => validateTestConfig('{"crawl":{"scope":"https://example.com/"}}')).not.toThrow();
+  });
+  it("rejects non-string crawl.scope", () => {
+    expect(() => validateTestConfig('{"crawl":{"scope":42}}')).toThrow(/crawl\.scope must be a string/);
+  });
+  it("accepts crawl.urlList as an array of strings", () => {
+    expect(() => validateTestConfig('{"crawl":{"urlList":["a","b"]}}')).not.toThrow();
+  });
+  it("rejects non-array crawl.urlList", () => {
+    expect(() => validateTestConfig('{"crawl":{"urlList":"x"}}')).toThrow(/urlList must be an array/);
+  });
+  it("rejects non-string entries in crawl.urlList", () => {
+    expect(() => validateTestConfig('{"crawl":{"urlList":[1]}}')).toThrow(/entries must be strings/);
+  });
+});
+
+describe("validateTestConfig — non-object section roots", () => {
+  it("rejects non-object enrichment root", () => {
+    expect(() => validateTestConfig('{"enrichment":"x"}')).toThrow(/enrichment must be an object/);
+  });
+  it("rejects non-object heuristics root", () => {
+    expect(() => validateTestConfig('{"heuristics":"x"}')).toThrow(/heuristics must be an object/);
+  });
+  it("rejects non-array heuristics.exclude", () => {
+    expect(() => validateTestConfig('{"heuristics":{"exclude":"x"}}')).toThrow(/exclude must be an array of numbers/);
+  });
+  it("rejects non-object timing root", () => {
+    expect(() => validateTestConfig('{"timing":"x"}')).toThrow(/timing must be an object/);
+  });
+  it("rejects non-object rules root", () => {
+    expect(() => validateTestConfig('{"rules":"x"}')).toThrow(/rules must be an object/);
+  });
+  it("rejects non-object wcag root", () => {
+    expect(() => validateTestConfig('{"wcag":"x"}')).toThrow(/wcag must be an object/);
+  });
+  it("rejects non-object pageRules entries", () => {
+    expect(() => validateTestConfig('{"pageRules":["x"]}')).toThrow(/pageRules entries must be objects/);
+  });
+  it("rejects non-array pageRules root", () => {
+    expect(() => validateTestConfig('{"pageRules":"x"}')).toThrow(/pageRules must be an array/);
+  });
+  it("rejects non-array mocks root", () => {
+    expect(() => validateTestConfig('{"mocks":"x"}')).toThrow(/mocks must be an array/);
+  });
+  it("rejects non-object mock entries", () => {
+    expect(() => validateTestConfig('{"mocks":["x"]}')).toThrow(/mocks entries must be objects/);
+  });
+  it("rejects non-object auth root", () => {
+    expect(() => validateTestConfig('{"auth":"x"}')).toThrow(/auth must be an object/);
+  });
+  it("rejects non-object auth.gatedUrls root", () => {
+    expect(() => validateTestConfig('{"auth":{"gatedUrls":"x"}}')).toThrow(/gatedUrls must be an object/);
+  });
+});
+
 describe("validateTestConfig — auth.gatedUrls", () => {
   it("accepts mode 'none' / 'list' / 'prefix' / 'regex' with patterns", () => {
     for (const mode of ["none", "list", "prefix", "regex"] as const) {
