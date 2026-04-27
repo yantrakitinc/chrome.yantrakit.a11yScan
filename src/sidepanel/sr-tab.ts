@@ -75,17 +75,17 @@ export function renderScreenReaderTab(): void {
       }</span>
       ${elements.length > 0 ? `
         ${playState === "idle" || playState === "complete" ? `
-          <button id="sr-play-all" aria-label="Play all — read all elements aloud" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:var(--ds-amber-700)">
+          <button id="sr-play-all" aria-label="Play all — read all elements aloud" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M2 1l7 4-7 4z"/></svg>
           </button>
         ` : ""}
         ${playState === "playing" ? `
-          <button id="sr-pause" aria-label="Pause speech" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:var(--ds-amber-700)">
+          <button id="sr-pause" aria-label="Pause speech" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>
           </button>
         ` : ""}
         ${playState === "paused" ? `
-          <button id="sr-resume" aria-label="Resume speech" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:var(--ds-amber-700)">
+          <button id="sr-resume" aria-label="Resume speech" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M2 1l7 4-7 4z"/></svg>
           </button>
         ` : ""}

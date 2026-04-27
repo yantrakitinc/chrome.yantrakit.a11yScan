@@ -191,7 +191,7 @@ function renderExpandedToggle(busy: boolean): string {
       <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${state.testConfig ? "#d97706" : "var(--ds-zinc-500)"}">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
       </button>
-      ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:#d97706;background:var(--ds-amber-100);border:1px solid #fcd34d;border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
+      ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:#d97706;background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
     </div>
     <button id="reset-btn" aria-label="Reset all settings" ${busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px">Reset</button>
     <button id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:4px;color:var(--ds-zinc-500);margin-left:auto">
@@ -236,7 +236,7 @@ function renderModeToggles(busy: boolean): string {
   return `
     <div class="mode-row">
       <button class="mode-btn mode-crawl" aria-pressed="${state.crawl}" ${busy ? "disabled" : ""} data-mode="crawl">Crawl</button>
-      <button class="mode-btn mode-observe" disabled aria-disabled="true" aria-label="Observe mode — coming soon" style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">Observe<span aria-hidden="true" style="font-size:8px;font-weight:800;color:var(--ds-amber-700);position:absolute;top:-2px;right:-2px;background:var(--ds-amber-100);border:1px solid #fcd34d;border-radius:3px;padding:0 3px;line-height:1.4">SOON</span></button>
+      <button class="mode-btn mode-observe" disabled aria-disabled="true" aria-label="Observe mode — coming soon" style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">Observe<span aria-hidden="true" style="font-size:8px;font-weight:800;color:var(--ds-amber-700);position:absolute;top:-2px;right:-2px;background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:3px;padding:0 3px;line-height:1.4">SOON</span></button>
       <button class="mode-btn mode-movie" aria-pressed="${state.movie}" ${busy ? "disabled" : ""} data-mode="movie">Movie</button>
     </div>
   `;
@@ -266,7 +266,7 @@ function renderMvCheckbox(busy: boolean): string {
       : `<div style="display:flex;align-items:center;gap:4px;padding-left:24px;flex-wrap:wrap">
           ${state.viewports.map((v) => `<span class="font-mono" style="font-size:11px;font-weight:600;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px;padding:2px 6px">${v}</span>`).join("")}
           <button type="button" id="vp-edit"
-            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:1px 6px;border:none;background:none;color:#4338ca;text-decoration:underline">edit</button>
+            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:1px 6px;border:none;background:none;color:var(--ds-indigo-700);text-decoration:underline">edit</button>
         </div>`
     : "";
 
@@ -372,8 +372,8 @@ function openConfigDialog(): void {
         <svg width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
       </button>
     </div>
-    <a href="https://a11yscan.yantrakit.com/tools/test-config-builder" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:#4338ca;text-decoration:none">Open Builder ↗</a>
-    <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "#fcd34d" : "var(--ds-zinc-300)"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:#27272a;line-height:1.5">${escHtml(configJson)}</textarea>
+    <a href="https://a11yscan.yantrakit.com/tools/test-config-builder" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:var(--ds-indigo-700);text-decoration:none">Open Builder ↗</a>
+    <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "var(--ds-amber-300)" : "var(--ds-zinc-300)"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:#27272a;line-height:1.5">${escHtml(configJson)}</textarea>
     <div id="config-error" role="alert" aria-live="polite" style="font-size:11px;color:var(--ds-red-700);display:none"></div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       <button id="config-apply-btn" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Apply</button>
@@ -688,7 +688,7 @@ function renderCrawlResults(): string {
             <summary class="scan-detail-summary">
               <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
               <b class="truncate f-1" style="color:#18181b">
-                <a href="https://a11yscan.yantrakit.com/wcag/${criterion}" target="_blank" rel="noopener" style="color:#4338ca;text-decoration:underline">${criterion}</a>
+                <a href="https://a11yscan.yantrakit.com/wcag/${criterion}" target="_blank" rel="noopener" style="color:var(--ds-indigo-700);text-decoration:underline">${criterion}</a>
               </b>
               <span class="fs-0" style="font-size:10px;color:var(--ds-zinc-600)">${uniquePages.length} page${uniquePages.length === 1 ? "" : "s"}</span>
               <span class="fs-0 font-mono" style="color:var(--ds-zinc-600);font-weight:700">${totalNodes}</span>
@@ -734,7 +734,7 @@ function renderResults(result: iScanResult): string {
 
   // MV summary banner and filter chips (F02-AC10, AC11)
   const mvBanner = mvResult ? `
-    <div style="padding:6px 10px;background:var(--ds-amber-100);border:1px solid #fcd34d;border-radius:6px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--ds-amber-800)">
+    <div style="padding:6px 10px;background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:6px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--ds-amber-800)">
       Multi-Viewport: ${mvResult.shared.length} shared &middot; ${mvResult.viewportSpecific.length} viewport-specific
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
@@ -808,7 +808,7 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
         <span class="fs-0 font-mono" style="color:var(--ds-zinc-600);font-weight:700">${v.nodes.length}</span>
       </summary>
       <div class="scan-detail-body">
-        ${v.wcagCriteria && v.wcagCriteria.length > 0 ? `<div style="margin-bottom:6px">${v.wcagCriteria.map((c) => `<a href="${getWcagUrl(c)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;color:#4338ca;text-decoration:underline;margin-right:8px">${c} — Learn more \u2197</a>`).join("")}</div>` : ""}
+        ${v.wcagCriteria && v.wcagCriteria.length > 0 ? `<div style="margin-bottom:6px">${v.wcagCriteria.map((c) => `<a href="${getWcagUrl(c)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;color:var(--ds-indigo-700);text-decoration:underline;margin-right:8px">${c} — Learn more \u2197</a>`).join("")}</div>` : ""}
         ${v.nodes.map((n) => `
           <div style="background:#fff;border:1px solid var(--ds-zinc-200);border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
             <div style="display:flex;justify-content:space-between;gap:4px">
@@ -816,7 +816,7 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
               <button class="highlight-btn fs-0 cur-pointer min-h-24" data-selector="${escHtml(n.selector)}" aria-label="Highlight ${escHtml(n.selector)} on the page" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);background:none;border:none">Highlight</button>
             </div>
             <div style="color:var(--ds-red-700);margin-top:2px">${escHtml(n.failureSummary)}</div>
-            <button class="explain-btn cur-pointer min-h-24" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:11px;font-weight:700;color:#4338ca;background:none;border:none;margin-top:4px">Chat about it \u2192</button>
+            <button class="explain-btn cur-pointer min-h-24" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:11px;font-weight:700;color:var(--ds-indigo-700);background:none;border:none;margin-top:4px">Chat about it \u2192</button>
           </div>
         `).join("")}
       </div>
@@ -957,7 +957,7 @@ function renderObserveHistory(): string {
       <div style="display:flex;gap:6px;margin-bottom:8px">
         <input id="observer-domain-filter" type="search" placeholder="Filter by domain\u2026" aria-label="Filter by domain" value="${observerFilter}" class="f-1" style="font-size:11px;padding:6px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;min-width:0">
         <button id="clear-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px;background:none">Clear</button>
-        <button id="export-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);border:1px solid #fcd34d;border-radius:4px;padding:4px 10px;background:none">Export</button>
+        <button id="export-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);border:1px solid var(--ds-amber-300);border-radius:4px;padding:4px 10px;background:none">Export</button>
       </div>
       <div id="observer-list-content">${renderObserverListInner()}</div>
     </div>
