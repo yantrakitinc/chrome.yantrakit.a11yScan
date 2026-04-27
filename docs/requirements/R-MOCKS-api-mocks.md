@@ -35,9 +35,14 @@ The content script:
 
 ## Matching
 
-- `urlPattern` is tested as a regex first (try `new RegExp(pattern)`). If the regex parses, use it.
-- Else as substring match.
-- If `method` is set, it must match the request method (case-insensitive). If not set, any method matches.
+- `urlPattern` is treated as a regex when it both starts and ends with `/`
+  (JavaScript-literal style — e.g. `/users\/\d+/`). The leading and trailing
+  slash are stripped and the inner text is compiled with `new RegExp(...)`.
+  If compilation throws, the matcher silently falls back to substring matching
+  on the raw pattern instead of crashing the page's request.
+- Otherwise the pattern is a plain substring matched against the URL.
+- If `method` is set, it must equal the request method (case-insensitive). If
+  not set, any method matches.
 
 First match wins (mocks are processed in order).
 
