@@ -261,9 +261,18 @@ function ensureSrEscapeHandler(): void {
   if (srEscapeHandlerAttached) return;
   srEscapeHandlerAttached = true;
   document.addEventListener("keydown", (e) => {
-    // Only act if SR tab is active AND playback is not idle
+    if (e.key !== "Escape") return;
     const srTabActive = document.getElementById("panel-sr")?.hasAttribute("hidden") === false;
-    if (e.key === "Escape" && playState !== "idle" && srTabActive) {
+    if (!srTabActive) return;
+    // R-INSPECT: Escape during inspect mode exits without picking.
+    if (inspectActive) {
+      inspectActive = false;
+      sendMessage({ type: "EXIT_INSPECT_MODE" });
+      renderScreenReaderTab();
+      return;
+    }
+    // Existing behavior: Escape stops playback when something is playing.
+    if (playState !== "idle") {
       stopPlayback();
       renderScreenReaderTab();
     }
