@@ -61,13 +61,16 @@ describe("validateTestConfig — timing", () => {
   it("rejects negative pageLoadTimeout", () => {
     expect(() => validateTestConfig('{"timing":{"pageLoadTimeout":-1}}')).toThrow(/non-negative number/);
   });
-  it("accepts movieSpeed as a positive number", () => {
-    expect(() => validateTestConfig('{"timing":{"movieSpeed":2}}')).not.toThrow();
-    expect(() => validateTestConfig('{"timing":{"movieSpeed":0.5}}')).not.toThrow();
+  it("accepts the documented movieSpeed multipliers (0.25, 0.5, 1, 2, 4)", () => {
+    for (const v of [0.25, 0.5, 1, 2, 4]) {
+      expect(() => validateTestConfig(`{"timing":{"movieSpeed":${v}}}`)).not.toThrow();
+    }
   });
-  it("rejects non-positive movieSpeed", () => {
-    expect(() => validateTestConfig('{"timing":{"movieSpeed":0}}')).toThrow(/positive number/);
-    expect(() => validateTestConfig('{"timing":{"movieSpeed":-1}}')).toThrow(/positive number/);
+  it("rejects movieSpeed values outside the documented set", () => {
+    expect(() => validateTestConfig('{"timing":{"movieSpeed":0}}')).toThrow(/one of 0\.25/);
+    expect(() => validateTestConfig('{"timing":{"movieSpeed":-1}}')).toThrow(/one of 0\.25/);
+    expect(() => validateTestConfig('{"timing":{"movieSpeed":3}}')).toThrow(/one of 0\.25/);
+    expect(() => validateTestConfig('{"timing":{"movieSpeed":1.5}}')).toThrow(/one of 0\.25/);
   });
 });
 

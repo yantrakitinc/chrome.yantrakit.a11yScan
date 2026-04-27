@@ -75,8 +75,9 @@ export function validateTestConfig(jsonText: string): iTestConfig {
       }
     }
     if ("movieSpeed" in timing && timing.movieSpeed !== undefined) {
-      if (typeof timing.movieSpeed !== "number" || !Number.isFinite(timing.movieSpeed) || timing.movieSpeed <= 0) {
-        throw new Error("timing.movieSpeed must be a positive number. Got: " + JSON.stringify(timing.movieSpeed));
+      const allowed = [0.25, 0.5, 1, 2, 4];
+      if (typeof timing.movieSpeed !== "number" || !allowed.includes(timing.movieSpeed)) {
+        throw new Error("timing.movieSpeed must be one of 0.25, 0.5, 1, 2, 4. Got: " + JSON.stringify(timing.movieSpeed));
       }
     }
   }
