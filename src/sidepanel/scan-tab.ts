@@ -862,16 +862,16 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
     <details style="border:1px solid ${pass ? "#a7f3d0" : "#fecaca"};border-radius:4px;background:${pass ? "#ecfdf5" : "#fef2f2"};margin-bottom:4px">
       <summary style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;font-size:11px">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#71717a;transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
-        <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${w.role}</span>
-        <span style="font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.label}</span>
+        <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${escHtmlConfig(w.role)}</span>
+        <span style="font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtmlConfig(w.label)}</span>
         <span style="font-weight:700;${pass ? "color:#047857" : "color:#b91c1c"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
       </summary>
       <div style="padding:4px 8px 8px">
         ${w.checks.filter((c) => !c.pass).map((c) => `
-          <div style="font-size:11px;color:#b91c1c;padding:2px 0 2px 8px;border-left:2px solid #fecaca">${c.message}</div>
+          <div style="font-size:11px;color:#b91c1c;padding:2px 0 2px 8px;border-left:2px solid #fecaca">${escHtmlConfig(c.message)}</div>
         `).join("")}
         ${w.checks.filter((c) => c.pass).map((c) => `
-          <div style="font-size:11px;color:#047857;padding:2px 0 2px 8px;border-left:2px solid #a7f3d0">${c.message}</div>
+          <div style="font-size:11px;color:#047857;padding:2px 0 2px 8px;border-left:2px solid #a7f3d0">${escHtmlConfig(c.message)}</div>
         `).join("")}
         <button class="aria-highlight" data-selector="${escHtmlConfig(w.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;margin-top:4px;min-height:24px">Highlight on page</button>
       </div>
