@@ -1660,7 +1660,7 @@ function attachScanTabListeners(): void {
   });
 
   // URL manual add (F03-AC4)
-  document.getElementById("url-manual-add")?.addEventListener("click", () => {
+  const addManualUrl = () => {
     const input = document.getElementById("url-manual-input") as HTMLInputElement | null;
     if (!input) return;
     const url = input.value.trim();
@@ -1674,6 +1674,15 @@ function attachScanTabListeners(): void {
       crawlUrlList.push(url);
       input.value = "";
       renderScanTab();
+      // Refocus the now-rendered input so the user can keep adding URLs
+      document.getElementById("url-manual-input")?.focus();
+    }
+  };
+  document.getElementById("url-manual-add")?.addEventListener("click", addManualUrl);
+  document.getElementById("url-manual-input")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addManualUrl();
     }
   });
 
