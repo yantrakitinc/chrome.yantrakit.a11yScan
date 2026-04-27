@@ -1532,6 +1532,10 @@ function attachScanTabListeners(): void {
     state.observer = false;
     state.movie = false;
     state.mv = false;
+    // Restore viewports to defaults (R-MV: Reset 'restores defaults [375, 768, 1280]').
+    state.viewports = [375, 768, 1280];
+    state.wcagVersion = "2.2";
+    state.wcagLevel = "AA";
     // Also clear test config on Reset (F13-AC7)
     state.testConfig = null;
     chrome.storage.local.remove([TEST_CONFIG_STORAGE_KEY, TEST_CONFIG_TIMESTAMP_KEY]);
