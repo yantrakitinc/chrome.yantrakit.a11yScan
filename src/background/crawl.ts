@@ -99,17 +99,18 @@ async function startCrawl(options: iCrawlOptions): Promise<void> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url) return;
 
-  const startUrl = tab.url;
+  const startUrl = stripFragment(tab.url);
+  const normalizedList = options.mode === "urllist" ? options.urlList.map(stripFragment) : null;
 
   crawlState = {
     status: "crawling",
     startedAt: new Date().toISOString(),
     pagesVisited: 0,
-    pagesTotal: options.mode === "urllist" ? options.urlList.length : 0,
+    pagesTotal: normalizedList ? normalizedList.length : 0,
     currentUrl: startUrl,
     results: {},
     failed: {},
-    queue: options.mode === "urllist" ? [...options.urlList] : [startUrl],
+    queue: normalizedList ?? [startUrl],
     visited: [],
   };
 
@@ -167,13 +168,29 @@ async function resumeCrawl(): Promise<void> {
   await processCrawlQueue();
 }
 
-function isUrlGated(url: string, gatedUrls?: { mode: string; patterns: string[] }): boolean {
+export function isUrlGated(url: string, gatedUrls?: { mode: string; patterns: string[] }): boolean {
   if (!gatedUrls || gatedUrls.mode === "none" || !gatedUrls.patterns?.length) return false;
   switch (gatedUrls.mode) {
     case "list": return gatedUrls.patterns.some((p) => url === p);
     case "prefix": return gatedUrls.patterns.some((p) => url.startsWith(p));
-    case "regex": return gatedUrls.patterns.some((p) => new RegExp(p).test(url));
+    case "regex": return gatedUrls.patterns.some((p) => {
+      try { return new RegExp(p).test(url); } catch { return false; }
+    });
     default: return false;
+  }
+}
+
+/**
+ * Strip the fragment from a URL so `/page#a` and `/page#b` collapse to the
+ * same crawl target. Returns the input unchanged on parse failure.
+ */
+export function stripFragment(url: string): string {
+  try {
+    const u = new URL(url);
+    u.hash = "";
+    return u.toString();
+  } catch {
+    return url;
   }
 }
 
@@ -344,13 +361,20 @@ async function collectLinks(tabId: number, scope: string): Promise<string[]> {
     const [result] = await chrome.scripting.executeScript({
       target: { tabId },
       func: (scopeUrl: string) => {
-        return Array.from(document.querySelectorAll("a[href]"))
-          .map((a) => (a as HTMLAnchorElement).href)
-          .filter((href) => href.startsWith(scopeUrl))
-          .filter((href) => {
-            const link = document.querySelector(`a[href="${href}"]`);
-            return !link?.getAttribute("rel")?.includes("nofollow");
-          });
+        const seen = new Set<string>();
+        const out: string[] = [];
+        for (const a of Array.from(document.querySelectorAll("a[href]"))) {
+          if ((a as HTMLAnchorElement).rel?.split(/\s+/).includes("nofollow")) continue;
+          const href = (a as HTMLAnchorElement).href;
+          if (!href.startsWith(scopeUrl)) continue;
+          // Strip fragment so /page#a and /page#b don't both queue.
+          let normalized = href;
+          try { const u = new URL(href); u.hash = ""; normalized = u.toString(); } catch { /* keep raw */ }
+          if (seen.has(normalized)) continue;
+          seen.add(normalized);
+          out.push(normalized);
+        }
+        return out;
       },
       args: [scope],
     });
