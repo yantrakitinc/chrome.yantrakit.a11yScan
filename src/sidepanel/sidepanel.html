@@ -31,11 +31,13 @@
   </header>
 
   <!-- Confirm Clear All Bar (F22) -->
-  <div id="confirm-clear-bar" role="alert" aria-live="assertive" hidden>
+  <!-- role=alertdialog (not alert) — alert regions cannot host interactive
+       children. alertdialog is the right pattern for a confirm prompt. -->
+  <div id="confirm-clear-bar" role="alertdialog" aria-labelledby="confirm-clear-text" aria-modal="true" hidden>
     <p id="confirm-clear-text">This will clear all scan results, observer history, crawl data, chat history, and saved configuration. This action cannot be undone.</p>
     <div class="confirm-clear-actions">
-      <button id="confirm-clear-yes">Yes, clear all</button>
-      <button id="confirm-clear-cancel">Cancel</button>
+      <button id="confirm-clear-yes" class="ds-btn ds-btn--sm ds-btn--danger-fill">Yes, clear all</button>
+      <button id="confirm-clear-cancel" class="ds-btn ds-btn--sm ds-btn--secondary">Cancel</button>
     </div>
   </div>
 

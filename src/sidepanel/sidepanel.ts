@@ -225,11 +225,20 @@ function initConfirmClearBar(): void {
 
   yesBtn?.addEventListener("click", () => {
     if (bar) bar.hidden = true;
+  // Sync the visible state with the source the user just confirmed.
     sendMessage({ type: "CLEAR_ALL_CONFIRMED" });
   });
 
   cancelBtn?.addEventListener("click", () => {
     if (bar) bar.hidden = true;
+  });
+
+  // Escape closes the alertdialog (R-PANEL: 'Escape closes via JS handler
+  // since <div> is not a native dialog'). Only acts when the bar is visible.
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && bar && !bar.hidden) {
+      bar.hidden = true;
+    }
   });
 }
 
@@ -257,9 +266,13 @@ function initMessageListener(): void {
         break;
 
       case "CONFIRM_CLEAR_ALL": {
-        // AC5: show inline confirmation bar instead of confirm() (F22)
+        // AC5: show inline confirmation bar instead of confirm() (F22).
+        // Move focus to Cancel by default (safer) per R-PANEL.
         const bar = document.getElementById("confirm-clear-bar");
-        if (bar) bar.hidden = false;
+        if (bar) {
+          bar.hidden = false;
+          (document.getElementById("confirm-clear-cancel") as HTMLButtonElement | null)?.focus();
+        }
         break;
       }
 
