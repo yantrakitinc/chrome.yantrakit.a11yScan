@@ -972,7 +972,7 @@ function renderToolbarContent(): string {
       </div>
       <div class="toolbar-row">
         <span class="toolbar-label">Highlight</span>
-        <button class="toolbar-btn" id="toggle-violations" aria-pressed="false">Violations</button>
+        <button class="toolbar-btn${state.violationsOverlayOn ? " active" : ""}" id="toggle-violations" aria-pressed="${state.violationsOverlayOn}">Violations</button>
       </div>
   `;
 }
@@ -1336,6 +1336,7 @@ function attachScanTabListeners(): void {
     state.scanSubTab = "results";
     state.ariaWidgets = [];
     state.manualReview = {};
+    state.violationsOverlayOn = false;
     updateTabDisabledStates();
     renderScanTab();
     // Remove all overlays and highlights
@@ -1522,12 +1523,14 @@ function attachScanTabListeners(): void {
   });
   document.getElementById("cancel-wait")?.addEventListener("click", () => sendMessage({ type: "CANCEL_CRAWL" }));
 
-  // Violation overlay toggle
+  // Violation overlay toggle — state-tracked so the button reflects reality
+  // across re-renders (manual review marks, sub-tab switches, etc.)
   document.getElementById("toggle-violations")?.addEventListener("click", () => {
+    state.violationsOverlayOn = !state.violationsOverlayOn;
     const btn = document.getElementById("toggle-violations") as HTMLButtonElement;
-    const pressed = btn.getAttribute("aria-pressed") === "true";
-    btn.setAttribute("aria-pressed", String(!pressed));
-    if (!pressed && state.lastScanResult) {
+    btn.setAttribute("aria-pressed", String(state.violationsOverlayOn));
+    btn.classList.toggle("active", state.violationsOverlayOn);
+    if (state.violationsOverlayOn && state.lastScanResult) {
       sendMessage({ type: "SHOW_VIOLATION_OVERLAY", payload: { violations: state.lastScanResult.violations } });
     } else {
       sendMessage({ type: "HIDE_VIOLATION_OVERLAY" });

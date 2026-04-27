@@ -59,6 +59,8 @@ export const state = {
   /** Crawl results stored when crawl completes — used in JSON export (F12-AC1) */
   crawlResults: null as Record<string, iScanResult> | null,
   crawlFailed: null as Record<string, string> | null,
+  /** Whether the violation-overlay toolbar toggle is currently on. Survives re-render. */
+  violationsOverlayOn: false,
 };
 
 /* ═══════════════════════════════════════════════════════════════════
