@@ -921,6 +921,25 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   white-space: nowrap;
 }
 
+/* <details> summary inside scan-content (used 4×) — flex layout, gap, pad */
+.scan-detail-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: var(--ds-text-base);
+  cursor: pointer;
+}
+
+/* Empty-state placeholder text (used 2×) */
+.scan-empty {
+  font-size: var(--ds-text-base);
+  color: var(--ds-zinc-500);
+  text-align: center;
+  padding: var(--ds-space-8);
+}
+
 @media (min-width: 600px) {
   /* Remove text truncation on violation rule/selector text */
   #scan-content details summary b {

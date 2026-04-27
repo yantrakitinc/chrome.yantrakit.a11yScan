@@ -593,7 +593,7 @@ function renderCrawlResults(): string {
       if (err) {
         return `
           <details style="border:1px solid #fecaca;border-radius:4px;margin-bottom:4px;background:#fef2f2">
-            <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:11px">
+            <summary class="scan-detail-summary">
               <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
               <span style="color:#dc2626;font-weight:700;flex-shrink:0">\u2717</span>
               <span class="truncate" style="font-family:monospace;color:#27272a;flex:1" title="${escHtml(url)}">${escHtml(url)}</span>
@@ -607,7 +607,7 @@ function renderCrawlResults(): string {
       const hasViolations = violationCount > 0;
       return `
         <details style="border:1px solid ${hasViolations ? "#fecaca" : "#a7f3d0"};border-radius:4px;margin-bottom:4px;background:${hasViolations ? "#fef2f2" : "#ecfdf5"}">
-          <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:11px">
+          <summary class="scan-detail-summary">
             <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
             <span style="color:${hasViolations ? "#dc2626" : "#047857"};font-weight:700;flex-shrink:0">${hasViolations ? "\u2717" : "\u2713"}</span>
             <span class="truncate" style="font-family:monospace;color:#27272a;flex:1" title="${escHtml(url)}">${escHtml(url)}</span>
@@ -640,7 +640,7 @@ function renderCrawlResults(): string {
         const uniquePages = [...new Set(entries.map((e) => e.pages[0]))];
         return `
           <details class="severity-${entries[0].violation.impact}" style="border-radius:0 4px 4px 0;margin-bottom:4px">
-            <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11px;cursor:pointer">
+            <summary class="scan-detail-summary">
               <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
               <b class="truncate" style="color:#18181b;flex:1">
                 <a href="https://a11yscan.yantrakit.com/wcag/${criterion}" target="_blank" rel="noopener" style="color:#4338ca;text-decoration:underline">${criterion}</a>
@@ -756,7 +756,7 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
     : "";
   return `
     <details class="severity-${v.impact} sr-details" style="border-radius:0 4px 4px 0;margin-bottom:4px">
-      <summary style="list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11px;cursor:pointer">
+      <summary class="scan-detail-summary">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <b class="truncate" style="color:#18181b;flex:1">${v.wcagCriteria?.join(", ") || v.id}${vpBadge}</b>
         <span style="font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px;flex-shrink:0">${v.impact}</span>
@@ -919,12 +919,12 @@ function renderObserveHistory(): string {
 
 function renderObserverListInner(): string {
   if (observerEntries.length === 0) {
-    return '<div style="font-size:11px;color:#71717a;text-align:center;padding:16px">Observer history will appear here as you browse with Observer mode on. Data stays local to your browser.</div>';
+    return '<div class="scan-empty">Observer history will appear here as you browse with Observer mode on. Data stays local to your browser.</div>';
   }
   const filtered = observerFilter
     ? observerEntries.filter((e) => e.url.includes(observerFilter) || (e.title || "").toLowerCase().includes(observerFilter.toLowerCase()))
     : observerEntries;
-  if (filtered.length === 0) return '<div style="font-size:11px;color:#71717a;text-align:center;padding:16px">No entries match that domain.</div>';
+  if (filtered.length === 0) return '<div class="scan-empty">No entries match that domain.</div>';
   return filtered.map((entry) => `
     <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px;cursor:pointer" class="observer-entry" data-url="${escHtml(entry.url)}">
       <div style="display:flex;align-items:center;gap:6px">
