@@ -48,49 +48,49 @@ export function renderScreenReaderTab(): void {
     : `${elements.length} elements in reading order`;
 
   panel.innerHTML = `
-    <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid #e4e4e7;display:flex;gap:8px;background:#fafafa">
-      <button id="sr-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px">Analyze</button>
+    <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;gap:8px;background:#fafafa">
+      <button id="sr-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Analyze</button>
       <button id="sr-inspect" aria-label="Inspect element" aria-pressed="${inspectActive}" class="cur-pointer min-h-24" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid ${inspectActive ? "#f59e0b" : "#d4d4d8"};border-radius:4px;background:${inspectActive ? "#fffbeb" : "none"};color:${inspectActive ? "#b45309" : "#52525b"}">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2"/></svg>
       </button>
-      ${srAnalyzed ? '<button id="sr-clear" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;background:none">Clear</button>' : ""}
+      ${srAnalyzed ? '<button id="sr-clear" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;background:none">Clear</button>' : ""}
     </div>
     ${scopeSelector ? `
       <div class="fs-0" style="padding:4px 12px;background:#eff6ff;border-bottom:1px solid #bfdbfe;display:flex;align-items:center;gap:6px">
         <span style="font-size:10px;font-weight:600;color:#1d4ed8">Scoped to:</span>
         <span class="f-1 font-mono" style="font-size:10px;color:#3b82f6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${scopeSelector}</span>
-        <button id="sr-clear-scope" class="cur-pointer" style="font-size:10px;font-weight:700;color:#dc2626;border:none;background:none;padding:2px 4px">Clear scope</button>
+        <button id="sr-clear-scope" class="cur-pointer" style="font-size:10px;font-weight:700;color:var(--ds-red-600);border:none;background:none;padding:2px 4px">Clear scope</button>
       </div>
     ` : ""}
-    <div role="status" aria-live="polite" aria-atomic="true" class="fs-0" style="padding:8px 12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;gap:8px;${playState === "playing" || playState === "paused" ? "background:#fffbeb" : ""}">
-      <span class="f-1 font-mono" style="font-size:11px;font-weight:600;color:#52525b">${
-        playState === "complete" ? '<span style="color:#047857;font-weight:700">Complete</span>' :
-        playState === "playing" ? `<span style="color:#92400e;font-weight:700">${
+    <div role="status" aria-live="polite" aria-atomic="true" class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;align-items:center;gap:8px;${playState === "playing" || playState === "paused" ? "background:#fffbeb" : ""}">
+      <span class="f-1 font-mono" style="font-size:11px;font-weight:600;color:var(--ds-zinc-600)">${
+        playState === "complete" ? '<span style="color:var(--ds-green-700);font-weight:700">Complete</span>' :
+        playState === "playing" ? `<span style="color:var(--ds-amber-800);font-weight:700">${
           singleSpeakIndex !== null ? `Speaking element ${singleSpeakIndex + 1}` : `Playing ${playIndex + 1} of ${elements.length}`
         }</span>` :
-        playState === "paused" ? `<span style="color:#92400e;font-weight:700">${
+        playState === "paused" ? `<span style="color:var(--ds-amber-800);font-weight:700">${
           singleSpeakIndex !== null ? `Paused element ${singleSpeakIndex + 1}` : `Paused at ${playIndex + 1} of ${elements.length}`
         }</span>` :
         countLabel
       }</span>
       ${elements.length > 0 ? `
         ${playState === "idle" || playState === "complete" ? `
-          <button id="sr-play-all" aria-label="Play all — read all elements aloud" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:#b45309">
+          <button id="sr-play-all" aria-label="Play all — read all elements aloud" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:var(--ds-amber-700)">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M2 1l7 4-7 4z"/></svg>
           </button>
         ` : ""}
         ${playState === "playing" ? `
-          <button id="sr-pause" aria-label="Pause speech" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:#b45309">
+          <button id="sr-pause" aria-label="Pause speech" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:var(--ds-amber-700)">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>
           </button>
         ` : ""}
         ${playState === "paused" ? `
-          <button id="sr-resume" aria-label="Resume speech" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:#b45309">
+          <button id="sr-resume" aria-label="Resume speech" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fcd34d;border-radius:4px;background:none;color:var(--ds-amber-700)">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M2 1l7 4-7 4z"/></svg>
           </button>
         ` : ""}
         ${playState === "playing" || playState === "paused" ? `
-          <button id="sr-stop" aria-label="Stop speech" title="Stop speech (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;color:#dc2626">
+          <button id="sr-stop" aria-label="Stop speech" title="Stop speech (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="8" height="8"/></svg>
           </button>
         ` : ""}
@@ -98,7 +98,7 @@ export function renderScreenReaderTab(): void {
     </div>
     <div id="sr-list" class="f-1" style="overflow-y:auto">
       ${elements.length === 0
-        ? '<div style="padding:16px;text-align:center;font-size:12px;color:#71717a">Click Analyze to scan the page reading order.</div>'
+        ? '<div style="padding:16px;text-align:center;font-size:12px;color:var(--ds-zinc-500)">Click Analyze to scan the page reading order.</div>'
         : elements.map((el) => renderSrRow(el)).join("")
       }
     </div>

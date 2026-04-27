@@ -123,12 +123,12 @@ export function renderScanTab(): void {
     <div class="accordion-wrapper">
       ${state.accordionExpanded ? `
         <div class="accordion-toggle" role="group" aria-label="Scan settings">
-          <span style="font-size:11px;font-weight:700;color:#92400e">WCAG</span>
+          <span style="font-size:11px;font-weight:700;color:var(--ds-amber-800)">WCAG</span>
           ${renderExpandedToggle(busy)}
         </div>
       ` : `
         <button type="button" class="accordion-toggle" id="accordion-toggle" aria-expanded="false" aria-controls="accordion-body" aria-label="Expand scan settings">
-          <span style="font-size:11px;font-weight:700;color:#92400e">WCAG</span>
+          <span style="font-size:11px;font-weight:700;color:var(--ds-amber-800)">WCAG</span>
           ${renderCollapsedToggle()}
         </button>
       `}
@@ -177,12 +177,12 @@ export function renderScanTab(): void {
 
 function renderExpandedToggle(busy: boolean): string {
   return `
-    <select id="wcag-version" aria-label="WCAG version" ${busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600">
+    <select id="wcag-version" aria-label="WCAG version" ${busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
       <option ${state.wcagVersion === "2.2" ? "selected" : ""}>2.2</option>
       <option ${state.wcagVersion === "2.1" ? "selected" : ""}>2.1</option>
       <option ${state.wcagVersion === "2.0" ? "selected" : ""}>2.0</option>
     </select>
-    <select id="wcag-level" aria-label="Conformance level" ${busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600">
+    <select id="wcag-level" aria-label="Conformance level" ${busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
       <option ${state.wcagLevel === "AA" ? "selected" : ""}>AA</option>
       <option ${state.wcagLevel === "A" ? "selected" : ""}>A</option>
       <option ${state.wcagLevel === "AAA" ? "selected" : ""}>AAA</option>
@@ -191,10 +191,10 @@ function renderExpandedToggle(busy: boolean): string {
       <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "#fef3c7" : "none"};border-radius:4px;color:${state.testConfig ? "#d97706" : "#71717a"}">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
       </button>
-      ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:#d97706;background:#fef3c7;border:1px solid #fcd34d;border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
+      ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:#d97706;background:var(--ds-amber-100);border:1px solid #fcd34d;border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
     </div>
-    <button id="reset-btn" aria-label="Reset all settings" ${busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px;padding:4px 10px">Reset</button>
-    <button id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:4px;color:#71717a;margin-left:auto">
+    <button id="reset-btn" aria-label="Reset all settings" ${busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px">Reset</button>
+    <button id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:4px;color:var(--ds-zinc-500);margin-left:auto">
       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l4-4 4 4"/></svg>
     </button>
   `;
@@ -216,17 +216,17 @@ function renderCollapsedToggle(): string {
   };
   let modeHtml = "";
   if (modes.length === 0) {
-    modeHtml = '<span style="font-size:11px;color:#71717a">Single page</span>';
+    modeHtml = '<span style="font-size:11px;color:var(--ds-zinc-500)">Single page</span>';
   } else if (modes.length <= 2) {
     modeHtml = modes.map((m) => `<span style="font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;${modeColors[m as string] || "background:#e4e4e7;color:#3f3f46"}">${m}</span>`).join(" ");
   } else {
-    modeHtml = `<span style="font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;background:#e4e4e7;color:#3f3f46">${modes.length} modes</span>`;
+    modeHtml = `<span style="font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--ds-zinc-200);color:var(--ds-zinc-700)">${modes.length} modes</span>`;
   }
 
   return `
-    <span style="font-size:11px;font-weight:600;color:#3f3f46">${state.wcagVersion} ${state.wcagLevel}</span>
+    <span style="font-size:11px;font-weight:600;color:var(--ds-zinc-700)">${state.wcagVersion} ${state.wcagLevel}</span>
     ${modeHtml}
-    <span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:#71717a;margin-left:auto">
+    <span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--ds-zinc-500);margin-left:auto">
       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
     </span>
   `;
@@ -236,7 +236,7 @@ function renderModeToggles(busy: boolean): string {
   return `
     <div class="mode-row">
       <button class="mode-btn mode-crawl" aria-pressed="${state.crawl}" ${busy ? "disabled" : ""} data-mode="crawl">Crawl</button>
-      <button class="mode-btn mode-observe" disabled aria-disabled="true" aria-label="Observe mode — coming soon" style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">Observe<span aria-hidden="true" style="font-size:8px;font-weight:800;color:#b45309;position:absolute;top:-2px;right:-2px;background:#fef3c7;border:1px solid #fcd34d;border-radius:3px;padding:0 3px;line-height:1.4">SOON</span></button>
+      <button class="mode-btn mode-observe" disabled aria-disabled="true" aria-label="Observe mode — coming soon" style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">Observe<span aria-hidden="true" style="font-size:8px;font-weight:800;color:var(--ds-amber-700);position:absolute;top:-2px;right:-2px;background:var(--ds-amber-100);border:1px solid #fcd34d;border-radius:3px;padding:0 3px;line-height:1.4">SOON</span></button>
       <button class="mode-btn mode-movie" aria-pressed="${state.movie}" ${busy ? "disabled" : ""} data-mode="movie">Movie</button>
     </div>
   `;
@@ -249,22 +249,22 @@ function renderMvCheckbox(busy: boolean): string {
           <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:4px">
             ${state.viewports.map((v, i) => `
               <input type="number" min="320" value="${v}" data-index="${i}" class="vp-input font-mono min-h-24" aria-label="Viewport ${i + 1} width in pixels"
-                style="width:60px;font-size:11px;font-weight:600;padding:2px 4px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;box-sizing:border-box">
+                style="width:60px;font-size:11px;font-weight:600;padding:2px 4px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800);box-sizing:border-box">
               <button type="button" class="vp-remove cur-pointer min-h-24" data-index="${i}" aria-label="Remove ${v}px viewport"
-                style="font-size:12px;font-weight:700;line-height:1;padding:2px 5px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#52525b"
+                style="font-size:12px;font-weight:700;line-height:1;padding:2px 5px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-600)"
                 ${state.viewports.length <= 1 ? "disabled" : ""}>×</button>
             `).join("")}
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             <button type="button" id="vp-add"
-              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a"
+              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800)"
               ${state.viewports.length >= 6 ? "disabled" : ""}>+ add</button>
             <button type="button" id="vp-done"
-              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid #d97706;border-radius:4px;background:#fef3c7;color:#92400e">done</button>
+              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid #d97706;border-radius:4px;background:var(--ds-amber-100);color:var(--ds-amber-800)">done</button>
           </div>
         </div>`
       : `<div style="display:flex;align-items:center;gap:4px;padding-left:24px;flex-wrap:wrap">
-          ${state.viewports.map((v) => `<span class="font-mono" style="font-size:11px;font-weight:600;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px;padding:2px 6px">${v}</span>`).join("")}
+          ${state.viewports.map((v) => `<span class="font-mono" style="font-size:11px;font-weight:600;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px;padding:2px 6px">${v}</span>`).join("")}
           <button type="button" id="vp-edit"
             class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:1px 6px;border:none;background:none;color:#4338ca;text-decoration:underline">edit</button>
         </div>`
@@ -273,7 +273,7 @@ function renderMvCheckbox(busy: boolean): string {
   return `
     <label class="cur-pointer" style="display:flex;align-items:center;gap:6px;${busy ? "opacity:0.4;pointer-events:none" : ""}">
       <input type="checkbox" id="mv-check" ${state.mv ? "checked" : ""} ${busy ? "disabled" : ""} class="cur-pointer" style="width:16px;height:16px;accent-color:#d97706">
-      <span style="font-size:12px;font-weight:600;color:#27272a">Multi-Viewport</span>
+      <span style="font-size:12px;font-weight:600;color:var(--ds-zinc-800)">Multi-Viewport</span>
     </label>
     ${chipsRow}
   `;
@@ -283,7 +283,7 @@ function renderCrawlConfig(busy: boolean): string {
   const urlCount = crawlUrlList.length;
   const urlListBtn = _crawlMode === "urllist"
     ? `<button type="button" id="url-list-open" aria-expanded="${urlListPanelOpen}" aria-controls="url-list-panel"
-        class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;margin-top:4px">
+        class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800);margin-top:4px">
         ${urlCount === 0 ? "Set up URL list" : `${urlCount} URL${urlCount === 1 ? "" : "s"} \u2014 Edit list`}
       </button>`
     : "";
@@ -293,7 +293,7 @@ function renderCrawlConfig(busy: boolean): string {
   return `
     <div style="display:flex;align-items:center;gap:8px">
       <span class="scan-caption-strong">Crawl mode</span>
-      <select id="crawl-mode" aria-label="Crawl mode" ${busy ? "disabled" : ""} class="f-1" style="font-size:12px;padding:4px 8px;border:1px solid #d4d4d8;border-radius:4px;font-weight:600">
+      <select id="crawl-mode" aria-label="Crawl mode" ${busy ? "disabled" : ""} class="f-1" style="font-size:12px;padding:4px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
         <option value="follow" ${_crawlMode === "follow" ? "selected" : ""}>Follow all links</option>
         <option value="urllist" ${_crawlMode === "urllist" ? "selected" : ""}>URL list</option>
       </select>
@@ -307,28 +307,28 @@ function renderUrlListPanel(): string {
   const listRows = crawlUrlList.map((url, i) => `
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
       <input type="text" readonly value="${escHtml(url)}"
-        class="f-1 font-mono" style="font-size:11px;padding:3px 6px;border:1px solid #e4e4e7;border-radius:3px;background:#fafafa;color:#27272a;min-width:0">
+        class="f-1 font-mono" style="font-size:11px;padding:3px 6px;border:1px solid var(--ds-zinc-200);border-radius:3px;background:#fafafa;color:var(--ds-zinc-800);min-width:0">
       <button type="button" class="url-remove-btn fs-0 cur-pointer min-h-24" data-index="${i}"
         aria-label="Remove URL"
-        style="font-size:12px;font-weight:700;color:#b91c1c;background:none;border:none;padding:0 4px">&times;</button>
+        style="font-size:12px;font-weight:700;color:var(--ds-red-700);background:none;border:none;padding:0 4px">&times;</button>
     </div>
   `).join("");
 
   const summary = crawlUrlList.length > 0
-    ? `<div style="font-size:11px;font-weight:600;color:#52525b;margin-bottom:6px">${crawlUrlList.length} URL${crawlUrlList.length === 1 ? "" : "s"} will be scanned</div>`
+    ? `<div style="font-size:11px;font-weight:600;color:var(--ds-zinc-600);margin-bottom:6px">${crawlUrlList.length} URL${crawlUrlList.length === 1 ? "" : "s"} will be scanned</div>`
     : "";
 
   return `
-    <div id="url-list-panel" style="margin-top:6px;border:1px solid #d4d4d8;border-radius:6px;background:#fafafa;padding:8px">
-      <div style="font-size:11px;font-weight:800;color:#27272a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">URL List</div>
+    <div id="url-list-panel" style="margin-top:6px;border:1px solid var(--ds-zinc-300);border-radius:6px;background:#fafafa;padding:8px">
+      <div style="font-size:11px;font-weight:800;color:var(--ds-zinc-800);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">URL List</div>
 
       <div style="margin-bottom:8px">
         <textarea id="url-paste-area" rows="3" aria-label="Paste URLs or sitemap XML" placeholder="Paste URLs (one per line) or sitemap XML (&lt;?xml\u2026)"
-          class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:6px;border:1px solid #d4d4d8;border-radius:4px;resize:vertical;background:#fff;color:#27272a"></textarea>
+          class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:6px;border:1px solid var(--ds-zinc-300);border-radius:4px;resize:vertical;background:#fff;color:var(--ds-zinc-800)"></textarea>
         <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
           <button type="button" id="url-paste-add"
-            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000">Add from textarea</button>
-          <label class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#3f3f46;display:flex;align-items:center">
+            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:var(--ds-amber-500);color:#1a1000">Add from textarea</button>
+          <label class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-700);display:flex;align-items:center">
             Upload .txt
             <input type="file" id="url-file-input" accept=".txt,text/plain" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0)">
           </label>
@@ -337,16 +337,16 @@ function renderUrlListPanel(): string {
 
       <div style="display:flex;gap:4px;margin-bottom:8px">
         <input type="url" id="url-manual-input" aria-label="Add URL to crawl list" placeholder="https://example.com/page"
-          class="f-1" style="font-size:11px;padding:4px 6px;border:1px solid #d4d4d8;border-radius:4px;background:#fff;color:#27272a;min-width:0">
+          class="f-1" style="font-size:11px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800);min-width:0">
         <button type="button" id="url-manual-add"
-          class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000">Add</button>
+          class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:var(--ds-amber-500);color:#1a1000">Add</button>
       </div>
 
       ${summary}
       <div id="url-list-rows" style="max-height:160px;overflow-y:auto">${listRows}</div>
 
       <button type="button" id="url-list-done"
-        class="cur-pointer min-h-24" style="width:100%;margin-top:8px;font-size:11px;font-weight:800;padding:5px;border:none;border-radius:4px;background:#f59e0b;color:#1a1000">Done</button>
+        class="cur-pointer min-h-24" style="width:100%;margin-top:8px;font-size:11px;font-weight:800;padding:5px;border:none;border-radius:4px;background:var(--ds-amber-500);color:#1a1000">Done</button>
     </div>
   `;
 }
@@ -367,21 +367,21 @@ function openConfigDialog(): void {
   const configJson = state.testConfig ? JSON.stringify(state.testConfig, null, 2) : "";
   content.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <h2 id="config-dialog-title" style="margin:0;font-size:12px;font-weight:800;color:#27272a;text-transform:uppercase;letter-spacing:0.05em">Test Configuration</h2>
-      <button id="config-close-btn" aria-label="Close" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;color:#71717a;border-radius:4px">
+      <h2 id="config-dialog-title" style="margin:0;font-size:12px;font-weight:800;color:var(--ds-zinc-800);text-transform:uppercase;letter-spacing:0.05em">Test Configuration</h2>
+      <button id="config-close-btn" aria-label="Close" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;color:var(--ds-zinc-500);border-radius:4px">
         <svg width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
       </button>
     </div>
     <a href="https://a11yscan.yantrakit.com/tools/test-config-builder" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:#4338ca;text-decoration:none">Open Builder ↗</a>
     <textarea id="config-textarea" aria-label="Paste config JSON here" placeholder='Paste JSON config here, e.g. {\n  "wcag": { "version": "2.1", "level": "AA" }\n}' class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid ${state.testConfig ? "#fcd34d" : "#d4d4d8"};border-radius:4px;resize:vertical;min-height:100px;background:#fff;color:#27272a;line-height:1.5">${escHtml(configJson)}</textarea>
-    <div id="config-error" role="alert" aria-live="polite" style="font-size:11px;color:#b91c1c;display:none"></div>
+    <div id="config-error" role="alert" aria-live="polite" style="font-size:11px;color:var(--ds-red-700);display:none"></div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <button id="config-apply-btn" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px">Apply</button>
-      <label id="config-upload-label" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px;display:flex;align-items:center">
+      <button id="config-apply-btn" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Apply</button>
+      <label id="config-upload-label" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px;display:flex;align-items:center">
         Upload .json
         <input type="file" id="config-file-input" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap" aria-label="Upload JSON config file">
       </label>
-      ${state.testConfig ? '<button id="config-clear-btn" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px">Clear Config</button>' : ""}
+      ${state.testConfig ? '<button id="config-clear-btn" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px">Clear Config</button>' : ""}
     </div>
   `;
 
@@ -481,7 +481,7 @@ function renderScanProgress(): string {
   return `
     <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span class="font-mono" style="font-size:11px;color:#52525b">${state.mv ? `viewport ${state.mvProgress ? `${state.mvProgress.current}/${state.mvProgress.total}` : `1/${state.viewports.length}`}` : "analyzing page\u2026"}</span>
+        <span class="font-mono" style="font-size:11px;color:var(--ds-zinc-600)">${state.mv ? `viewport ${state.mvProgress ? `${state.mvProgress.current}/${state.mvProgress.total}` : `1/${state.viewports.length}`}` : "analyzing page\u2026"}</span>
         <button id="cancel-scan" aria-label="Cancel scan" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
           <svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
         </button>
@@ -501,8 +501,8 @@ function renderCrawlProgress(): string {
   return `
     <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex;align-items:center;margin-bottom:4px;gap:8px">
-        <span class="fs-0 font-mono" style="font-size:11px;font-weight:700;color:#52525b">${pageLabel}</span>
-        ${urlDisplay ? `<span class="truncate f-1 font-mono" style="font-size:10px;color:#71717a;min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
+        <span class="fs-0 font-mono" style="font-size:11px;font-weight:700;color:var(--ds-zinc-600)">${pageLabel}</span>
+        ${urlDisplay ? `<span class="truncate f-1 font-mono" style="font-size:10px;color:var(--ds-zinc-500);min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
         <div class="fs-0" style="display:flex;gap:4px">
           ${state.crawlPhase === "crawling"
             ? '<button id="pause-crawl" aria-label="Pause crawl" class="scan-progress-icon-btn"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
@@ -523,9 +523,9 @@ function renderPageRuleWait(): string {
     <div role="alert" aria-live="assertive" class="fs-0" style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:#fffbeb">
       <div style="font-size:11px;font-weight:700;color:#78350f;margin-bottom:6px">\u26a0 Page rule triggered</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button id="continue-crawl" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a1000;background:#f59e0b;border:none;border-radius:4px">Continue</button>
-        <button id="scan-then-continue" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#3f3f46;background:#fff;border:1px solid #d4d4d8;border-radius:4px">Scan page, then continue</button>
-        <button id="cancel-wait" class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px;margin-left:auto;padding:4px 10px">Cancel</button>
+        <button id="continue-crawl" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Continue</button>
+        <button id="scan-then-continue" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px">Scan page, then continue</button>
+        <button id="cancel-wait" class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;margin-left:auto;padding:4px 10px">Cancel</button>
       </div>
     </div>
   `;
@@ -552,7 +552,7 @@ function renderContent(): string {
   if (state.scanPhase === "scanning") {
     // Show partial results if available (F01-AC7: results render as soon as they arrive)
     if (state.lastScanResult) return renderResults(state.lastScanResult);
-    return '<div class="scan-pane"><div style="font-size:11px;color:#71717a;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="#d4d4d8" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page\u2026</div></div>';
+    return '<div class="scan-pane"><div style="font-size:11px;color:var(--ds-zinc-500);font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="#d4d4d8" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page\u2026</div></div>';
   }
 
   // Sub-tab content routing
@@ -579,9 +579,9 @@ function renderEmptyState(): string {
   return `
     <div style="padding:16px">
       <h2 style="font-size:14px;font-weight:800;color:#18181b;margin-bottom:4px">Get started</h2>
-      <p style="font-size:12px;color:#52525b;line-height:1.5">Click the button above to check this page for accessibility issues.</p>
+      <p style="font-size:12px;color:var(--ds-zinc-600);line-height:1.5">Click the button above to check this page for accessibility issues.</p>
       <div style="margin-top:16px">
-        <h3 style="font-size:11px;font-weight:800;color:#71717a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Scan modes</h3>
+        <h3 style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Scan modes</h3>
         <div style="padding-left:12px;border-left:2px solid #38bdf8;margin-bottom:8px">
           <div class="scan-section-title">Crawl</div>
           <div class="scan-body">Automatically visits every page on your website and checks each one for issues.</div>
@@ -609,11 +609,11 @@ function renderCrawlResults(): string {
   const allUrls = [...Object.keys(results), ...Object.keys(failed).filter((u) => !(u in results))];
 
   const toggle = `
-    <div style="display:flex;gap:0;border:1px solid #d4d4d8;border-radius:4px;overflow:hidden;margin-bottom:8px">
+    <div style="display:flex;gap:0;border:1px solid var(--ds-zinc-300);border-radius:4px;overflow:hidden;margin-bottom:8px">
       <button type="button" id="crawl-view-page"
         class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;background:${crawlViewMode === "page" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "page" ? "#92400e" : "#52525b"}">By page</button>
       <button type="button" id="crawl-view-wcag"
-        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;border-left:1px solid #d4d4d8;background:${crawlViewMode === "wcag" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "wcag" ? "#92400e" : "#52525b"}">By WCAG</button>
+        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;border-left:1px solid var(--ds-zinc-300);background:${crawlViewMode === "wcag" ? "#fef3c7" : "#fff"};color:${crawlViewMode === "wcag" ? "#92400e" : "#52525b"}">By WCAG</button>
     </div>
   `;
 
@@ -621,9 +621,9 @@ function renderCrawlResults(): string {
   const totalFailed = Object.keys(failed).length;
   const summary = `
     <div class="scan-stats-grid scan-stats-grid--3">
-      <div><div style="font-size:15px;font-weight:800;color:#27272a">${allUrls.length}</div><div class="scan-sublabel">Pages</div></div>
-      <div><div style="font-size:15px;font-weight:800;color:#b91c1c">${totalViolations}</div><div class="scan-sublabel">Violations</div></div>
-      <div><div style="font-size:15px;font-weight:800;color:#dc2626">${totalFailed}</div><div class="scan-sublabel">Failed</div></div>
+      <div><div style="font-size:15px;font-weight:800;color:var(--ds-zinc-800)">${allUrls.length}</div><div class="scan-sublabel">Pages</div></div>
+      <div><div style="font-size:15px;font-weight:800;color:var(--ds-red-700)">${totalViolations}</div><div class="scan-sublabel">Violations</div></div>
+      <div><div style="font-size:15px;font-weight:800;color:var(--ds-red-600)">${totalFailed}</div><div class="scan-sublabel">Failed</div></div>
     </div>
   `;
 
@@ -634,13 +634,13 @@ function renderCrawlResults(): string {
       const err = failed[url];
       if (err) {
         return `
-          <details style="border:1px solid #fecaca;border-radius:4px;margin-bottom:4px;background:#fef2f2">
+          <details style="border:1px solid var(--ds-red-200);border-radius:4px;margin-bottom:4px;background:#fef2f2">
             <summary class="scan-detail-summary">
               <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-              <span class="fs-0" style="color:#dc2626;font-weight:700">\u2717</span>
-              <span class="truncate f-1 font-mono" style="color:#27272a" title="${escHtml(url)}">${escHtml(url)}</span>
+              <span class="fs-0" style="color:var(--ds-red-600);font-weight:700">\u2717</span>
+              <span class="truncate f-1 font-mono" style="color:var(--ds-zinc-800)" title="${escHtml(url)}">${escHtml(url)}</span>
             </summary>
-            <div style="padding:4px 8px 8px;font-size:11px;color:#b91c1c">${escHtml(err)}</div>
+            <div style="padding:4px 8px 8px;font-size:11px;color:var(--ds-red-700)">${escHtml(err)}</div>
           </details>
         `;
       }
@@ -652,11 +652,11 @@ function renderCrawlResults(): string {
           <summary class="scan-detail-summary">
             <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
             <span class="fs-0" style="color:${hasViolations ? "#dc2626" : "#047857"};font-weight:700">${hasViolations ? "\u2717" : "\u2713"}</span>
-            <span class="truncate f-1 font-mono" style="color:#27272a" title="${escHtml(url)}">${escHtml(url)}</span>
+            <span class="truncate f-1 font-mono" style="color:var(--ds-zinc-800)" title="${escHtml(url)}">${escHtml(url)}</span>
             <span class="fs-0" style="font-size:10px;font-weight:700;color:${hasViolations ? "#b91c1c" : "#047857"}">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
           </summary>
           <div class="scan-detail-body">
-            ${r.violations.sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact)).map((v) => renderViolation(v)).join("") || '<div style="font-size:11px;color:#047857;padding:4px 0">No violations found.</div>'}
+            ${r.violations.sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact)).map((v) => renderViolation(v)).join("") || '<div style="font-size:11px;color:var(--ds-green-700);padding:4px 0">No violations found.</div>'}
           </div>
         </details>
       `;
@@ -675,7 +675,7 @@ function renderCrawlResults(): string {
     }
 
     if (byCriterion.size === 0) {
-      body = '<div style="padding:12px;font-size:12px;color:#047857;font-weight:600;text-align:center">No violations found across all pages.</div>';
+      body = '<div style="padding:12px;font-size:12px;color:var(--ds-green-700);font-weight:600;text-align:center">No violations found across all pages.</div>';
     } else {
       body = Array.from(byCriterion.entries()).map(([criterion, entries]) => {
         const totalNodes = entries.reduce((s, e) => s + e.violation.nodes.length, 0);
@@ -687,15 +687,15 @@ function renderCrawlResults(): string {
               <b class="truncate f-1" style="color:#18181b">
                 <a href="https://a11yscan.yantrakit.com/wcag/${criterion}" target="_blank" rel="noopener" style="color:#4338ca;text-decoration:underline">${criterion}</a>
               </b>
-              <span class="fs-0" style="font-size:10px;color:#52525b">${uniquePages.length} page${uniquePages.length === 1 ? "" : "s"}</span>
-              <span class="fs-0 font-mono" style="color:#52525b;font-weight:700">${totalNodes}</span>
+              <span class="fs-0" style="font-size:10px;color:var(--ds-zinc-600)">${uniquePages.length} page${uniquePages.length === 1 ? "" : "s"}</span>
+              <span class="fs-0 font-mono" style="color:var(--ds-zinc-600);font-weight:700">${totalNodes}</span>
             </summary>
             <div class="scan-detail-body">
               ${uniquePages.map((pageUrl) => {
                 const pageEntries = entries.filter((e) => e.pages[0] === pageUrl);
                 return `
                   <div style="margin-bottom:4px">
-                    <div class="truncate font-mono" style="font-size:10px;color:#52525bmargin-bottom:2px" title="${escHtml(pageUrl)}">${escHtml(pageUrl)}</div>
+                    <div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-600)margin-bottom:2px" title="${escHtml(pageUrl)}">${escHtml(pageUrl)}</div>
                     ${pageEntries.map((e) => renderViolation(e.violation)).join("")}
                   </div>
                 `;
@@ -731,7 +731,7 @@ function renderResults(result: iScanResult): string {
 
   // MV summary banner and filter chips (F02-AC10, AC11)
   const mvBanner = mvResult ? `
-    <div style="padding:6px 10px;background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;margin-bottom:6px;font-size:11px;font-weight:600;color:#92400e">
+    <div style="padding:6px 10px;background:var(--ds-amber-100);border:1px solid #fcd34d;border-radius:6px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--ds-amber-800)">
       Multi-Viewport: ${mvResult.shared.length} shared &middot; ${mvResult.viewportSpecific.length} viewport-specific
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
@@ -744,10 +744,10 @@ function renderResults(result: iScanResult): string {
     <div class="scan-pane">
       ${mvBanner}
       <div class="scan-stats-grid scan-stats-grid--4">
-        <div><div style="font-size:16px;font-weight:800;color:#b91c1c">${totalViolationNodes}</div><div class="scan-caption-strong">Violations</div></div>
-        <div><div style="font-size:16px;font-weight:800;color:#047857">${result.passes.length}</div><div class="scan-caption-strong">Passes</div></div>
-        <div><div style="font-size:16px;font-weight:800;color:#b45309">${result.incomplete.length}</div><div class="scan-caption-strong">Review</div></div>
-        <div><div style="font-size:16px;font-weight:800;color:#3f3f46">${passRate}%</div><div class="scan-caption-strong">Pass rate</div></div>
+        <div><div style="font-size:16px;font-weight:800;color:var(--ds-red-700)">${totalViolationNodes}</div><div class="scan-caption-strong">Violations</div></div>
+        <div><div style="font-size:16px;font-weight:800;color:var(--ds-green-700)">${result.passes.length}</div><div class="scan-caption-strong">Passes</div></div>
+        <div><div style="font-size:16px;font-weight:800;color:var(--ds-amber-700)">${result.incomplete.length}</div><div class="scan-caption-strong">Review</div></div>
+        <div><div style="font-size:16px;font-weight:800;color:var(--ds-zinc-700)">${passRate}%</div><div class="scan-caption-strong">Pass rate</div></div>
       </div>
 
       ${displayViolations
@@ -759,25 +759,25 @@ function renderResults(result: iScanResult): string {
         .join("")}
 
       <details style="margin-top:8px">
-        <summary class="cur-pointer" style="list-style:none;font-size:12px;font-weight:700;color:#047857;padding:6px 0;display:flex;align-items:center;gap:6px">
+        <summary class="cur-pointer" style="list-style:none;font-size:12px;font-weight:700;color:var(--ds-green-700);padding:6px 0;display:flex;align-items:center;gap:6px">
           <svg class="chevron fs-0" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6l3 3 5-5"/></svg>
           ${result.passes.length} rules passed
         </summary>
         <div>
           ${result.passes.map((p) => `
-            <details style="border-bottom:1px solid #f4f4f5">
+            <details style="border-bottom:1px solid var(--ds-zinc-100)">
               <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:11px">
                 <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
-                <span class="truncate f-1" style="font-weight:600;color:#27272a">${p.id}</span>
-                <span class="fs-0" style="color:#71717a">${p.wcagCriteria?.join(", ") || ""}</span>
-                <span class="fs-0" style="color:#047857;font-weight:700">${p.nodes.length}</span>
+                <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${p.id}</span>
+                <span class="fs-0" style="color:var(--ds-zinc-500)">${p.wcagCriteria?.join(", ") || ""}</span>
+                <span class="fs-0" style="color:var(--ds-green-700);font-weight:700">${p.nodes.length}</span>
               </summary>
               <div style="padding:2px 8px 6px 28px">
-                <div style="font-size:11px;color:#52525b;margin-bottom:4px">${escHtml(p.description)}</div>
+                <div style="font-size:11px;color:var(--ds-zinc-600);margin-bottom:4px">${escHtml(p.description)}</div>
                 ${p.nodes.map((n) => `
-                  <div class="font-mono" style="font-size:11px;color:#047857;padding:2px 8px;margin:1px 0;background:#ecfdf5;border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
+                  <div class="font-mono" style="font-size:11px;color:var(--ds-green-700);padding:2px 8px;margin:1px 0;background:#ecfdf5;border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
                     <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1 4l2 2 4-4"/></svg>
                     <span class="truncate">${escHtml(n.selector)}</span>
                   </div>
@@ -802,17 +802,17 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <b class="truncate f-1" style="color:#18181b">${v.wcagCriteria?.join(", ") || v.id}${vpBadge}</b>
         <span class="fs-0" style="font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px">${v.impact}</span>
-        <span class="fs-0 font-mono" style="color:#52525b;font-weight:700">${v.nodes.length}</span>
+        <span class="fs-0 font-mono" style="color:var(--ds-zinc-600);font-weight:700">${v.nodes.length}</span>
       </summary>
       <div class="scan-detail-body">
         ${v.wcagCriteria && v.wcagCriteria.length > 0 ? `<div style="margin-bottom:6px">${v.wcagCriteria.map((c) => `<a href="${getWcagUrl(c)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;color:#4338ca;text-decoration:underline;margin-right:8px">${c} — Learn more \u2197</a>`).join("")}</div>` : ""}
         ${v.nodes.map((n) => `
-          <div style="background:#fff;border:1px solid #e4e4e7;border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
+          <div style="background:#fff;border:1px solid var(--ds-zinc-200);border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
             <div style="display:flex;justify-content:space-between;gap:4px">
-              <span class="truncate font-mono" style="font-weight:600;color:#27272a">${escHtml(n.selector)}</span>
-              <button class="highlight-btn fs-0 cur-pointer min-h-24" data-selector="${escHtml(n.selector)}" aria-label="Highlight ${escHtml(n.selector)} on the page" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none">Highlight</button>
+              <span class="truncate font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(n.selector)}</span>
+              <button class="highlight-btn fs-0 cur-pointer min-h-24" data-selector="${escHtml(n.selector)}" aria-label="Highlight ${escHtml(n.selector)} on the page" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);background:none;border:none">Highlight</button>
             </div>
-            <div style="color:#b91c1c;margin-top:2px">${escHtml(n.failureSummary)}</div>
+            <div style="color:var(--ds-red-700);margin-top:2px">${escHtml(n.failureSummary)}</div>
             <button class="explain-btn cur-pointer min-h-24" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:11px;font-weight:700;color:#4338ca;background:none;border:none;margin-top:4px">Chat about it \u2192</button>
           </div>
         `).join("")}
@@ -841,22 +841,22 @@ function renderManualReview(): string {
   return `
     <div class="scan-pane">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:11px;color:#52525b;font-weight:600">${filtered.length} criteria need human review</span>
-        <span style="font-size:11px;font-weight:700;color:#b45309">${reviewed} of ${filtered.length} reviewed</span>
+        <span style="font-size:11px;color:var(--ds-zinc-600);font-weight:600">${filtered.length} criteria need human review</span>
+        <span style="font-size:11px;font-weight:700;color:var(--ds-amber-700)">${reviewed} of ${filtered.length} reviewed</span>
       </div>
       ${filtered.map((c) => {
         const status = state.manualReview[c.id] || null;
         return `
-          <div style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:6px" data-criterion="${c.id}">
+          <div style="padding:8px;border:1px solid var(--ds-zinc-200);border-radius:4px;background:#fff;margin-bottom:6px" data-criterion="${c.id}">
             <div style="display:flex;align-items:center;gap:8px">
-              <span class="f-1" style="font-size:11px;font-weight:700;color:#27272a;min-width:0">${c.id} ${c.name}</span>
+              <span class="f-1" style="font-size:11px;font-weight:700;color:var(--ds-zinc-800);min-width:0">${c.id} ${c.name}</span>
               <div class="fs-0" style="display:flex;gap:2px">
                 <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="pass" aria-pressed="${status === "pass"}" aria-label="Mark ${c.id} ${c.name} as Pass" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "pass" ? "background:#047857;color:#fff" : "background:#f4f4f5;color:#52525b"}">Pass</button>
                 <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="fail" aria-pressed="${status === "fail"}" aria-label="Mark ${c.id} ${c.name} as Fail" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "fail" ? "background:#b91c1c;color:#fff" : "background:#f4f4f5;color:#52525b"}">Fail</button>
                 <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="na" aria-pressed="${status === "na"}" aria-label="Mark ${c.id} ${c.name} as Not Applicable" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "na" ? "background:#3f3f46;color:#fff" : "background:#f4f4f5;color:#52525b"}">N/A</button>
               </div>
             </div>
-            <div style="font-size:11px;color:#52525b;line-height:1.5;margin-top:4px">${c.manualCheck}</div>
+            <div style="font-size:11px;color:var(--ds-zinc-600);line-height:1.5;margin-top:4px">${c.manualCheck}</div>
           </div>
         `;
       }).join("")}
@@ -873,8 +873,8 @@ function renderAriaResults(): string {
   if (widgets.length === 0) {
     return `
       <div style="padding:16px;text-align:center">
-        <div style="font-size:12px;color:#71717a">No ARIA widgets scanned yet.</div>
-        <button id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:8px;padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:#f59e0b;border:none;border-radius:4px">Scan ARIA Patterns</button>
+        <div style="font-size:12px;color:var(--ds-zinc-500)">No ARIA widgets scanned yet.</div>
+        <button id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:8px;padding:8px;font-size:12px;font-weight:800;color:#1a1000;background:var(--ds-amber-500);border:none;border-radius:4px">Scan ARIA Patterns</button>
       </div>
     `;
   }
@@ -885,12 +885,12 @@ function renderAriaResults(): string {
   return `
     <div class="scan-pane">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:11px;color:#52525b;font-weight:600">${widgets.length} widgets detected</span>
-        <span style="font-size:11px;font-weight:700;color:#b91c1c">${issues.length} issues \u00b7 ${compliant.length} compliant</span>
+        <span style="font-size:11px;color:var(--ds-zinc-600);font-weight:600">${widgets.length} widgets detected</span>
+        <span style="font-size:11px;font-weight:700;color:var(--ds-red-700)">${issues.length} issues \u00b7 ${compliant.length} compliant</span>
       </div>
-      ${issues.length > 0 ? `<div style="font-size:11px;font-weight:800;color:#71717a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Issues</div>` : ""}
+      ${issues.length > 0 ? `<div style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Issues</div>` : ""}
       ${issues.map((w) => renderAriaWidget(w, false)).join("")}
-      ${compliant.length > 0 ? `<div style="font-size:11px;font-weight:800;color:#71717a;text-transform:uppercase;letter-spacing:0.05em;margin:8px 0 4px">Compliant</div>` : ""}
+      ${compliant.length > 0 ? `<div style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin:8px 0 4px">Compliant</div>` : ""}
       ${compliant.map((w) => renderAriaWidget(w, true)).join("")}
     </div>
   `;
@@ -904,17 +904,17 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
       <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;font-size:11px">
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${escHtml(w.role)}</span>
-        <span class="truncate f-1" style="font-weight:600;color:#27272a">${escHtml(w.label)}</span>
+        <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(w.label)}</span>
         <span style="font-weight:700;${pass ? "color:#047857" : "color:#b91c1c"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
       </summary>
       <div class="scan-detail-body">
         ${w.checks.filter((c) => !c.pass).map((c) => `
-          <div style="font-size:11px;color:#b91c1c;padding:2px 0 2px 8px;border-left:2px solid #fecaca">${escHtml(c.message)}</div>
+          <div style="font-size:11px;color:var(--ds-red-700);padding:2px 0 2px 8px;border-left:2px solid var(--ds-red-200)">${escHtml(c.message)}</div>
         `).join("")}
         ${w.checks.filter((c) => c.pass).map((c) => `
-          <div style="font-size:11px;color:#047857;padding:2px 0 2px 8px;border-left:2px solid #a7f3d0">${escHtml(c.message)}</div>
+          <div style="font-size:11px;color:var(--ds-green-700);padding:2px 0 2px 8px;border-left:2px solid #a7f3d0">${escHtml(c.message)}</div>
         `).join("")}
-        <button class="aria-highlight cur-pointer min-h-24" data-selector="${escHtml(w.selector)}" aria-label="Highlight ${escHtml(w.role)} ${escHtml(w.label)} on the page" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;margin-top:4px">Highlight on page</button>
+        <button class="aria-highlight cur-pointer min-h-24" data-selector="${escHtml(w.selector)}" aria-label="Highlight ${escHtml(w.role)} ${escHtml(w.label)} on the page" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);background:none;border:none;margin-top:4px">Highlight on page</button>
       </div>
     </details>
   `;
@@ -952,9 +952,9 @@ function renderObserveHistory(): string {
   return `
     <div class="scan-pane">
       <div style="display:flex;gap:6px;margin-bottom:8px">
-        <input id="observer-domain-filter" type="search" placeholder="Filter by domain\u2026" aria-label="Filter by domain" value="${observerFilter}" class="f-1" style="font-size:11px;padding:6px 8px;border:1px solid #d4d4d8;border-radius:4px;min-width:0">
-        <button id="clear-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:4px 10px;background:none">Clear</button>
-        <button id="export-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;padding:4px 10px;background:none">Export</button>
+        <input id="observer-domain-filter" type="search" placeholder="Filter by domain\u2026" aria-label="Filter by domain" value="${observerFilter}" class="f-1" style="font-size:11px;padding:6px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;min-width:0">
+        <button id="clear-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px;background:none">Clear</button>
+        <button id="export-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);border:1px solid #fcd34d;border-radius:4px;padding:4px 10px;background:none">Export</button>
       </div>
       <div id="observer-list-content">${renderObserverListInner()}</div>
     </div>
@@ -970,15 +970,15 @@ function renderObserverListInner(): string {
     : observerEntries;
   if (filtered.length === 0) return '<div class="scan-empty">No entries match that domain.</div>';
   return filtered.map((entry) => `
-    <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px" class="observer-entry cur-pointer" data-url="${escHtml(entry.url)}">
+    <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid var(--ds-zinc-200);border-radius:4px;background:#fff;margin-bottom:4px" class="observer-entry cur-pointer" data-url="${escHtml(entry.url)}">
       <div style="display:flex;align-items:center;gap:6px">
         <span class="fs-0" style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "#b91c1c" : "#047857"}">${entry.violationCount}</span>
-        <span class="truncate f-1" style="font-size:11px;font-weight:600;color:#27272a">${escHtml(entry.title || entry.url)}</span>
-        <span class="fs-0" style="font-size:10px;color:#71717a">${entry.source === "auto" ? "auto" : "manual"}</span>
+        <span class="truncate f-1" style="font-size:11px;font-weight:600;color:var(--ds-zinc-800)">${escHtml(entry.title || entry.url)}</span>
+        <span class="fs-0" style="font-size:10px;color:var(--ds-zinc-500)">${entry.source === "auto" ? "auto" : "manual"}</span>
         ${entry.viewportBucket ? `<span class="fs-0" style="font-size:10px;color:#0369a1;background:#e0f2fe;padding:1px 4px;border-radius:3px">${escHtml(entry.viewportBucket)}</span>` : ""}
       </div>
-      <div class="truncate font-mono" style="font-size:10px;color:#71717a;margin-top:2px">${escHtml(entry.url)}</div>
-      <div style="font-size:10px;color:#71717a;margin-top:1px">${new Date(entry.timestamp).toLocaleString()}</div>
+      <div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-500);margin-top:2px">${escHtml(entry.url)}</div>
+      <div style="font-size:10px;color:var(--ds-zinc-500);margin-top:1px">${new Date(entry.timestamp).toLocaleString()}</div>
     </div>
   `).join("");
 }
@@ -1763,7 +1763,7 @@ function showError(message: string): void {
   if (content) {
     content.innerHTML = `
       <div style="padding:16px">
-        <div style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px">
+        <div style="padding:12px;background:#fef2f2;border:1px solid var(--ds-red-200);border-radius:8px">
           <div style="font-size:12px;font-weight:700;color:#991b1b;margin-bottom:4px">Scan failed</div>
           <div style="font-size:11px;color:#7f1d1d;word-break:break-all">${escHtml(message)}</div>
         </div>
@@ -1912,9 +1912,9 @@ function buildHtmlReport(): string {
   <div><strong>WCAG:</strong> ${state.wcagVersion} ${state.wcagLevel} &middot; <strong>Duration:</strong> ${r.scanDurationMs}ms</div>
 </div>
 <div class="summary">
-  <div class="summary-card"><div class="num" style="color:#b91c1c">${totalViolationNodes}</div><div class="label">Violations</div></div>
-  <div class="summary-card"><div class="num" style="color:#047857">${r.passes.length}</div><div class="label">Passes</div></div>
-  <div class="summary-card"><div class="num" style="color:#b45309">${r.incomplete.length}</div><div class="label">Review</div></div>
+  <div class="summary-card"><div class="num" style="color:var(--ds-red-700)">${totalViolationNodes}</div><div class="label">Violations</div></div>
+  <div class="summary-card"><div class="num" style="color:var(--ds-green-700)">${r.passes.length}</div><div class="label">Passes</div></div>
+  <div class="summary-card"><div class="num" style="color:var(--ds-amber-700)">${r.incomplete.length}</div><div class="label">Review</div></div>
   <div class="summary-card"><div class="num">${passRate}%</div><div class="label">Pass Rate</div></div>
 </div>
 <h2>Violations (${r.violations.length} rules)</h2>
@@ -1946,11 +1946,11 @@ ${(() => {
   }).join("");
   return `<h2>Manual Review (${reviewedCount}/${filteredCriteria.length} reviewed)</h2>
 <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
-  <thead><tr style="background:#f4f4f5"><th style="padding:6px 8px;text-align:left;font-size:12px">Criterion</th><th style="padding:6px 8px;text-align:left;font-size:12px">Name</th><th style="padding:6px 8px;text-align:left;font-size:12px">Status</th></tr></thead>
+  <thead><tr style="background:var(--ds-zinc-100)"><th style="padding:6px 8px;text-align:left;font-size:12px">Criterion</th><th style="padding:6px 8px;text-align:left;font-size:12px">Name</th><th style="padding:6px 8px;text-align:left;font-size:12px">Status</th></tr></thead>
   <tbody>${rows}</tbody>
 </table>`;
 })()}
-<footer style="margin-top:32px;padding-top:16px;border-top:1px solid #e4e4e7;font-size:11px;color:#71717a">
+<footer style="margin-top:32px;padding-top:16px;border-top:1px solid var(--ds-zinc-200);font-size:11px;color:var(--ds-zinc-500)">
   Generated by A11y Scan &middot; ${new Date().toISOString()}
 </footer>
 </body>
