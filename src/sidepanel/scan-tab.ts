@@ -478,7 +478,7 @@ function renderCrawlProgress(): string {
     <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex;align-items:center;margin-bottom:4px;gap:8px">
         <span style="font-size:11px;font-weight:700;color:#52525b;font-family:monospace;flex-shrink:0">${pageLabel}</span>
-        ${urlDisplay ? `<span style="font-size:10px;color:#71717a;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0" title="${currentUrl}">${urlDisplay}</span>` : ""}
+        ${urlDisplay ? `<span style="font-size:10px;color:#71717a;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0" title="${escHtmlConfig(currentUrl)}">${escHtmlConfig(urlDisplay)}</span>` : ""}
         <div style="display:flex;gap:4px;flex-shrink:0">
           ${state.crawlPhase === "crawling"
             ? '<button id="pause-crawl" aria-label="Pause crawl" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #d4d4d8;border-radius:4px;background:none;cursor:pointer;color:#52525b"><svg width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
@@ -755,7 +755,7 @@ function renderResults(result: iScanResult): string {
                 ${p.nodes.map((n) => `
                   <div style="font-size:11px;font-family:monospace;color:#047857;padding:2px 8px;margin:1px 0;background:#ecfdf5;border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
                     <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0"><path d="M1 4l2 2 4-4"/></svg>
-                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.selector}</span>
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtmlConfig(n.selector)}</span>
                   </div>
                 `).join("")}
               </div>
@@ -785,8 +785,8 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
         ${v.nodes.map((n) => `
           <div style="background:#fff;border:1px solid #e4e4e7;border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
             <div style="display:flex;justify-content:space-between;gap:4px">
-              <span style="font-family:monospace;font-weight:600;color:#27272a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.selector}</span>
-              <button class="highlight-btn" data-selector="${n.selector}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;flex-shrink:0;min-height:24px">Highlight</button>
+              <span style="font-family:monospace;font-weight:600;color:#27272a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtmlConfig(n.selector)}</span>
+              <button class="highlight-btn" data-selector="${escHtmlConfig(n.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;flex-shrink:0;min-height:24px">Highlight</button>
             </div>
             <div style="color:#b91c1c;margin-top:2px">${escHtmlConfig(n.failureSummary)}</div>
             <button class="explain-btn" data-rule="${v.id}" data-description="${escHtmlConfig(v.description)}" style="display:none;font-size:11px;font-weight:700;color:#4338ca;background:none;border:none;cursor:pointer;margin-top:4px;min-height:24px">Chat about it \u2192</button>
@@ -888,7 +888,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
         ${w.checks.filter((c) => c.pass).map((c) => `
           <div style="font-size:11px;color:#047857;padding:2px 0 2px 8px;border-left:2px solid #a7f3d0">${c.message}</div>
         `).join("")}
-        <button class="aria-highlight" data-selector="${w.selector}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;margin-top:4px;min-height:24px">Highlight on page</button>
+        <button class="aria-highlight" data-selector="${escHtmlConfig(w.selector)}" style="font-size:11px;font-weight:700;color:#b45309;background:none;border:none;cursor:pointer;margin-top:4px;min-height:24px">Highlight on page</button>
       </div>
     </details>
   `;
@@ -944,14 +944,14 @@ function renderObserverListInner(): string {
     : observerEntries;
   if (filtered.length === 0) return '<div style="font-size:11px;color:#71717a;text-align:center;padding:16px">No entries match that domain.</div>';
   return filtered.map((entry) => `
-    <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtmlConfig(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px;cursor:pointer" class="observer-entry" data-url="${entry.url}">
+    <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtmlConfig(entry.title || entry.url)}" style="padding:8px;border:1px solid #e4e4e7;border-radius:4px;background:#fff;margin-bottom:4px;cursor:pointer" class="observer-entry" data-url="${escHtmlConfig(entry.url)}">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "#b91c1c" : "#047857"};flex-shrink:0">${entry.violationCount}</span>
-        <span style="font-size:11px;font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.title || entry.url}</span>
+        <span style="font-size:11px;font-weight:600;color:#27272a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtmlConfig(entry.title || entry.url)}</span>
         <span style="font-size:10px;color:#71717a;flex-shrink:0">${entry.source === "auto" ? "auto" : "manual"}</span>
-        ${entry.viewportBucket ? `<span style="font-size:10px;color:#0369a1;background:#e0f2fe;padding:1px 4px;border-radius:3px;flex-shrink:0">${entry.viewportBucket}</span>` : ""}
+        ${entry.viewportBucket ? `<span style="font-size:10px;color:#0369a1;background:#e0f2fe;padding:1px 4px;border-radius:3px;flex-shrink:0">${escHtmlConfig(entry.viewportBucket)}</span>` : ""}
       </div>
-      <div style="font-size:10px;color:#71717a;margin-top:2px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.url}</div>
+      <div style="font-size:10px;color:#71717a;margin-top:2px;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtmlConfig(entry.url)}</div>
       <div style="font-size:10px;color:#71717a;margin-top:1px">${new Date(entry.timestamp).toLocaleString()}</div>
     </div>
   `).join("");
