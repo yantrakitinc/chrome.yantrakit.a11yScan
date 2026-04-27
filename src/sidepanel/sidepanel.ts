@@ -92,16 +92,13 @@ document.addEventListener("DOMContentLoaded", () => {
         state.viewports = [...vp].sort((a, b) => a - b);
       }
     }
-    // Restore observer toggle state on panel reopen (F04-AC15)
-    sendMessage({ type: "OBSERVER_GET_STATE" }).then((res) => {
-      if (res && (res as { type: string }).type === "OBSERVER_STATE") {
-        state.observer = (res as { payload: { enabled: boolean } }).payload.enabled;
-      }
-      // Restore active top-level tab so reopen returns the user to where they were (R-PANEL)
-      restoreTopTab();
-    }).catch(() => {
-      restoreTopTab();
-    });
+    // Observer mode is currently hidden as Coming Soon; force-disable any
+    // leftover state from prior sessions so the Scan-tab sub-tabs and action
+    // button don't show Observer-aware UI for a feature the user can't toggle.
+    // (When Observer is restored, this block reverts to OBSERVER_GET_STATE.)
+    state.observer = false;
+    // Restore active top-level tab so reopen returns the user to where they were (R-PANEL)
+    restoreTopTab();
   });
 });
 
