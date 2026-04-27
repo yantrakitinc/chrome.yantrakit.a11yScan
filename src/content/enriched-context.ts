@@ -117,7 +117,7 @@ function getFilePathGuesses(el: Element): iFilePathGuess[] {
 }
 
 function getSelector(el: Element): string {
-  if (el.id) return `#${el.id}`;
+  if (el.id) return `#${CSS.escape(el.id)}`;
   const tag = el.tagName.toLowerCase();
   const classes = Array.from(el.classList).filter(c => !/[[\]:@!]/.test(c)).slice(0, 2).map(c => CSS.escape(c)).join(".");
   return classes ? `${tag}.${classes}` : tag;

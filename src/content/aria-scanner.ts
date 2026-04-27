@@ -38,10 +38,12 @@ export function scanAriaPatterns(): iAriaWidget[] {
 }
 
 function getSelector(el: Element): string {
-  if (el.id) return `#${el.id}`;
+  if (el.id) return `#${CSS.escape(el.id)}`;
   const tag = el.tagName.toLowerCase();
   const role = el.getAttribute("role");
-  if (role) return `${tag}[role="${role}"]`;
+  // ARIA roles are a controlled alpha-dash vocabulary; skip role-based selector
+  // if the page used something odd that would break the attribute selector.
+  if (role && /^[a-z]+(-[a-z]+)*$/.test(role)) return `${tag}[role="${role}"]`;
   const classes = Array.from(el.classList).filter(c => !/[[\]:@!]/.test(c)).slice(0, 2).map(c => CSS.escape(c)).join(".");
   return classes ? `${tag}.${classes}` : tag;
 }

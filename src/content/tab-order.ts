@@ -87,7 +87,7 @@ function checkFocusIndicator(el: HTMLElement): boolean {
 
 /** Build a CSS selector for an element */
 function getSelector(el: Element): string {
-  if (el.id) return `#${el.id}`;
+  if (el.id) return `#${CSS.escape(el.id)}`;
   const tag = el.tagName.toLowerCase();
   const classes = Array.from(el.classList).filter(c => !/[[\]:@!]/.test(c)).slice(0, 2).map(c => CSS.escape(c)).join(".");
   return classes ? `${tag}.${classes}` : tag;
@@ -110,7 +110,8 @@ function getAccessibleName(el: HTMLElement): string {
   // <label> for inputs
   if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
     if (el.id) {
-      const label = document.querySelector(`label[for="${el.id}"]`);
+      // CSS.escape so ids like "user[email]" or 'q"x' don't break the selector
+      const label = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
       if (label) return label.textContent?.trim() || "";
     }
     const parentLabel = el.closest("label");
