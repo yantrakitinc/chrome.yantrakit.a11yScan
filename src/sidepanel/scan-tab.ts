@@ -1338,6 +1338,9 @@ function attachScanTabListeners(): void {
     btn.addEventListener("click", () => {
       const selector = btn.dataset.selector;
       if (selector) sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector } });
+      // Flash the closest containing violation/criterion card so the user
+      // can see which panel item is being highlighted on the page.
+      flashActiveItem(btn.closest("details") || btn.closest(".violation-card") || btn.parentElement);
     });
   });
 
@@ -1513,6 +1516,7 @@ function attachScanTabListeners(): void {
     btn.addEventListener("click", () => {
       const selector = btn.dataset.selector;
       if (selector) sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector } });
+      flashActiveItem(btn.closest("details"));
     });
   });
 
@@ -1583,6 +1587,24 @@ function attachScanTabListeners(): void {
     const speed = parseFloat((e.target as HTMLSelectElement).value);
     sendMessage({ type: "SET_MOVIE_SPEED", payload: { speed } });
   });
+}
+
+/**
+ * Adds .ds-flash-active to `target` for 3s so the user gets visual feedback
+ * in the panel that "this is the item I just highlighted on the page".
+ * Stacked clicks reset the timer on the same target.
+ */
+const flashTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+function flashActiveItem(target: HTMLElement | null): void {
+  if (!target) return;
+  const existing = flashTimers.get(target);
+  if (existing) clearTimeout(existing);
+  target.classList.add("ds-flash-active");
+  const timer = setTimeout(() => {
+    target.classList.remove("ds-flash-active");
+    flashTimers.delete(target);
+  }, 3000);
+  flashTimers.set(target, timer);
 }
 
 function downloadBlob(blob: Blob, filename: string): void {

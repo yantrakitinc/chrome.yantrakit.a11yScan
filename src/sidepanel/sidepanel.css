@@ -162,6 +162,16 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
 .ds-row--active:hover { background: var(--ds-amber-100); }
 .ds-row:focus-visible { outline-offset: -3px; }
 
+/* Generic active-flash for cards/items that have inline styles we don't
+   want to fight with (violations, ARIA widgets, gap/fi/trap items).
+   Outline draws outside the box and so won't conflict with inline border. */
+.ds-flash-active {
+  outline: 2px solid var(--ds-amber-500);
+  outline-offset: 1px;
+  border-radius: var(--ds-radius-3);
+  transition: outline-color var(--ds-motion-fast);
+}
+
 /* Card-style row variant for KB gap/trap/fi entries */
 .ds-row--card {
   display: block;

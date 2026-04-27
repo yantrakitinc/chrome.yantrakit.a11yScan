@@ -19,6 +19,20 @@ let movieIndex = 0;
 let selectedKbIndex: number | null = null;
 let selectedKbTimer: ReturnType<typeof setTimeout> | null = null;
 
+// Flash a kb-gap/kb-fi/kb-trap item in the panel for 3s on activation.
+// Direct DOM manipulation — no re-render needed, won't fight inline styles.
+const kbFlashTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+function flashKbItem(item: HTMLElement): void {
+  const existing = kbFlashTimers.get(item);
+  if (existing) clearTimeout(existing);
+  item.classList.add("ds-flash-active");
+  const t = setTimeout(() => {
+    item.classList.remove("ds-flash-active");
+    kbFlashTimers.delete(item);
+  }, 3000);
+  kbFlashTimers.set(item, t);
+}
+
 /** Returns the current tab order for F12 export */
 export function getTabOrder(): iTabOrderElement[] { return tabOrder; }
 
@@ -237,11 +251,12 @@ export function renderKeyboardTab(): void {
     });
   });
 
-  // Gap/indicator/trap item click/keyboard → highlight
+  // Gap/indicator/trap item click/keyboard → highlight on page + flash in panel
   document.querySelectorAll<HTMLDivElement>(".kb-gap, .kb-fi, .kb-trap").forEach((item) => {
     const activate = () => {
       const selector = item.dataset.selector;
       if (selector) sendMessage({ type: "HIGHLIGHT_ELEMENT", payload: { selector } });
+      flashKbItem(item);
     };
     item.addEventListener("click", activate);
     item.addEventListener("keydown", (e) => {
