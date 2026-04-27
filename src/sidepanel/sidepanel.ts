@@ -85,6 +85,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const stored = result[TEST_CONFIG_STORAGE_KEY];
     if (stored && typeof stored === "object") {
       state.testConfig = stored as iTestConfig;
+      // Sync MV viewports from the stored config so the chips match
+      // testConfig on panel reopen (R-MV AC8).
+      const vp = state.testConfig.viewports;
+      if (vp && Array.isArray(vp) && vp.length > 0) {
+        state.viewports = [...vp].sort((a, b) => a - b);
+      }
     }
     // Restore observer toggle state on panel reopen (F04-AC15)
     sendMessage({ type: "OBSERVER_GET_STATE" }).then((res) => {

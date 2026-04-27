@@ -435,6 +435,11 @@ function attachConfigDialogListeners(dialog: HTMLDialogElement): void {
     try {
       const config = validateTestConfig(text);
       state.testConfig = config;
+      // Sync state.viewports to testConfig.viewports when supplied so the MV
+      // chips reflect the config-supplied list (R-MV AC8).
+      if (config.viewports && config.viewports.length > 0) {
+        state.viewports = [...config.viewports].sort((a, b) => a - b);
+      }
       chrome.storage.local.set({
         [TEST_CONFIG_STORAGE_KEY]: config,
         [TEST_CONFIG_TIMESTAMP_KEY]: new Date().toISOString(),
