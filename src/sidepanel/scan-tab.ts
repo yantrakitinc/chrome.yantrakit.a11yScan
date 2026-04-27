@@ -854,9 +854,9 @@ function renderManualReview(): string {
             <div style="display:flex;align-items:center;gap:8px">
               <span class="f-1" style="font-size:11px;font-weight:700;color:var(--ds-zinc-800);min-width:0">${c.id} ${c.name}</span>
               <div class="fs-0" style="display:flex;gap:2px">
-                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="pass" aria-pressed="${status === "pass"}" aria-label="Mark ${c.id} ${c.name} as Pass" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "pass" ? "background:#047857;color:#fff" : "background:#f4f4f5;color:#52525b"}">Pass</button>
-                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="fail" aria-pressed="${status === "fail"}" aria-label="Mark ${c.id} ${c.name} as Fail" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "fail" ? "background:#b91c1c;color:#fff" : "background:#f4f4f5;color:#52525b"}">Fail</button>
-                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="na" aria-pressed="${status === "na"}" aria-label="Mark ${c.id} ${c.name} as Not Applicable" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "na" ? "background:#3f3f46;color:#fff" : "background:#f4f4f5;color:#52525b"}">N/A</button>
+                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="pass" aria-pressed="${status === "pass"}" aria-label="Mark ${c.id} ${c.name} as Pass" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "pass" ? "background:var(--ds-green-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">Pass</button>
+                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="fail" aria-pressed="${status === "fail"}" aria-label="Mark ${c.id} ${c.name} as Fail" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "fail" ? "background:var(--ds-red-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">Fail</button>
+                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="na" aria-pressed="${status === "na"}" aria-label="Mark ${c.id} ${c.name} as Not Applicable" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "na" ? "background:var(--ds-zinc-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">N/A</button>
               </div>
             </div>
             <div style="font-size:11px;color:var(--ds-zinc-600);line-height:1.5;margin-top:4px">${c.manualCheck}</div>
@@ -908,7 +908,7 @@ function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
         <svg class="chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
         <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:#a7f3d0;color:#064e3b" : "background:#fecaca;color:#7f1d1d"}">${escHtml(w.role)}</span>
         <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(w.label)}</span>
-        <span style="font-weight:700;${pass ? "color:#047857" : "color:#b91c1c"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
+        <span style="font-weight:700;${pass ? "color:var(--ds-green-700)" : "color:var(--ds-red-700)"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
       </summary>
       <div class="scan-detail-body">
         ${w.checks.filter((c) => !c.pass).map((c) => `
