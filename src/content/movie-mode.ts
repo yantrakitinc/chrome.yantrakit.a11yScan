@@ -62,6 +62,10 @@ export function stopMovie(): void {
 }
 
 export function setSpeed(multiplier: number): void {
+  // Guard against invalid input (0, negative, NaN) so we don't divide-by-zero
+  // and end up with Infinity/NaN as the timer interval — which schedules an
+  // immediate next tick on every browser, busy-looping through the elements.
+  if (!Number.isFinite(multiplier) || multiplier <= 0) return;
   speed = 1000 / multiplier;
 }
 
