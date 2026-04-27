@@ -508,10 +508,25 @@ function attachConfigDialogListeners(dialog: HTMLDialogElement): void {
 
 
 function renderScanProgress(): string {
+  return renderScanProgressHtml({
+    mv: state.mv,
+    mvProgress: state.mvProgress,
+    viewports: state.viewports,
+  });
+}
+
+/**
+ * Render the scanning progress bar. Pure; exported for tests.
+ */
+export function renderScanProgressHtml(s: {
+  mv: boolean;
+  mvProgress: { current: number; total: number } | null;
+  viewports: number[];
+}): string {
   return `
     <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span class="font-mono" style="font-size:11px;color:var(--ds-zinc-600)">${state.mv ? `viewport ${state.mvProgress ? `${state.mvProgress.current}/${state.mvProgress.total}` : `1/${state.viewports.length}`}` : "analyzing page\u2026"}</span>
+        <span class="font-mono" style="font-size:11px;color:var(--ds-zinc-600)">${s.mv ? `viewport ${s.mvProgress ? `${s.mvProgress.current}/${s.mvProgress.total}` : `1/${s.viewports.length}`}` : "analyzing page\u2026"}</span>
         <button id="cancel-scan" aria-label="Cancel scan" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
           <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
         </button>
@@ -522,7 +537,19 @@ function renderScanProgress(): string {
 }
 
 function renderCrawlProgress(): string {
-  const { pagesVisited, pagesTotal, currentUrl } = state.crawlProgress;
+  return renderCrawlProgressHtml(state.crawlProgress, state.crawlPhase);
+}
+
+/**
+ * Render the crawl progress bar. Shows pages-visited/total + current URL,
+ * pause/resume button matching crawlPhase, and a percent-fill bar.
+ * Pure; exported for tests.
+ */
+export function renderCrawlProgressHtml(
+  progress: { pagesVisited: number; pagesTotal: number; currentUrl: string },
+  crawlPhase: "idle" | "crawling" | "wait" | "paused" | "complete",
+): string {
+  const { pagesVisited, pagesTotal, currentUrl } = progress;
   const pageLabel = pagesTotal > 0 ? `${pagesVisited}/${pagesTotal} pages` : "scanning\u2026";
   const urlDisplay = currentUrl
     ? (() => { try { return new URL(currentUrl).pathname || currentUrl; } catch { return currentUrl; } })()
@@ -534,7 +561,7 @@ function renderCrawlProgress(): string {
         <span class="fs-0 font-mono" style="font-size:11px;font-weight:700;color:var(--ds-zinc-600)">${pageLabel}</span>
         ${urlDisplay ? `<span class="truncate f-1 font-mono" style="font-size:10px;color:var(--ds-zinc-500);min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
         <div class="fs-0" style="display:flex;gap:4px">
-          ${state.crawlPhase === "crawling"
+          ${crawlPhase === "crawling"
             ? '<button id="pause-crawl" aria-label="Pause crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
             : '<button id="resume-crawl" aria-label="Resume crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><path d="M0 0l8 5-8 5z"/></svg></button>'
           }
@@ -543,13 +570,20 @@ function renderCrawlProgress(): string {
           </button>
         </div>
       </div>
-      <div class="progress-track"><div class="progress-fill" style="width:${progressPct}%${state.crawlPhase === "crawling" ? ";animation:pulse 1.5s ease infinite" : ""}"></div></div>
+      <div class="progress-track"><div class="progress-fill" style="width:${progressPct}%${crawlPhase === "crawling" ? ";animation:pulse 1.5s ease infinite" : ""}"></div></div>
     </div>
   `;
 }
 
 function renderPageRuleWait(): string {
-  const info = state.crawlWaitInfo;
+  return renderPageRuleWaitHtml(state.crawlWaitInfo);
+}
+
+/**
+ * Render the alert banner shown when a page rule pauses the crawl. Pure;
+ * exported for tests.
+ */
+export function renderPageRuleWaitHtml(info: { url: string; description: string; waitType?: string } | null): string {
   return `
     <div role="alert" aria-live="assertive" class="fs-0" style="padding:8px 12px;border-bottom:2px solid var(--ds-yellow-400);background:var(--ds-amber-50)">
       <div style="font-size:11px;font-weight:700;color:var(--ds-amber-900);margin-bottom:6px">\u26a0 Page rule triggered</div>
@@ -565,13 +599,21 @@ function renderPageRuleWait(): string {
 }
 
 function renderSubTabs(): string {
+  return renderSubTabsHtml({ observer: state.observer, activeSubTab: state.scanSubTab });
+}
+
+/**
+ * Render the sub-tab nav row (Results / Manual / ARIA, plus Observe when
+ * Observer mode is on). Pure; exported for tests.
+ */
+export function renderSubTabsHtml(s: { observer: boolean; activeSubTab: string }): string {
   const tabs = ["results", "manual", "aria"];
-  if (state.observer) tabs.push("observe");
+  if (s.observer) tabs.push("observe");
   return `
     <div class="sub-tabs" role="tablist" aria-label="Scan results sections">
       ${tabs.map((t) => {
         const label = t === "results" ? "Results" : t === "manual" ? "Manual" : t === "aria" ? "ARIA" : "Observe";
-        const isActive = t === state.scanSubTab;
+        const isActive = t === s.activeSubTab;
         return `<button role="tab" id="subtab-${t}" aria-selected="${isActive}" aria-controls="scan-content" tabindex="${isActive ? "0" : "-1"}" class="sub-tab ${isActive ? "active" : ""}" data-subtab="${t}">${label}</button>`;
       }).join("")}
     </div>
@@ -608,7 +650,7 @@ function renderContent(): string {
   }
 }
 
-function renderEmptyState(): string {
+export function renderEmptyState(): string {
   return `
     <div style="padding:16px">
       <h2 style="font-size:14px;font-weight:800;color:var(--ds-zinc-900);margin-bottom:4px">Get started</h2>
@@ -637,8 +679,21 @@ function renderEmptyState(): string {
    ═══════════════════════════════════════════════════════════════════ */
 
 function renderCrawlResults(): string {
-  const results = state.crawlResults!;
-  const failed = state.crawlFailed ?? {};
+  return renderCrawlResultsHtml(state.crawlResults!, state.crawlFailed ?? {}, crawlViewMode);
+}
+
+/**
+ * Render the crawl-results table. Supports two view modes:
+ * - "page": one row per crawled URL with violation count + collapsible body
+ * - "wcag": violations grouped by WCAG criterion across all pages
+ *
+ * Pure; exported for tests.
+ */
+export function renderCrawlResultsHtml(
+  results: Record<string, iScanResult>,
+  failed: Record<string, string>,
+  crawlViewMode: "page" | "wcag",
+): string {
   const allUrls = [...Object.keys(results), ...Object.keys(failed).filter((u) => !(u in results))];
 
   const toggle = `
@@ -743,7 +798,14 @@ function renderCrawlResults(): string {
   return `<div class="scan-pane">${toggle}${summary}${body}</div>`;
 }
 
-function renderResults(result: iScanResult): string {
+/**
+ * Render the Results tab body for a single scan: stats grid, MV banner +
+ * filter chips when an MV scan exists, sorted violations, then a collapsed
+ * passes section. Reads MV state from the closure for parity with the
+ * production caller; the violation-shape and stat math is fully testable
+ * via the result argument.
+ */
+export function renderResults(result: iScanResult): string {
   const mvResult = state.lastMvResult;
   const mvFilter = state.mvViewportFilter;
 
@@ -824,7 +886,7 @@ function renderResults(result: iScanResult): string {
   `;
 }
 
-function renderViolation(v: iScanResult["violations"][0], viewportWidths: number[] | null = null): string {
+export function renderViolation(v: iScanResult["violations"][0], viewportWidths: number[] | null = null): string {
   // Viewport-specific badge shown when violation only appears at some widths (F02-AC13)
   const vpBadge = viewportWidths && viewportWidths.length > 0
     ? viewportWidths.map((w) => `<span class="font-mono" style="font-size:10px;font-weight:700;padding:1px 4px;background:var(--ds-blue-100);color:var(--ds-sky-700);border-radius:3px;margin-left:2px">${w}px</span>`).join("")
@@ -859,17 +921,34 @@ function renderViolation(v: iScanResult["violations"][0], viewportWidths: number
    ═══════════════════════════════════════════════════════════════════ */
 
 function renderManualReview(): string {
-  const criteria = getManualReviewCriteria(state.wcagVersion, state.wcagLevel);
-  // Filter by page elements if available
-  const pageElements = state.lastScanResult?.pageElements;
-  const filtered = pageElements
+  return renderManualReviewHtml({
+    wcagVersion: state.wcagVersion,
+    wcagLevel: state.wcagLevel,
+    pageElements: state.lastScanResult?.pageElements ?? null,
+    manualReview: state.manualReview,
+  });
+}
+
+/**
+ * Render the Manual Review tab body. Filters criteria by relevantWhen
+ * against pageElements, then per-criterion shows pass/fail/na buttons with
+ * aria-pressed reflecting current state. Pure; exported for tests.
+ */
+export function renderManualReviewHtml(s: {
+  wcagVersion: string;
+  wcagLevel: string;
+  pageElements: import("@shared/types").iPageElements | null;
+  manualReview: Record<string, "pass" | "fail" | "na" | null>;
+}): string {
+  const criteria = getManualReviewCriteria(s.wcagVersion, s.wcagLevel);
+  const filtered = s.pageElements
     ? criteria.filter((c) => {
         if (!c.relevantWhen) return true;
-        return pageElements[c.relevantWhen as keyof typeof pageElements];
+        return s.pageElements![c.relevantWhen as keyof typeof s.pageElements];
       })
     : criteria;
 
-  const reviewed = Object.values(state.manualReview).filter((v) => v !== null).length;
+  const reviewed = Object.values(s.manualReview).filter((v) => v !== null).length;
 
   return `
     <div class="scan-pane">
@@ -878,7 +957,7 @@ function renderManualReview(): string {
         <span style="font-size:11px;font-weight:700;color:var(--ds-amber-700)">${reviewed} of ${filtered.length} reviewed</span>
       </div>
       ${filtered.map((c) => {
-        const status = state.manualReview[c.id] || null;
+        const status = s.manualReview[c.id] || null;
         return `
           <div style="padding:8px;border:1px solid var(--ds-zinc-200);border-radius:4px;background:#fff;margin-bottom:6px" data-criterion="${c.id}">
             <div style="display:flex;align-items:center;gap:8px">
@@ -902,7 +981,15 @@ function renderManualReview(): string {
    ═══════════════════════════════════════════════════════════════════ */
 
 function renderAriaResults(): string {
-  const widgets = state.ariaWidgets;
+  return renderAriaResultsHtml(state.ariaWidgets);
+}
+
+/**
+ * Render the ARIA tab body. Empty state shows a 'Scan ARIA Patterns' button.
+ * Otherwise splits widgets into compliant + issues sections. Pure; exported
+ * for tests.
+ */
+export function renderAriaResultsHtml(widgets: iAriaWidget[]): string {
   if (widgets.length === 0) {
     return `
       <div style="padding:16px;text-align:center">
@@ -929,7 +1016,7 @@ function renderAriaResults(): string {
   `;
 }
 
-function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
+export function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
   // Per R-ARIA: 'Passing widgets are collapsed by default; failing are open
   // by default'. So issues are open, compliant are closed.
   return `
@@ -995,12 +1082,24 @@ function renderObserveHistory(): string {
 }
 
 function renderObserverListInner(): string {
-  if (observerEntries.length === 0) {
+  return renderObserverListInnerHtml(observerEntries, observerFilter);
+}
+
+/**
+ * Render the inner observer list (no chrome). Pure; exported for tests.
+ * Returns the empty-state copy when entries is empty, the no-match copy
+ * when the filter excludes everything, otherwise one row per entry.
+ */
+export function renderObserverListInnerHtml(
+  entries: iObserverEntry[],
+  filter: string,
+): string {
+  if (entries.length === 0) {
     return '<div class="scan-empty">Observer history will appear here as you browse with Observer mode on. Data stays local to your browser.</div>';
   }
-  const filtered = observerFilter
-    ? observerEntries.filter((e) => e.url.includes(observerFilter) || (e.title || "").toLowerCase().includes(observerFilter.toLowerCase()))
-    : observerEntries;
+  const filtered = filter
+    ? entries.filter((e) => e.url.includes(filter) || (e.title || "").toLowerCase().includes(filter.toLowerCase()))
+    : entries;
   if (filtered.length === 0) return '<div class="scan-empty">No entries match that domain.</div>';
   return filtered.map((entry) => `
     <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid var(--ds-zinc-200);border-radius:4px;background:#fff;margin-bottom:4px" class="observer-entry cur-pointer" data-url="${escHtml(entry.url)}">
@@ -1040,7 +1139,12 @@ function renderToolbarContent(): string {
   `;
 }
 
-function severityOrder(impact: string): number {
+/**
+ * Sort key for impact severity: critical(0) → serious(1) → moderate(2) →
+ * minor(3) → unknown(4). Used to order violations highest-severity-first
+ * in render output. Pure; exported for tests.
+ */
+export function severityOrder(impact: string): number {
   return { critical: 0, serious: 1, moderate: 2, minor: 3 }[impact] ?? 4;
 }
 
@@ -1725,7 +1829,16 @@ function showError(message: string): void {
 }
 
 function getDomain(): string {
-  try { return new URL(state.lastScanResult?.url || "").hostname.replace(/\./g, "-"); } catch { return "unknown"; }
+  return urlToDomainSlug(state.lastScanResult?.url || "");
+}
+
+/**
+ * Convert a URL to a filename-safe domain slug: hostname with dots → hyphens.
+ * Returns "unknown" when the input isn't a parseable URL. Used in export
+ * filenames. Pure; exported for tests.
+ */
+export function urlToDomainSlug(url: string): string {
+  try { return new URL(url).hostname.replace(/\./g, "-"); } catch { return "unknown"; }
 }
 
 function getDateStamp(): string {
