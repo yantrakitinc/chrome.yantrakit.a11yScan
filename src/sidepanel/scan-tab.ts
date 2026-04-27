@@ -1141,12 +1141,17 @@ function attachScanTabListeners(): void {
     if (!state.accordionExpanded) {
       state.accordionExpanded = true;
       renderScanTab();
+      // Move focus to the now-visible Collapse button so keyboard users don't
+      // lose context when the accordion-toggle button disappears mid-render.
+      document.getElementById("collapse-btn")?.focus();
     }
   });
   document.getElementById("collapse-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     state.accordionExpanded = false;
     renderScanTab();
+    // Mirror: focus the now-visible Expand toggle.
+    document.getElementById("accordion-toggle")?.focus();
   });
 
   // Mode toggles
