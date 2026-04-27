@@ -62,7 +62,7 @@ export function renderScreenReaderTab(): void {
         <button id="sr-clear-scope" class="cur-pointer" style="font-size:10px;font-weight:700;color:var(--ds-red-600);border:none;background:none;padding:2px 4px">Clear scope</button>
       </div>
     ` : ""}
-    <div role="status" aria-live="polite" aria-atomic="true" class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;align-items:center;gap:8px;${playState === "playing" || playState === "paused" ? "background:#fffbeb" : ""}">
+    <div role="status" aria-live="polite" aria-atomic="true" class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;align-items:center;gap:8px;${playState === "playing" || playState === "paused" ? "background:var(--ds-amber-50)" : ""}">
       <span class="f-1 font-mono" style="font-size:11px;font-weight:600;color:var(--ds-zinc-600)">${
         playState === "complete" ? '<span style="color:var(--ds-green-700);font-weight:700">Complete</span>' :
         playState === "playing" ? `<span style="color:var(--ds-amber-800);font-weight:700">${

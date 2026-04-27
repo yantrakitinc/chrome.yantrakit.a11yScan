@@ -521,7 +521,7 @@ function renderCrawlProgress(): string {
 function renderPageRuleWait(): string {
   const info = state.crawlWaitInfo;
   return `
-    <div role="alert" aria-live="assertive" class="fs-0" style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:#fffbeb">
+    <div role="alert" aria-live="assertive" class="fs-0" style="padding:8px 12px;border-bottom:2px solid #fbbf24;background:var(--ds-amber-50)">
       <div style="font-size:11px;font-weight:700;color:#78350f;margin-bottom:6px">\u26a0 Page rule triggered</div>
       ${info?.description ? `<div style="font-size:11px;color:var(--ds-zinc-800);margin-bottom:4px">${escHtml(info.description)}</div>` : ""}
       ${info?.url ? `<div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-500);margin-bottom:6px" title="${escHtml(info.url)}">${escHtml(info.url)}</div>` : ""}
