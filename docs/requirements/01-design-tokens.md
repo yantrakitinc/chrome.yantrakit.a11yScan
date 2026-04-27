@@ -17,6 +17,7 @@ Single source of design values used by the entire sidepanel. All colors, spacing
 - `--ds-amber-200`: `#fde68a` — soft border (info banners)
 - `--ds-amber-300`: `#fcd34d` — secondary border (Play/Pause button borders, "Config loaded" badge border)
 - `--ds-amber-500`: `#f59e0b` — primary CTA fill ("Scan Page", "Apply" button background)
+- `--ds-amber-600`: `#d97706` — settings-button active text, MV filter chip border, viewport done-button border, mv-check accent
 - `--ds-amber-700`: `#b45309` — secondary text/icon ("Play All" icon, footer brand mark)
 - `--ds-amber-800`: `#92400e` — emphasized text in amber regions (active tab text, status during playback)
 - `--ds-amber-900`: `#78350f` — strongest amber text (active tab label)

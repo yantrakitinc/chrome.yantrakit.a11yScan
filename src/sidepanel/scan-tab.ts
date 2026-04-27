@@ -188,10 +188,10 @@ function renderExpandedToggle(busy: boolean): string {
       <option ${state.wcagLevel === "AAA" ? "selected" : ""}>AAA</option>
     </select>
     <div style="display:flex;align-items:center;gap:2px">
-      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${state.testConfig ? "#d97706" : "var(--ds-zinc-500)"}">
+      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${state.testConfig ? "var(--ds-amber-600)" : "var(--ds-zinc-500)"}">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
       </button>
-      ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:#d97706;background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
+      ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:var(--ds-amber-600);background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
     </div>
     <button id="reset-btn" aria-label="Reset all settings" ${busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px">Reset</button>
     <button id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:4px;color:var(--ds-zinc-500);margin-left:auto">
@@ -260,7 +260,7 @@ function renderMvCheckbox(busy: boolean): string {
               class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800)"
               ${state.viewports.length >= 6 ? "disabled" : ""}>+ add</button>
             <button type="button" id="vp-done"
-              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid #d97706;border-radius:4px;background:var(--ds-amber-100);color:var(--ds-amber-800)">done</button>
+              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid var(--ds-amber-600);border-radius:4px;background:var(--ds-amber-100);color:var(--ds-amber-800)">done</button>
           </div>
         </div>`
       : `<div style="display:flex;align-items:center;gap:4px;padding-left:24px;flex-wrap:wrap">
@@ -272,7 +272,7 @@ function renderMvCheckbox(busy: boolean): string {
 
   return `
     <label class="cur-pointer" style="display:flex;align-items:center;gap:6px;${busy ? "opacity:0.4;pointer-events:none" : ""}">
-      <input type="checkbox" id="mv-check" ${state.mv ? "checked" : ""} ${busy ? "disabled" : ""} class="cur-pointer" style="width:16px;height:16px;accent-color:#d97706">
+      <input type="checkbox" id="mv-check" ${state.mv ? "checked" : ""} ${busy ? "disabled" : ""} class="cur-pointer" style="width:16px;height:16px;accent-color:var(--ds-amber-600)">
       <span style="font-size:12px;font-weight:600;color:var(--ds-zinc-800)">Multi-Viewport</span>
     </label>
     ${chipsRow}
@@ -738,8 +738,8 @@ function renderResults(result: iScanResult): string {
       Multi-Viewport: ${mvResult.shared.length} shared &middot; ${mvResult.viewportSpecific.length} viewport-specific
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
-      <button class="mv-filter-chip cur-pointer min-h-24" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === null ? "#d97706" : "var(--ds-zinc-300)"};background:${mvFilter === null ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === null ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">All</button>
-      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip font-mono cur-pointer min-h-24" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === vp ? "#d97706" : "var(--ds-zinc-300)"};background:${mvFilter === vp ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === vp ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">${vp}px</button>`).join("")}
+      <button class="mv-filter-chip cur-pointer min-h-24" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === null ? "var(--ds-amber-600)" : "var(--ds-zinc-300)"};background:${mvFilter === null ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === null ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">All</button>
+      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip font-mono cur-pointer min-h-24" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === vp ? "var(--ds-amber-600)" : "var(--ds-zinc-300)"};background:${mvFilter === vp ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === vp ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">${vp}px</button>`).join("")}
     </div>
   ` : "";
 
