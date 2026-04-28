@@ -151,6 +151,116 @@ describe("scan-tab — settings button opens config dialog", () => {
   });
 });
 
+describe("scan-tab — mode toggle clicks and message dispatch", () => {
+  it("clicking mode-btn[data-mode='movie'] flips state.movie + persists movie_enabled to storage", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.accordionExpanded = true;
+    state.movie = false;
+    renderScanTab();
+    document.querySelector<HTMLButtonElement>(".mode-btn[data-mode='movie']")?.click();
+    expect(state.movie).toBe(true);
+    expect(storageData["movie_enabled"]).toBe(true);
+  });
+});
+
+describe("scan-tab — Export buttons", () => {
+  function pageScan() {
+    return {
+      url: "https://x.com",
+      timestamp: "2026-01-01",
+      violations: [{
+        id: "color-contrast", impact: "serious" as const, description: "Contrast",
+        help: "Improve contrast", helpUrl: "", tags: [],
+        nodes: [{ selector: "#submit", html: "<button>x</button>", failureSummary: "low contrast" }],
+        wcagCriteria: ["1.4.3"],
+      }],
+      passes: [], incomplete: [],
+      summary: { critical: 0, serious: 1, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 100,
+    };
+  }
+
+  it("clicking #export-html when results exist triggers a Blob download (URL.createObjectURL)", async () => {
+    const createSpy = vi.fn(() => "blob:fake");
+    const revokeSpy = vi.fn();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis.URL as any).createObjectURL = createSpy;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis.URL as any).revokeObjectURL = revokeSpy;
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+
+    document.getElementById("export-html")?.click();
+    expect(createSpy).toHaveBeenCalled();
+  });
+
+  it("clicking #export-pdf when results exist opens a print window (popup blocked → 'Popup blocked' status)", async () => {
+    // window.open returns null to simulate popup blocked
+    const origOpen = window.open;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    window.open = vi.fn(() => null) as any;
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+
+    document.getElementById("export-pdf")?.click();
+    expect(document.getElementById("export-pdf")?.textContent).toMatch(/Popup blocked/);
+
+    window.open = origOpen;
+  });
+
+  it("clicking #export-copy when results exist writes JSON to navigator.clipboard", async () => {
+    const writeText = vi.fn(async () => undefined);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      value: { writeText }, configurable: true,
+    });
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+
+    document.getElementById("export-copy")?.click();
+    await new Promise((r) => setTimeout(r, 5));
+    expect(writeText).toHaveBeenCalled();
+    // Button text flips to "Copied!"
+    expect(document.getElementById("export-copy")?.textContent).toMatch(/Copied/);
+  });
+
+  it("clicking #export-copy when clipboard fails shows 'Copy failed' status", async () => {
+    const writeText = vi.fn(async () => { throw new Error("denied"); });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      value: { writeText }, configurable: true,
+    });
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+
+    document.getElementById("export-copy")?.click();
+    await new Promise((r) => setTimeout(r, 5));
+    expect(document.getElementById("export-copy")?.textContent).toMatch(/Copy failed/);
+  });
+});
+
 describe("scan-tab — scan-btn click dispatches the right path", () => {
   it("scan-btn in idle phase with no crawl: posts SCAN_REQUEST", async () => {
     const { renderScanTab } = await import("../scan-tab");
