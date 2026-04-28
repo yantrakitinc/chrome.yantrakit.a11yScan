@@ -16,7 +16,7 @@ const EXTENSION_PATH = path.resolve(__dirname, "../dist");
  * NEVER bake the prod URL in as the default — it skews real analytics,
  * costs prod bandwidth, and tests stale CDN-cached fixtures.
  */
-const DEMO_BASE = process.env.A11Y_E2E_BASE || "http://a11yscan.local:31469/demo";
+const DEMO_BASE = process.env.A11Y_E2E_BASE || "http://a11yScan.local:51471/demo";
 
 export { DEMO_BASE };
 

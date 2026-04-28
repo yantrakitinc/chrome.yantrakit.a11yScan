@@ -330,10 +330,18 @@ export function updateTabDisabledStates(): void {
 function initCvd(): void {
   const select = document.getElementById("cvd-select") as HTMLSelectElement;
   select.addEventListener("change", () => {
-    const type = select.value;
-    const matrix = type ? CVD_MATRICES[type] || null : null;
-    sendMessage({ type: "APPLY_CVD_FILTER", payload: { matrix } });
+    sendMessage({ type: "APPLY_CVD_FILTER", payload: { matrix: cvdMatrixForType(select.value) } });
   });
+}
+
+/**
+ * Look up the 9-element CVD simulation matrix for a given preset name.
+ * Empty/unknown values return null so the caller can apply 'normal vision'.
+ * Pure; exported for tests.
+ */
+export function cvdMatrixForType(type: string): number[] | null {
+  if (!type) return null;
+  return CVD_MATRICES[type] || null;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared, switchTab, updateTabDisabledStates, state, buildElementNotFoundToast, pickViolationScrollTarget } from "../sidepanel";
+import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared, switchTab, updateTabDisabledStates, state, buildElementNotFoundToast, pickViolationScrollTarget, cvdMatrixForType } from "../sidepanel";
 
 describe("CVD_MATRICES — color-vision-deficiency simulation matrices (F08)", () => {
   it("includes the 8 documented CVD presets", () => {
@@ -187,6 +187,22 @@ describe("switchTab + updateTabDisabledStates", () => {
     updateTabDisabledStates();
     expect((document.getElementById("tab-sr") as HTMLButtonElement).disabled).toBe(false);
     expect((document.getElementById("tab-kb") as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+describe("cvdMatrixForType", () => {
+  it("returns null for empty string ('Normal vision' option)", () => {
+    expect(cvdMatrixForType("")).toBeNull();
+  });
+  it("returns null for unknown preset names", () => {
+    expect(cvdMatrixForType("not-a-real-preset")).toBeNull();
+  });
+  it("returns the 9-element matrix for each documented preset", () => {
+    for (const name of ["protanopia", "deuteranopia", "tritanopia", "protanomaly", "deuteranomaly", "tritanomaly", "achromatopsia", "achromatomaly"]) {
+      const m = cvdMatrixForType(name);
+      expect(m, `${name}`).toBeTruthy();
+      expect(m!.length).toBe(9);
+    }
   });
 });
 
