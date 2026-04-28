@@ -196,16 +196,12 @@ function getSelector(el: Element): string {
       parts.unshift(`#${CSS.escape(cur.id)}`);
       break;
     }
-    const par: Element | null = cur.parentElement;
-    if (par) {
-      const sameTag = Array.from(par.children) as Element[];
-      const sibs = sameTag.filter((c) => c.tagName === cur!.tagName);
-      if (sibs.length > 1) {
-        const idx = sibs.indexOf(cur!) + 1;
-        parts.unshift(`${tag}:nth-of-type(${idx})`);
-      } else {
-        parts.unshift(tag);
-      }
+    const par: Element = cur.parentElement!; // loop terminates at document.body, so par is always defined here
+    const sameTag = Array.from(par.children) as Element[];
+    const sibs = sameTag.filter((c) => c.tagName === cur!.tagName);
+    if (sibs.length > 1) {
+      const idx = sibs.indexOf(cur!) + 1;
+      parts.unshift(`${tag}:nth-of-type(${idx})`);
     } else {
       parts.unshift(tag);
     }

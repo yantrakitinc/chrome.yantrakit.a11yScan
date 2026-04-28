@@ -157,4 +157,122 @@ describe("analyzeReadingOrder — scope and visibility", () => {
     expect(items.find((i) => i.accessibleName === "Hidden")).toBeUndefined();
     expect(items.find((i) => i.accessibleName === "Visible")).toBeTruthy();
   });
+
+  it("skips an element whose computed display is 'none'", () => {
+    document.body.innerHTML = `
+      <h1>Visible</h1>
+      <div style="display:none"><h2>Gone</h2></div>
+    `;
+    const items = analyzeReadingOrder();
+    expect(items.find((i) => i.accessibleName === "Gone")).toBeUndefined();
+    expect(items.find((i) => i.accessibleName === "Visible")).toBeTruthy();
+  });
+
+  it("skips an element whose computed visibility is 'hidden'", () => {
+    document.body.innerHTML = `
+      <h1>Visible</h1>
+      <div style="visibility:hidden"><h2>Gone</h2></div>
+    `;
+    const items = analyzeReadingOrder();
+    expect(items.find((i) => i.accessibleName === "Gone")).toBeUndefined();
+  });
+});
+
+describe("analyzeReadingOrder — aria-owns reordering", () => {
+  it("appends aria-owns referenced elements after natural children in walk order", () => {
+    // The container owns #b1 (a button declared elsewhere); the button should
+    // appear in the result even though it is not a child of the container, AND
+    // it should walk after the natural children.
+    document.body.innerHTML = `
+      <div id="container" aria-owns="owned-btn">
+        <span>first</span>
+      </div>
+      <button id="owned-btn">Owned</button>
+    `;
+    const items = analyzeReadingOrder();
+    const ownedIdx = items.findIndex((i) => i.accessibleName === "Owned");
+    const firstIdx = items.findIndex((i) => i.accessibleName === "first");
+    expect(ownedIdx).toBeGreaterThan(-1);
+    expect(firstIdx).toBeGreaterThan(-1);
+    expect(ownedIdx).toBeGreaterThan(firstIdx);
+  });
+
+  it("ignores aria-owns ids that don't resolve", () => {
+    document.body.innerHTML = `<div id="c" aria-owns="missing-id"><p>hi</p></div>`;
+    expect(() => analyzeReadingOrder()).not.toThrow();
+    expect(analyzeReadingOrder().find((i) => i.accessibleName === "hi")).toBeTruthy();
+  });
+});
+
+describe("analyzeReadingOrder — semantic role fall-through", () => {
+  it("does not include text-only elements that have child elements (the !text branch)", () => {
+    // <p> has a <span> child, so the 'text-only with content' check fails (children > 0).
+    // The <p> itself isn't included; only the <span> child (which is text-only with no
+    // descendants) is.
+    document.body.innerHTML = `<p><span>inner</span></p>`;
+    const items = analyzeReadingOrder();
+    const innerSpan = items.find((i) => i.accessibleName === "inner");
+    expect(innerSpan).toBeTruthy();
+    expect(innerSpan!.role).toBe("text");
+  });
+
+  it("does not include an empty p/span/div (no text)", () => {
+    document.body.innerHTML = `<div></div><p></p><span></span>`;
+    const items = analyzeReadingOrder();
+    expect(items.length).toBe(0);
+  });
+});
+
+describe("analyzeReadingOrder — accessible-name title + clip-hidden source", () => {
+  it("falls back to title attribute with nameSource='title'", () => {
+    document.body.innerHTML = `<a href="#" title="Help link"><svg aria-hidden="true"></svg></a>`;
+    const link = analyzeReadingOrder().find((i) => i.role === "link")!;
+    expect(link.accessibleName).toBe("Help link");
+    expect(link.nameSource).toBe("title");
+  });
+
+  it("uses clip-rect inline-styled descendant as sr-only fallback", () => {
+    // No .sr-only class — visually-hidden via clip rect inline style.
+    document.body.innerHTML = `
+      <a href="#"><span style="clip:rect(0px,0px,0px,0px);position:absolute">VH text</span><svg aria-hidden="true"></svg></a>
+    `;
+    const link = analyzeReadingOrder().find((i) => i.role === "link")!;
+    expect(link.accessibleName).toBe("VH text");
+    expect(link.nameSource).toBe("sr-only");
+  });
+
+  it("uses clip-path inset(50%) inline-styled descendant as sr-only fallback", () => {
+    document.body.innerHTML = `
+      <a href="#"><span style="clip-path:inset(50%);position:absolute">VH path</span><svg aria-hidden="true"></svg></a>
+    `;
+    const link = analyzeReadingOrder().find((i) => i.role === "link")!;
+    expect(link.accessibleName).toBe("VH path");
+    expect(link.nameSource).toBe("sr-only");
+  });
+});
+
+describe("analyzeReadingOrder — additional state branches", () => {
+  it("reports 'current' for any aria-current value", () => {
+    document.body.innerHTML = `<a href="#" aria-current="page">Now</a>`;
+    expect(analyzeReadingOrder()[0].states).toContain("current");
+  });
+});
+
+describe("analyzeReadingOrder — getSelector branches", () => {
+  it("uses :nth-of-type when multiple same-tag siblings have no id", () => {
+    // Three buttons under a parent with an id (so the recursion stops at the
+    // parent's #id and the button gets a :nth-of-type qualifier).
+    document.body.innerHTML = `
+      <section id="section">
+        <button>One</button>
+        <button>Two</button>
+        <button>Three</button>
+      </section>
+    `;
+    const items = analyzeReadingOrder();
+    const buttons = items.filter((i) => i.role === "button");
+    expect(buttons.length).toBe(3);
+    // Each selector should reference :nth-of-type indices 1..3
+    expect(buttons.some((b) => /:nth-of-type\(2\)/.test(b.selector))).toBe(true);
+  });
 });
