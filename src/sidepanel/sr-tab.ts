@@ -377,6 +377,40 @@ export function elementToSpeechText(el: iScreenReaderElement): string {
   return `${el.role}, ${el.accessibleName}${el.states.length > 0 ? ", " + el.states.join(", ") : ""}`;
 }
 
+/**
+ * Compose the SR status-bar label HTML for the current play state.
+ * - idle: "<count> elements in [scope|reading order]"
+ * - playing/paused: counter ("Speaking 3" or "Playing 3 of 10") with amber accent
+ * - complete: green "Complete" pill
+ *
+ * Pure; exported for tests.
+ */
+export function srStatusLabelHtml(s: {
+  playState: "idle" | "playing" | "paused" | "complete";
+  playIndex: number;
+  singleSpeakIndex: number | null;
+  elementCount: number;
+  scoped: boolean;
+}): string {
+  const countLabel = s.scoped
+    ? `${s.elementCount} elements in scope`
+    : `${s.elementCount} elements in reading order`;
+  if (s.playState === "complete") return '<span style="color:var(--ds-green-700);font-weight:700">Complete</span>';
+  if (s.playState === "playing") {
+    const inner = s.singleSpeakIndex !== null
+      ? `Speaking element ${s.singleSpeakIndex + 1}`
+      : `Playing ${s.playIndex + 1} of ${s.elementCount}`;
+    return `<span style="color:var(--ds-amber-800);font-weight:700">${inner}</span>`;
+  }
+  if (s.playState === "paused") {
+    const inner = s.singleSpeakIndex !== null
+      ? `Paused element ${s.singleSpeakIndex + 1}`
+      : `Paused at ${s.playIndex + 1} of ${s.elementCount}`;
+    return `<span style="color:var(--ds-amber-800);font-weight:700">${inner}</span>`;
+  }
+  return countLabel;
+}
+
 /** For a container element, fetch its scoped reading order from content script and build full speech */
 async function getSpeakTextForElement(el: iScreenReaderElement): Promise<string> {
   const base = elementToSpeechText(el);

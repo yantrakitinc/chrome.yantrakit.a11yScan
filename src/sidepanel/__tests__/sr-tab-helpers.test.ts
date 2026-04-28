@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { elementToSpeechText, roleClassFor, renderSrRowHtml } from "../sr-tab";
+import { elementToSpeechText, roleClassFor, renderSrRowHtml, srStatusLabelHtml } from "../sr-tab";
 import type { iScreenReaderElement } from "@shared/types";
 
 function el(overrides: Partial<iScreenReaderElement> = {}): iScreenReaderElement {
@@ -89,5 +89,34 @@ describe("renderSrRowHtml", () => {
 
   it("emits the data-index attribute = el.index - 1 (0-based)", () => {
     expect(renderSrRowHtml(el({ index: 7 }), false)).toMatch(/data-index="6"/);
+  });
+});
+
+describe("srStatusLabelHtml", () => {
+  function s(overrides: Partial<Parameters<typeof srStatusLabelHtml>[0]> = {}) {
+    return { playState: "idle" as const, playIndex: 0, singleSpeakIndex: null, elementCount: 5, scoped: false, ...overrides };
+  }
+
+  it("idle without scope: 'N elements in reading order'", () => {
+    expect(srStatusLabelHtml(s())).toBe("5 elements in reading order");
+  });
+  it("idle with scope: 'N elements in scope'", () => {
+    expect(srStatusLabelHtml(s({ scoped: true }))).toBe("5 elements in scope");
+  });
+  it("complete: green Complete pill", () => {
+    expect(srStatusLabelHtml(s({ playState: "complete" }))).toMatch(/Complete/);
+    expect(srStatusLabelHtml(s({ playState: "complete" }))).toMatch(/--ds-green-700/);
+  });
+  it("playing without singleSpeakIndex: 'Playing X of Y'", () => {
+    expect(srStatusLabelHtml(s({ playState: "playing", playIndex: 2, elementCount: 10 }))).toMatch(/Playing 3 of 10/);
+  });
+  it("playing with singleSpeakIndex set: 'Speaking element X'", () => {
+    expect(srStatusLabelHtml(s({ playState: "playing", singleSpeakIndex: 4 }))).toMatch(/Speaking element 5/);
+  });
+  it("paused without singleSpeakIndex: 'Paused at X of Y'", () => {
+    expect(srStatusLabelHtml(s({ playState: "paused", playIndex: 2, elementCount: 10 }))).toMatch(/Paused at 3 of 10/);
+  });
+  it("paused with singleSpeakIndex set: 'Paused element X'", () => {
+    expect(srStatusLabelHtml(s({ playState: "paused", singleSpeakIndex: 4 }))).toMatch(/Paused element 5/);
   });
 });
