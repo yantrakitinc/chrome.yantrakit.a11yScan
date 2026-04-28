@@ -88,3 +88,106 @@ describe("renderResults — passes section renders when scan has passes", () => 
     expect(html).toMatch(/2 rules passed/);
   });
 });
+
+describe("renderResults — Multi-Viewport state branches", () => {
+  function violation(id: string, impact: "serious" | "minor" = "serious") {
+    return {
+      id, impact, description: id, help: "", helpUrl: "", tags: [],
+      nodes: [{ selector: "#" + id, html: "", failureSummary: "" }],
+      wcagCriteria: ["1.4.3"],
+    };
+  }
+
+  it("with mvResult and mvFilter=null, the All chip renders with selected (amber-100) bg", () => {
+    const scan = makeScan({ violations: [violation("v1")] });
+    const mvResult = {
+      viewports: [375, 768, 1280],
+      shared: [],
+      viewportSpecific: [],
+      perViewport: { 375: scan, 768: scan, 1280: scan },
+    };
+    const html = renderResults(scan, mvResult, null);
+    // The 'All' chip is selected when mvFilter is null
+    expect(html).toMatch(/data-mvfilter="all" aria-pressed="true"/);
+    expect(html).toMatch(/data-mvfilter="375" aria-pressed="false"/);
+  });
+
+  it("with mvFilter=768 (a specific viewport), only that chip is pressed", () => {
+    const scan = makeScan({ violations: [violation("v1")] });
+    const mvResult = {
+      viewports: [375, 768, 1280],
+      shared: [],
+      viewportSpecific: [],
+      perViewport: { 375: scan, 768: scan, 1280: scan },
+    };
+    const html = renderResults(scan, mvResult, 768);
+    expect(html).toMatch(/data-mvfilter="all" aria-pressed="false"/);
+    expect(html).toMatch(/data-mvfilter="768" aria-pressed="true"/);
+    expect(html).toMatch(/data-mvfilter="375" aria-pressed="false"/);
+  });
+
+  it("when mvFilter selects a viewport with no perViewport entry, displayViolations is empty", () => {
+    const scan = makeScan({ violations: [violation("v1")] });
+    const mvResult = {
+      viewports: [375, 768],
+      shared: [],
+      viewportSpecific: [],
+      perViewport: { 375: scan }, // 768 missing
+    };
+    const html = renderResults(scan, mvResult, 768);
+    // No violation row from v1 should be rendered (filter excludes it)
+    expect(html).not.toMatch(/sr-details/);
+  });
+
+  it("violation tagged in viewportSpecific gets a viewport badge", () => {
+    const v = violation("vp-only");
+    const scan = makeScan({ violations: [v] });
+    const mvResult = {
+      viewports: [375, 768],
+      shared: [],
+      viewportSpecific: [{ id: "vp-only", viewports: [768] }],
+      perViewport: { 375: scan, 768: scan },
+    };
+    const html = renderResults(scan, mvResult, null);
+    // The 768px badge should appear next to the violation
+    expect(html).toMatch(/>768px</);
+  });
+});
+
+describe("renderCrawlResultsHtml — pluralization branches", () => {
+  it("violationCount === 1 renders 'issue' (singular)", () => {
+    const results = {
+      "https://x.com/a": makeScan({
+        violations: [{ id: "v1", impact: "serious" as const, description: "x", help: "", helpUrl: "", tags: [], nodes: [{ selector: "#a", html: "", failureSummary: "" }], wcagCriteria: ["1.4.3"] }],
+      }),
+    };
+    const html = renderCrawlResultsHtml(results, {}, "page");
+    expect(html).toMatch(/1 issue\b/);
+    expect(html).not.toMatch(/1 issues/);
+  });
+
+  it("uniquePages.length === 1 renders 'page' (singular)", () => {
+    const results = {
+      "https://x.com/single": makeScan({
+        violations: [{ id: "v1", impact: "serious" as const, description: "x", help: "", helpUrl: "", tags: [], nodes: [{ selector: "#a", html: "", failureSummary: "" }], wcagCriteria: ["1.4.3"] }],
+      }),
+    };
+    const html = renderCrawlResultsHtml(results, {}, "wcag");
+    expect(html).toMatch(/1 page\b/);
+    expect(html).not.toMatch(/1 pages/);
+  });
+});
+
+describe("renderCrawlResultsHtml — crawl view toggle aria-pressed", () => {
+  it("crawlViewMode='page' marks By page chip pressed", () => {
+    const html = renderCrawlResultsHtml({}, {}, "page");
+    expect(html).toMatch(/id="crawl-view-page" aria-pressed="true"/);
+    expect(html).toMatch(/id="crawl-view-wcag" aria-pressed="false"/);
+  });
+
+  it("crawlViewMode='wcag' marks By WCAG chip pressed", () => {
+    const html = renderCrawlResultsHtml({}, {}, "wcag");
+    expect(html).toMatch(/id="crawl-view-page" aria-pressed="false"/);
+    expect(html).toMatch(/id="crawl-view-wcag" aria-pressed="true"/);
+  });
+});
