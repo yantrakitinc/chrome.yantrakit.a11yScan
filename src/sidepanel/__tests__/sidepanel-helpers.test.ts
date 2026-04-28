@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
-import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared } from "../sidepanel";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared, switchTab, updateTabDisabledStates, state } from "../sidepanel";
 
 describe("CVD_MATRICES — color-vision-deficiency simulation matrices (F08)", () => {
   it("includes the 8 documented CVD presets", () => {
@@ -91,6 +91,102 @@ describe("reduceCrawlProgress", () => {
   it("defaults missing payload fields to 0 / empty string", () => {
     const out = reduceCrawlProgress(base(), { status: "crawling" });
     expect(out.crawlProgress).toEqual({ pagesVisited: 0, pagesTotal: 0, currentUrl: "" });
+  });
+});
+
+describe("switchTab + updateTabDisabledStates", () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <div id="top-tabs">
+        <button id="tab-scan" data-tab="scan" class="tab active" aria-selected="true" tabindex="0"></button>
+        <button id="tab-sr" data-tab="sr" class="tab" aria-selected="false" tabindex="-1"></button>
+        <button id="tab-kb" data-tab="kb" class="tab" aria-selected="false" tabindex="-1"></button>
+        <button id="tab-ai" data-tab="ai" class="tab" aria-selected="false" tabindex="-1" disabled></button>
+      </div>
+      <div id="panel-scan" class="tab-panel active"></div>
+      <div id="panel-sr" class="tab-panel" hidden></div>
+      <div id="panel-kb" class="tab-panel" hidden></div>
+      <div id="panel-ai" class="tab-panel" hidden></div>
+    `;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome = {
+      runtime: { sendMessage: vi.fn(async () => undefined), onMessage: { addListener: vi.fn() } },
+      tabs: { query: vi.fn(async () => []), sendMessage: vi.fn(async () => undefined) },
+      storage: {
+        local: { get: vi.fn(async () => ({})), set: vi.fn(async () => undefined), remove: vi.fn(async () => undefined) },
+        session: { get: vi.fn(async () => ({})), set: vi.fn(async () => undefined) },
+      },
+    };
+    state.topTab = "scan";
+    state.scanPhase = "idle";
+    state.crawlPhase = "idle";
+  });
+  afterEach(() => {
+    document.body.innerHTML = "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (globalThis as any).chrome;
+  });
+
+  it("switchTab updates state.topTab", () => {
+    switchTab("sr");
+    expect(state.topTab).toBe("sr");
+  });
+
+  it("switchTab toggles aria-selected + tabindex on tab buttons", () => {
+    switchTab("kb");
+    expect(document.getElementById("tab-kb")?.getAttribute("aria-selected")).toBe("true");
+    expect(document.getElementById("tab-kb")?.getAttribute("tabindex")).toBe("0");
+    expect(document.getElementById("tab-scan")?.getAttribute("aria-selected")).toBe("false");
+    expect(document.getElementById("tab-scan")?.getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("switchTab shows the matching panel and hides others", () => {
+    switchTab("sr");
+    expect(document.getElementById("panel-sr")?.hidden).toBe(false);
+    expect(document.getElementById("panel-scan")?.hidden).toBe(true);
+    expect(document.getElementById("panel-kb")?.hidden).toBe(true);
+  });
+
+  it("switchTab is a no-op when target tab is disabled (e.g., 'ai' coming soon)", () => {
+    switchTab("ai");
+    expect(state.topTab).toBe("scan"); // unchanged
+  });
+
+  it("updateTabDisabledStates disables sr+kb during scanning", () => {
+    state.scanPhase = "scanning";
+    updateTabDisabledStates();
+    expect((document.getElementById("tab-sr") as HTMLButtonElement).disabled).toBe(true);
+    expect((document.getElementById("tab-kb") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("updateTabDisabledStates disables sr+kb during crawl 'crawling' or 'wait' phase", () => {
+    state.crawlPhase = "crawling";
+    updateTabDisabledStates();
+    expect((document.getElementById("tab-sr") as HTMLButtonElement).disabled).toBe(true);
+    state.crawlPhase = "wait";
+    updateTabDisabledStates();
+    expect((document.getElementById("tab-kb") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("updateTabDisabledStates leaves AI tab's disabled flag alone (permanent disable)", () => {
+    state.scanPhase = "scanning";
+    updateTabDisabledStates();
+    expect((document.getElementById("tab-ai") as HTMLButtonElement).disabled).toBe(true);
+    state.scanPhase = "idle";
+    state.crawlPhase = "idle";
+    updateTabDisabledStates();
+    // AI is still disabled (its baseline state), even when nothing is busy
+    expect((document.getElementById("tab-ai") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("updateTabDisabledStates re-enables sr+kb when idle", () => {
+    state.scanPhase = "scanning";
+    updateTabDisabledStates();
+    state.scanPhase = "idle";
+    state.crawlPhase = "idle";
+    updateTabDisabledStates();
+    expect((document.getElementById("tab-sr") as HTMLButtonElement).disabled).toBe(false);
+    expect((document.getElementById("tab-kb") as HTMLButtonElement).disabled).toBe(false);
   });
 });
 
