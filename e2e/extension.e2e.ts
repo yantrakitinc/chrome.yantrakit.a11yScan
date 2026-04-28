@@ -72,7 +72,8 @@ async function probeDevServer(): Promise<void> {
   const probeUrl = DEMO_BASE.replace(/\/demo$/, "/");
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 3000);
+    // Next dev cold-start can take 5–10s on a fresh process — give it 15s.
+    const timer = setTimeout(() => ctrl.abort(), 15000);
     const res = await fetch(probeUrl, { signal: ctrl.signal });
     clearTimeout(timer);
     if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
