@@ -398,14 +398,24 @@ async function getSpeakTextForElement(el: iScreenReaderElement): Promise<string>
 }
 
 function renderSrRow(el: iScreenReaderElement): string {
-  const roleClass = roleClassFor(el.role);
-  const sourceLabel = el.nameSource === "contents" ? "text" : el.nameSource;
   const rowIdx = el.index - 1;
-  // Highlight priority: single speak > Play All current > recently clicked
   const isHighlighted =
     singleSpeakIndex !== null ? singleSpeakIndex === rowIdx :
     playState !== "idle" && rowIdx === playIndex ? true :
     selectedRowIndex === rowIdx;
+  return renderSrRowHtml(el, isHighlighted);
+}
+
+/**
+ * Render one row of the SR reading-order list. Pure; exported for tests.
+ * `isHighlighted` is set by the caller based on play / single-speak / click
+ * state — keeping it a parameter lets tests exercise both branches without
+ * touching mutable module state.
+ */
+export function renderSrRowHtml(el: iScreenReaderElement, isHighlighted: boolean): string {
+  const roleClass = roleClassFor(el.role);
+  const sourceLabel = el.nameSource === "contents" ? "text" : el.nameSource;
+  const rowIdx = el.index - 1;
   const escapedName = escHtml(el.accessibleName);
 
   return `

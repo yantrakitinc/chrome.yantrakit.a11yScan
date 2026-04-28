@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { elementToSpeechText, roleClassFor } from "../sr-tab";
+import { elementToSpeechText, roleClassFor, renderSrRowHtml } from "../sr-tab";
 import type { iScreenReaderElement } from "@shared/types";
 
 function el(overrides: Partial<iScreenReaderElement> = {}): iScreenReaderElement {
@@ -51,5 +51,43 @@ describe("roleClassFor", () => {
   it("falls back to ds-badge--role-default for unknown roles", () => {
     expect(roleClassFor("widget")).toBe("ds-badge--role-default");
     expect(roleClassFor("")).toBe("ds-badge--role-default");
+  });
+});
+
+describe("renderSrRowHtml", () => {
+  it("renders index, role badge, accessible name, source badge", () => {
+    const out = renderSrRowHtml(el({ index: 4, role: "link", accessibleName: "Sign in", nameSource: "aria-label" }), false);
+    expect(out).toMatch(/<span class="ds-row__index">4</);
+    expect(out).toMatch(/ds-badge--role-link/);
+    expect(out).toMatch(/Sign in/);
+    expect(out).toMatch(/aria-label/);
+  });
+
+  it("renames nameSource='contents' to 'text' for the source badge", () => {
+    const out = renderSrRowHtml(el({ nameSource: "contents" }), false);
+    expect(out).toMatch(/>text</);
+  });
+
+  it("emits ds-row--active when highlighted", () => {
+    expect(renderSrRowHtml(el(), true)).toMatch(/ds-row--active/);
+    expect(renderSrRowHtml(el(), false)).not.toMatch(/ds-row--active/);
+  });
+
+  it("renders a state badge for each entry in states", () => {
+    const out = renderSrRowHtml(el({ states: ["pressed", "expanded"] }), false);
+    expect(out).toMatch(/ds-badge--state[^"]*">pressed</);
+    expect(out).toMatch(/ds-badge--state[^"]*">expanded</);
+  });
+
+  it("escapes html-injection in role / accessibleName / selector", () => {
+    const out = renderSrRowHtml(el({ role: "<x>", accessibleName: "<svg/>", selector: "#a\"b" }), false);
+    expect(out).not.toMatch(/<x>/);
+    expect(out).toMatch(/&lt;x&gt;/);
+    expect(out).toMatch(/&lt;svg\/&gt;/);
+    expect(out).toMatch(/#a&quot;b/);
+  });
+
+  it("emits the data-index attribute = el.index - 1 (0-based)", () => {
+    expect(renderSrRowHtml(el({ index: 7 }), false)).toMatch(/data-index="6"/);
   });
 });

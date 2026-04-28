@@ -85,6 +85,42 @@ function flashKbItem(item: HTMLElement): void {
   kbFlashTimers.set(item, t);
 }
 
+/**
+ * Map a tab-order role to its design-token badge class. Pure; exported for
+ * tests. Roles outside the documented set fall back to the default class.
+ */
+export function kbRoleClassFor(role: string): string {
+  return role === "button" ? "ds-badge--role-button"
+    : role === "link" ? "ds-badge--role-link"
+    : role === "textbox" ? "ds-badge--role-textbox"
+    : "ds-badge--role-default";
+}
+
+/**
+ * Render one row of the tab-order list. Pure; exported for tests.
+ * `isActive` is true when the row is the active Movie Mode element or the
+ * recently-clicked row (KB tab parity with SR tab).
+ */
+export function renderKbRowHtml(el: iTabOrderElement, idx: number, isActive: boolean): string {
+  const escName = escHtml(el.accessibleName);
+  const focusLabel = el.hasFocusIndicator ? "Has visible focus indicator" : "Missing visible focus indicator";
+  const focusColor = el.hasFocusIndicator ? "var(--ds-green-700)" : "var(--ds-red-700)";
+  return `
+    <div class="ds-row kb-row${isActive ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${escHtml(el.role)}: ${escName}" data-selector="${escHtml(el.selector)}" data-index="${idx}">
+      <span class="ds-row__index-circle">${el.index}</span>
+      <span class="ds-badge ${kbRoleClassFor(el.role)}">${escHtml(el.role)}</span>
+      <span class="ds-row__label">${escName}</span>
+      <span aria-label="${focusLabel}" title="${focusLabel}" class="fs-0" style="display:flex;align-items:center;justify-content:center;color:${focusColor}">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <circle cx="7" cy="7" r="5"/>
+          <circle cx="7" cy="7" r="2"/>
+          <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13"/>
+        </svg>
+      </span>
+    </div>
+  `;
+}
+
 /** Returns the current tab order for F12 export */
 export function getTabOrder(): iTabOrderElement[] { return tabOrder; }
 
@@ -146,28 +182,9 @@ export function renderKeyboardTab(): void {
           ${tabOrder.length === 0
             ? '<div class="ds-empty" style="padding:12px">Click Analyze to scan keyboard navigation.</div>'
             : tabOrder.map((el, i) => {
-              const escName = escHtml(el.accessibleName);
-              const roleClass = el.role === "button" ? "ds-badge--role-button"
-                : el.role === "link" ? "ds-badge--role-link"
-                : el.role === "textbox" ? "ds-badge--role-textbox"
-                : "ds-badge--role-default";
               const isActive = (moviePlayState !== "idle" && i === movieIndex) || (selectedKbIndex === i);
-              const focusLabel = el.hasFocusIndicator ? "Has visible focus indicator" : "Missing visible focus indicator";
-              const focusColor = el.hasFocusIndicator ? "var(--ds-green-700)" : "var(--ds-red-700)";
-              return `
-              <div class="ds-row kb-row${isActive ? " ds-row--active" : ""}" role="button" tabindex="0" aria-label="Highlight ${escHtml(el.role)}: ${escName}" data-selector="${escHtml(el.selector)}" data-index="${i}">
-                <span class="ds-row__index-circle">${el.index}</span>
-                <span class="ds-badge ${roleClass}">${escHtml(el.role)}</span>
-                <span class="ds-row__label">${escName}</span>
-                <span aria-label="${focusLabel}" title="${focusLabel}" class="fs-0" style="display:flex;align-items:center;justify-content:center;color:${focusColor}">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
-                    <circle cx="7" cy="7" r="5"/>
-                    <circle cx="7" cy="7" r="2"/>
-                    <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13"/>
-                  </svg>
-                </span>
-              </div>
-            `;}).join("")
+              return renderKbRowHtml(el, i, isActive);
+            }).join("")
           }
         </div>
       </details>
