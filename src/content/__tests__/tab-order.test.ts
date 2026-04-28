@@ -209,4 +209,62 @@ describe("getFocusGaps — additional reasons", () => {
     expect(found).toBeTruthy();
     expect(found!.reason).toMatch(/aria-hidden/i);
   });
+
+  it("falls back to the tabindex=-1 reason for any non-disabled, non-aria-hidden div without tabindex", () => {
+    // Non-focusable elements (div without explicit tabindex) report tabIndex=-1
+    // so the third branch always wins for these. Confirm the contract.
+    document.body.innerHTML = `<div role="button" id="d1">x</div>`;
+    const gap = getFocusGaps().find((g) => g.selector === "#d1")!;
+    expect(gap.reason).toMatch(/tabindex/i);
+  });
+});
+
+describe("detectKeyboardTraps — trap detection branch", () => {
+  it("flags an element whose Tab keydown listener calls preventDefault and keeps focus", () => {
+    document.body.innerHTML = `<button id="trap">x</button>`;
+    const el = document.getElementById("trap")!;
+    // Real focus trap: a listener that preventDefaults Tab. After preventDefault,
+    // dispatchEvent returns false, and since we don't actually move focus,
+    // document.activeElement still equals el → trap.push fires.
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") e.preventDefault();
+    });
+    const traps = detectKeyboardTraps();
+    expect(traps.length).toBe(1);
+    expect(traps[0].selector).toBe("#trap");
+    expect(traps[0].description).toMatch(/trapped/i);
+  });
+
+  it("skips elements that throw on .focus() (try/catch path)", () => {
+    document.body.innerHTML = `<button id="b1">x</button>`;
+    const el = document.getElementById("b1")!;
+    // Force focus() to throw — the catch block should swallow and skip
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (el as any).focus = () => { throw new Error("nope"); };
+    expect(() => detectKeyboardTraps()).not.toThrow();
+  });
+});
+
+describe("checkFocusIndicator — error-path coverage (via getTabOrder)", () => {
+  it("hasFocusIndicator stays a boolean even if focus() throws", () => {
+    document.body.innerHTML = `<button id="b1">x</button>`;
+    const el = document.getElementById("b1")!;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (el as any).focus = () => { throw new Error("blocked"); };
+    const order = getTabOrder();
+    // catch returns true (assume indicator present rather than miss-flag)
+    expect(order[0].hasFocusIndicator).toBe(true);
+  });
+});
+
+describe("detectFocusIndicators — error-path coverage", () => {
+  it("returns hasIndicator=true fallback when focus() throws", () => {
+    document.body.innerHTML = `<button id="b1">x</button>`;
+    const el = document.getElementById("b1")!;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (el as any).focus = () => { throw new Error("blocked"); };
+    const out = detectFocusIndicators();
+    expect(out[0].selector).toBe("#b1");
+    expect(out[0].hasIndicator).toBe(true);
+  });
 });
