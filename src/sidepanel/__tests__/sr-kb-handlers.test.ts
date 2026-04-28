@@ -98,3 +98,15 @@ describe("sr-tab handlers", () => {
     expect(types).toContain("ANALYZE_READING_ORDER");
   });
 });
+
+describe("kb-tab — onMovieTick / onMovieComplete", () => {
+  it("onMovieTick when movie is not playing is a no-op (doesn't throw)", async () => {
+    const { onMovieTick } = await import("../kb-tab");
+    expect(() => onMovieTick(0)).not.toThrow();
+  });
+
+  it("onMovieComplete when movie is idle is a no-op", async () => {
+    const { onMovieComplete } = await import("../kb-tab");
+    expect(() => onMovieComplete()).not.toThrow();
+  });
+});
