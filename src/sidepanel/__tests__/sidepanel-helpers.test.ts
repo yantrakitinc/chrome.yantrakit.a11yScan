@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared, switchTab, updateTabDisabledStates, state, buildElementNotFoundToast, pickViolationScrollTarget, cvdMatrixForType } from "../sidepanel";
+import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared, switchTab, updateTabDisabledStates, state, buildElementNotFoundToast, pickViolationScrollTarget, cvdMatrixForType, initConfirmClearBar } from "../sidepanel";
 
 describe("CVD_MATRICES — color-vision-deficiency simulation matrices (F08)", () => {
   it("includes the 8 documented CVD presets", () => {
@@ -187,6 +187,60 @@ describe("switchTab + updateTabDisabledStates", () => {
     updateTabDisabledStates();
     expect((document.getElementById("tab-sr") as HTMLButtonElement).disabled).toBe(false);
     expect((document.getElementById("tab-kb") as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+describe("initConfirmClearBar — F22 confirm-bar wiring", () => {
+  let sentMessages: { type: string }[];
+  beforeEach(() => {
+    sentMessages = [];
+    document.body.innerHTML = `
+      <div id="confirm-clear-bar" hidden>
+        <button id="confirm-clear-yes"></button>
+        <button id="confirm-clear-cancel"></button>
+      </div>
+    `;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome = { runtime: { sendMessage: vi.fn(async (m) => { sentMessages.push(m); }) } };
+  });
+  afterEach(() => {
+    document.body.innerHTML = "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (globalThis as any).chrome;
+  });
+
+  it("clicking Yes hides the bar and broadcasts CLEAR_ALL_CONFIRMED", () => {
+    const bar = document.getElementById("confirm-clear-bar")!;
+    bar.hidden = false; // simulate the bar already showing
+    initConfirmClearBar();
+    document.getElementById("confirm-clear-yes")?.click();
+    expect(bar.hidden).toBe(true);
+    expect(sentMessages.map((m) => m.type)).toContain("CLEAR_ALL_CONFIRMED");
+  });
+
+  it("clicking Cancel hides the bar without broadcasting", () => {
+    const bar = document.getElementById("confirm-clear-bar")!;
+    bar.hidden = false;
+    initConfirmClearBar();
+    document.getElementById("confirm-clear-cancel")?.click();
+    expect(bar.hidden).toBe(true);
+    expect(sentMessages.length).toBe(0);
+  });
+
+  it("Escape key while the bar is visible hides it", () => {
+    const bar = document.getElementById("confirm-clear-bar")!;
+    bar.hidden = false;
+    initConfirmClearBar();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(bar.hidden).toBe(true);
+  });
+
+  it("Escape while the bar is already hidden is a no-op (doesn't change state)", () => {
+    const bar = document.getElementById("confirm-clear-bar")!;
+    bar.hidden = true;
+    initConfirmClearBar();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(bar.hidden).toBe(true);
   });
 });
 

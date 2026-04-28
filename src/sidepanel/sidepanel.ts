@@ -348,14 +348,20 @@ export function cvdMatrixForType(type: string): number[] | null {
    Confirm Clear All Bar (F22)
    ═══════════════════════════════════════════════════════════════════ */
 
-function initConfirmClearBar(): void {
+/**
+ * Wire up the inline confirm-clear-bar (F22). Yes button hides the bar
+ * and broadcasts CLEAR_ALL_CONFIRMED. Cancel just hides. Escape also
+ * hides when the bar is visible. Exported for tests so the wiring can
+ * be exercised in jsdom.
+ */
+export function initConfirmClearBar(): void {
   const bar = document.getElementById("confirm-clear-bar");
   const yesBtn = document.getElementById("confirm-clear-yes");
   const cancelBtn = document.getElementById("confirm-clear-cancel");
 
   yesBtn?.addEventListener("click", () => {
     if (bar) bar.hidden = true;
-  // Sync the visible state with the source the user just confirmed.
+    // Sync the visible state with the source the user just confirmed.
     sendMessage({ type: "CLEAR_ALL_CONFIRMED" });
   });
 
