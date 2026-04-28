@@ -1253,6 +1253,27 @@ export function severityOrder(impact: string): number {
 }
 
 /**
+ * Merge a multi-viewport scan result into a single iScanResult that the
+ * results renderer can consume. Uses the first viewport's metadata
+ * (url/timestamp/etc.) and concatenates `shared + viewportSpecific`
+ * violations. Returns null if perViewport is empty.
+ *
+ * Pure; exported for tests. Used after MULTI_VIEWPORT_SCAN to populate
+ * state.lastScanResult so the existing single-page Results UI works.
+ */
+export function mergeMvResultToScan(
+  mv: import("@shared/types").iMultiViewportResult,
+): iScanResult | null {
+  const firstKey = Object.keys(mv.perViewport)[0];
+  if (!firstKey) return null;
+  const first = mv.perViewport[parseInt(firstKey)];
+  return {
+    ...first,
+    violations: [...mv.shared, ...mv.viewportSpecific] as import("@shared/types").iViolation[],
+  };
+}
+
+/**
  * Build the START_CRAWL message payload from sidepanel state. The
  * testConfig (when present) takes precedence over the manual UI controls
  * for every field, per F13-AC4. Pure; exported for tests.
@@ -1527,15 +1548,8 @@ function attachScanTabListeners(): void {
           state.lastMvResult = mvResult;
           state.mvViewportFilter = null;
           state.mvProgress = null;
-          // Build a merged iScanResult: use first viewport metadata + combined violation list
-          const firstMvKey = Object.keys(mvResult.perViewport)[0];
-          if (firstMvKey) {
-            const firstMvResult = mvResult.perViewport[parseInt(firstMvKey)];
-            state.lastScanResult = {
-              ...firstMvResult,
-              violations: [...mvResult.shared, ...mvResult.viewportSpecific] as import("@shared/types").iViolation[],
-            };
-          }
+          const merged = mergeMvResultToScan(mvResult);
+          if (merged) state.lastScanResult = merged;
           state.scanPhase = "results";
         } else if (resType === "SCAN_ERROR") {
           state.scanPhase = "idle";

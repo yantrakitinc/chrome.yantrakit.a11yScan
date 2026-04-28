@@ -10,7 +10,7 @@ import {
   renderExpandedToggleHtml, renderMvCheckboxHtml,
   renderCrawlConfigHtml, renderUrlListPanelHtml,
   buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls, addViewport, removeViewport,
-  buildStartCrawlPayload,
+  buildStartCrawlPayload, mergeMvResultToScan,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -817,6 +817,54 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("mergeMvResultToScan", () => {
+  function pageScan(url = "https://x.com", violations: iScanResult["violations"] = []): iScanResult {
+    return {
+      url, timestamp: "2026-01-01", violations, passes: [], incomplete: [],
+      summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 100,
+    };
+  }
+  function viol(id: string): iScanResult["violations"][0] {
+    return { id, impact: "serious", description: "x", help: "x", helpUrl: "", tags: [], nodes: [{ selector: "#x", html: "", failureSummary: "" }] };
+  }
+
+  it("returns null when perViewport is empty", () => {
+    expect(mergeMvResultToScan({
+      viewports: [],
+      perViewport: {},
+      shared: [],
+      viewportSpecific: [],
+    })).toBeNull();
+  });
+
+  it("uses the first viewport's metadata as the merged result's anchor", () => {
+    const merged = mergeMvResultToScan({
+      viewports: [375, 768],
+      perViewport: {
+        375: pageScan("https://x.com/375"),
+        768: pageScan("https://x.com/768"),
+      },
+      shared: [],
+      viewportSpecific: [],
+    });
+    expect(merged?.url).toBe("https://x.com/375");
+  });
+
+  it("concatenates shared + viewportSpecific into the merged violations", () => {
+    const merged = mergeMvResultToScan({
+      viewports: [375, 768],
+      perViewport: { 375: pageScan() },
+      shared: [viol("color-contrast")],
+      viewportSpecific: [{ ...viol("region"), viewports: [375] }],
+    });
+    expect(merged?.violations.length).toBe(2);
+    expect(merged?.violations[0].id).toBe("color-contrast");
+    expect(merged?.violations[1].id).toBe("region");
   });
 });
 
