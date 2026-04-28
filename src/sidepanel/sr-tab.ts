@@ -413,22 +413,37 @@ export function srStatusLabelHtml(s: {
 
 /** For a container element, fetch its scoped reading order from content script and build full speech */
 async function getSpeakTextForElement(el: iScreenReaderElement): Promise<string> {
-  const base = elementToSpeechText(el);
-  if (!CONTAINER_ROLES.has(el.role)) return base;
-
+  if (!CONTAINER_ROLES.has(el.role)) return elementToSpeechText(el);
   // Fetch scoped reading order for just this container's subtree
   try {
     const result = await sendMessage({ type: "ANALYZE_READING_ORDER", payload: { scopeSelector: el.selector } });
     if (result && (result as { type: string }).type === "READING_ORDER_RESULT") {
-      const scoped = (result as { payload: iScreenReaderElement[] }).payload;
-      // The container itself appears in scoped[0]; skip it. The rest are children.
-      const childTexts = scoped
-        .filter((c) => c.selector !== el.selector)
-        .map((c) => elementToSpeechText(c));
-      if (childTexts.length > 0) return `${base}. ${childTexts.join(". ")}.`;
+      return composeContainerSpeechText(el, (result as { payload: iScreenReaderElement[] }).payload);
     }
   } catch { /* fall through */ }
-  return base;
+  return elementToSpeechText(el);
+}
+
+/**
+ * Compose the spoken text for a container element + its scoped children.
+ * The scoped reading order returned by the content script includes the
+ * container itself as the first item; we filter it out and join the
+ * remaining children with ". " separators. When the container has no
+ * children (or only itself), returns the bare container text — Speak still
+ * announces the container even if empty.
+ *
+ * Pure; exported for tests.
+ */
+export function composeContainerSpeechText(
+  container: iScreenReaderElement,
+  scoped: iScreenReaderElement[],
+): string {
+  const base = elementToSpeechText(container);
+  const childTexts = scoped
+    .filter((c) => c.selector !== container.selector)
+    .map((c) => elementToSpeechText(c));
+  if (childTexts.length === 0) return base;
+  return `${base}. ${childTexts.join(". ")}.`;
 }
 
 function renderSrRow(el: iScreenReaderElement): string {
