@@ -196,6 +196,87 @@ describe("scan-tab handlers — highlight + manual review", () => {
   });
 });
 
+describe("scan-tab handlers — crawl controls", () => {
+  function withCrawling() {
+    return async () => {
+      const { renderScanTab } = await import("../scan-tab");
+      const { state } = await import("../sidepanel");
+      state.crawl = true;
+      state.crawlPhase = "crawling";
+      state.crawlProgress = { pagesVisited: 1, pagesTotal: 5, currentUrl: "https://x.com/a" };
+      renderScanTab();
+    };
+  }
+
+  it("pause-crawl button sends PAUSE_CRAWL", async () => {
+    await withCrawling()();
+    document.getElementById("pause-crawl")?.click();
+    await Promise.resolve();
+    expect(sentMessages.map((m) => m.type)).toContain("PAUSE_CRAWL");
+  });
+
+  it("cancel-crawl button sends CANCEL_CRAWL and resets crawlPhase to idle", async () => {
+    await withCrawling()();
+    const { state } = await import("../sidepanel");
+    document.getElementById("cancel-crawl")?.click();
+    await Promise.resolve();
+    expect(state.crawlPhase).toBe("idle");
+    expect(sentMessages.map((m) => m.type)).toContain("CANCEL_CRAWL");
+  });
+
+  it("resume-crawl button (paused phase) sends RESUME_CRAWL", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.crawl = true;
+    state.crawlPhase = "paused";
+    state.crawlProgress = { pagesVisited: 1, pagesTotal: 5, currentUrl: "https://x.com/a" };
+    renderScanTab();
+    document.getElementById("resume-crawl")?.click();
+    await Promise.resolve();
+    expect(sentMessages.map((m) => m.type)).toContain("RESUME_CRAWL");
+  });
+
+  it("continue-crawl (page-rule wait) sends USER_CONTINUE and clears crawlWaitInfo", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.crawl = true;
+    state.crawlPhase = "wait";
+    state.crawlWaitInfo = { url: "https://x.com/login", waitType: "login", description: "Sign in" };
+    renderScanTab();
+    document.getElementById("continue-crawl")?.click();
+    await Promise.resolve();
+    expect(sentMessages.map((m) => m.type)).toContain("USER_CONTINUE");
+    expect(state.crawlWaitInfo).toBeNull();
+  });
+});
+
+describe("scan-tab handlers — overlay toggle + crawl view mode", () => {
+  function pageScan() {
+    return {
+      url: "https://x.com", timestamp: "2026-01-01",
+      violations: [{ id: "x", impact: "serious" as const, description: "x", help: "x", helpUrl: "", tags: [],
+        nodes: [{ selector: "#a", html: "", failureSummary: "" }] }],
+      passes: [], incomplete: [],
+      summary: { critical: 0, serious: 1, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 0,
+    };
+  }
+
+  it("toggle-violations click flips state.violationsOverlayOn and sends overlay messages", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.violationsOverlayOn = false;
+    renderScanTab();
+    document.getElementById("toggle-violations")?.click();
+    await Promise.resolve();
+    expect(state.violationsOverlayOn).toBe(true);
+    expect(sentMessages.map((m) => m.type)).toContain("SHOW_VIOLATION_OVERLAY");
+  });
+});
+
 describe("scan-tab handlers — viewport editor", () => {
   it("vp-edit click flips viewportEditing on (UI shows the inline editor)", async () => {
     const { renderScanTab } = await import("../scan-tab");
