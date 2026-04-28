@@ -10,7 +10,7 @@ import {
   renderExpandedToggleHtml, renderMvCheckboxHtml,
   renderCrawlConfigHtml, renderUrlListPanelHtml,
   buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls, addViewport, removeViewport,
-  buildStartCrawlPayload, mergeMvResultToScan,
+  buildStartCrawlPayload, mergeMvResultToScan, buildObserverEntry,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -817,6 +817,77 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("buildObserverEntry", () => {
+  function pageScan(overrides: Partial<iScanResult> = {}): iScanResult {
+    return {
+      url: "https://example.com",
+      timestamp: "2026-01-01T00:00:00Z",
+      violations: [],
+      passes: [],
+      incomplete: [],
+      summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 100,
+      ...overrides,
+    };
+  }
+
+  it("threads id + timestamp from caller (so tests can pin them)", () => {
+    const out = buildObserverEntry({
+      id: "fixed-id",
+      timestamp: "2026-04-27T12:00:00Z",
+      scanResult: pageScan(),
+      tab: { url: "https://x.com/y", title: "Y" },
+      viewports: [375, 768, 1280],
+    });
+    expect(out.id).toBe("fixed-id");
+    expect(out.timestamp).toBe("2026-04-27T12:00:00Z");
+  });
+
+  it("source is always 'manual' (this builder is for the manual-scan path only)", () => {
+    expect(buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan(), tab: {}, viewports: [375],
+    }).source).toBe("manual");
+  });
+
+  it("counts violation NODES, not rules", () => {
+    const v = (id: string, n: number) => ({ id, impact: "serious" as const, description: "", help: "", helpUrl: "", tags: [], nodes: new Array(n).fill({ selector: "#x", html: "", failureSummary: "" }) });
+    const out = buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan({ violations: [v("a", 3), v("b", 5)] }),
+      tab: {},
+      viewports: [375],
+    });
+    expect(out.violationCount).toBe(8);
+  });
+
+  it("falls back to 1280 when tab.width is missing", () => {
+    const out = buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan(), tab: {}, viewports: [375, 768, 1280],
+    });
+    // 1280 → bucket "769–1280px" with breakpoints [375,768,1280]
+    expect(out.viewportBucket).toMatch(/1280/);
+  });
+
+  it("uses tab.url and tab.title verbatim, defaulting to empty string", () => {
+    const out = buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan(), tab: { url: "https://x.com", title: "x" }, viewports: [375],
+    });
+    expect(out.url).toBe("https://x.com");
+    expect(out.title).toBe("x");
+
+    const noTab = buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan(), tab: {}, viewports: [375],
+    });
+    expect(noTab.url).toBe("");
+    expect(noTab.title).toBe("");
   });
 });
 

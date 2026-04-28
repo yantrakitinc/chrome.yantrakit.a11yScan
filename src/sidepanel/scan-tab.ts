@@ -1253,6 +1253,36 @@ export function severityOrder(impact: string): number {
 }
 
 /**
+ * Build an observer history entry from a manual scan result + the active
+ * tab + viewport breakpoints. Pure-ish — depends on `id` and `timestamp`
+ * being passed in so tests can pin the values; production passes
+ * uuid()/isoNow().
+ *
+ * Used by F04-AC8 ("manual scans logged to observer when Observer is on").
+ * Exported for tests.
+ */
+export function buildObserverEntry(s: {
+  id: string;
+  timestamp: string;
+  scanResult: iScanResult;
+  tab: { url?: string; title?: string; width?: number };
+  viewports: number[];
+}): iObserverEntry {
+  const viewportWidth = s.tab.width ?? 1280;
+  return {
+    id: s.id,
+    url: s.tab.url || "",
+    title: s.tab.title || "",
+    timestamp: s.timestamp,
+    source: "manual",
+    violations: s.scanResult.violations,
+    passes: s.scanResult.passes,
+    violationCount: s.scanResult.violations.reduce((sum, v) => sum + v.nodes.length, 0),
+    viewportBucket: getViewportBucket(viewportWidth, s.viewports),
+  };
+}
+
+/**
  * Merge a multi-viewport scan result into a single iScanResult that the
  * results renderer can consume. Uses the first viewport's metadata
  * (url/timestamp/etc.) and concatenates `shared + viewportSpecific`
@@ -1563,21 +1593,13 @@ function attachScanTabListeners(): void {
           if (state.observer && state.lastScanResult) {
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
               const tab = tabs[0];
-              const scanResult = state.lastScanResult!;
-              const viewportWidth = (tab as { width?: number }).width ?? 1280;
-              const entry: iObserverEntry = {
+              const entry = buildObserverEntry({
                 id: uuid(),
-                url: tab?.url || "",
-                title: tab?.title || "",
                 timestamp: isoNow(),
-                source: "manual",
-                violations: scanResult.violations,
-                passes: scanResult.passes,
-                violationCount: scanResult.violations.reduce(
-                  (sum, v) => sum + v.nodes.length, 0
-                ),
-                viewportBucket: getViewportBucket(viewportWidth, state.viewports),
-              };
+                scanResult: state.lastScanResult!,
+                tab: tab ? { url: tab.url, title: tab.title, width: (tab as { width?: number }).width } : {},
+                viewports: state.viewports,
+              });
               sendMessage({ type: "OBSERVER_LOG_ENTRY", payload: entry });
               observerLoaded = false;
             });
