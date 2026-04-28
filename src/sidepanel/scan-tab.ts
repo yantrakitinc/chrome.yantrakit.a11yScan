@@ -2082,11 +2082,33 @@ export function buildJsonReportFrom(s: {
 }
 
 function buildHtmlReport(): string {
-  // Caller (the export-html / export-pdf click handlers) already gated on
-  // state.lastScanResult; this function is only entered when it's set.
-  const r = state.lastScanResult;
-  if (!r) throw new Error("buildHtmlReport called without a single-page scan result");
-  const totalViolationNodes = r.violations.reduce((s, v) => s + v.nodes.length, 0);
+  if (!state.lastScanResult) throw new Error("buildHtmlReport called without a single-page scan result");
+  return buildHtmlReportFrom({
+    scan: state.lastScanResult,
+    wcagVersion: state.wcagVersion,
+    wcagLevel: state.wcagLevel,
+    manualReview: state.manualReview,
+    ariaWidgets: state.ariaWidgets,
+  });
+}
+
+/**
+ * Build a self-contained HTML report. The output is downloaded by the user
+ * and opened standalone, so all CSS is inlined and color literals are used
+ * directly (the design tokens aren't available outside the side panel).
+ *
+ * Pure; exported for tests. Throws if `scan` is null since the caller
+ * gates on state.lastScanResult.
+ */
+export function buildHtmlReportFrom(s: {
+  scan: iScanResult;
+  wcagVersion: string;
+  wcagLevel: string;
+  manualReview: Record<string, "pass" | "fail" | "na" | null>;
+  ariaWidgets: iAriaWidget[];
+}): string {
+  const r = s.scan;
+  const totalViolationNodes = r.violations.reduce((sum, v) => sum + v.nodes.length, 0);
   const totalRules = r.violations.length + r.passes.length;
   const passRate = totalRules > 0 ? Math.round((r.passes.length / totalRules) * 100) : 100;
   const severityColor: Record<string, string> = { critical: "#991b1b", serious: "#c2410c", moderate: "#a16207", minor: "#4b5563" };
@@ -2118,7 +2140,7 @@ function buildHtmlReport(): string {
 <div class="meta">
   <div><strong>URL:</strong> ${escHtml(r.url)}</div>
   <div><strong>Scanned:</strong> ${new Date(r.timestamp).toLocaleString()}</div>
-  <div><strong>WCAG:</strong> ${state.wcagVersion} ${state.wcagLevel} &middot; <strong>Duration:</strong> ${r.scanDurationMs}ms</div>
+  <div><strong>WCAG:</strong> ${s.wcagVersion} ${s.wcagLevel} &middot; <strong>Duration:</strong> ${r.scanDurationMs}ms</div>
 </div>
 <div class="summary">
   <div class="summary-card"><div class="num" style="color:var(--ds-red-700)">${totalViolationNodes}</div><div class="label">Violations</div></div>
@@ -2135,20 +2157,20 @@ ${r.violations.sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact))
 </div>`).join("")}
 <h2>Passed Rules (${r.passes.length})</h2>
 ${r.passes.map((p) => `<div class="pass">&check; ${escHtml(p.id)} — ${escHtml(p.description)} (${p.nodes.length} elements)</div>`).join("")}
-${state.ariaWidgets.length > 0 ? `
-<h2>ARIA Widgets (${state.ariaWidgets.length})</h2>
-${state.ariaWidgets.map((w) => `<div class="pass">${w.failCount > 0 ? "&cross" : "&check"} ${escHtml(w.role)} — ${escHtml(w.label)} (${w.failCount} issues)</div>`).join("")}
+${s.ariaWidgets.length > 0 ? `
+<h2>ARIA Widgets (${s.ariaWidgets.length})</h2>
+${s.ariaWidgets.map((w) => `<div class="pass">${w.failCount > 0 ? "&cross" : "&check"} ${escHtml(w.role)} — ${escHtml(w.label)} (${w.failCount} issues)</div>`).join("")}
 ` : ""}
 ${(() => {
-  const allCriteria = getManualReviewCriteria(state.wcagVersion, state.wcagLevel);
-  const pageElements = state.lastScanResult?.pageElements;
+  const allCriteria = getManualReviewCriteria(s.wcagVersion, s.wcagLevel);
+  const pageElements = r.pageElements;
   const filteredCriteria = pageElements
     ? allCriteria.filter((c) => !c.relevantWhen || pageElements[c.relevantWhen as keyof typeof pageElements])
     : allCriteria;
-  const reviewedCount = Object.values(state.manualReview).filter((v) => v !== null).length;
+  const reviewedCount = Object.values(s.manualReview).filter((v) => v !== null).length;
   if (reviewedCount === 0) return "";
   const rows = filteredCriteria.map((c) => {
-    const status = state.manualReview[c.id] ?? null;
+    const status = s.manualReview[c.id] ?? null;
     const color = status === "pass" ? "#047857" : status === "fail" ? "#b91c1c" : status === "na" ? "#52525b" : "#a1a1aa";
     const label = status === "pass" ? "Pass" : status === "fail" ? "Fail" : status === "na" ? "N/A" : "Not reviewed";
     return `<tr><td style="padding:4px 8px;font-size:12px">${escHtml(c.id)}</td><td style="padding:4px 8px;font-size:12px">${escHtml(c.name)}</td><td style="padding:4px 8px;font-size:12px;font-weight:700;color:${color}">${label}</td></tr>`;

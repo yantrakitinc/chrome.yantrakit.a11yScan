@@ -9,7 +9,7 @@ import {
   renderModeTogglesHtml, renderCollapsedToggleHtml, renderToolbarContentHtml,
   renderExpandedToggleHtml, renderMvCheckboxHtml,
   renderCrawlConfigHtml, renderUrlListPanelHtml,
-  buildJsonReportFrom,
+  buildJsonReportFrom, buildHtmlReportFrom,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -816,6 +816,91 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("buildHtmlReportFrom", () => {
+  function pageScan(overrides: Partial<iScanResult> = {}): iScanResult {
+    return {
+      url: "https://example.com",
+      timestamp: "2026-01-01T00:00:00Z",
+      violations: [],
+      passes: [],
+      incomplete: [],
+      summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: {
+        hasVideo: false, hasAudio: false, hasForms: false, hasImages: false,
+        hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false,
+        hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false,
+      },
+      scanDurationMs: 100,
+      ...overrides,
+    };
+  }
+  function s(scan: iScanResult, overrides: Partial<Parameters<typeof buildHtmlReportFrom>[0]> = {}) {
+    return {
+      scan,
+      wcagVersion: "2.2",
+      wcagLevel: "AA",
+      manualReview: {},
+      ariaWidgets: [],
+      ...overrides,
+    };
+  }
+
+  it("emits a complete html document with DOCTYPE + html element", () => {
+    const out = buildHtmlReportFrom(s(pageScan()));
+    expect(out).toMatch(/^<!DOCTYPE html>/);
+    expect(out).toMatch(/<html lang="en">/);
+    expect(out).toMatch(/<\/html>/);
+  });
+
+  it("includes URL, scan timestamp, and WCAG metadata in the header", () => {
+    const out = buildHtmlReportFrom(s(pageScan({ url: "https://x.com/page" }), { wcagVersion: "2.1", wcagLevel: "A" }));
+    expect(out).toMatch(/https:\/\/x\.com\/page/);
+    expect(out).toMatch(/2\.1 A/);
+  });
+
+  it("escapes html-injection in URL, violation summaries, and selectors", () => {
+    const out = buildHtmlReportFrom(s(pageScan({
+      url: "https://x.com/<script>",
+      violations: [{ id: "x", impact: "serious", description: "<svg/>", help: "<x>", helpUrl: "", tags: [],
+        nodes: [{ selector: "<x>", html: "", failureSummary: "<script>alert(1)</script>" }] }],
+    })));
+    expect(out).not.toMatch(/<script>alert/);
+    expect(out).toMatch(/&lt;script&gt;/);
+  });
+
+  it("sorts violations critical-first", () => {
+    const out = buildHtmlReportFrom(s(pageScan({
+      violations: [
+        { id: "minor-rule", impact: "minor", description: "minor", help: "h", helpUrl: "", tags: [], nodes: [] },
+        { id: "critical-rule", impact: "critical", description: "critical", help: "h", helpUrl: "", tags: [], nodes: [] },
+      ],
+    })));
+    expect(out.indexOf("critical-rule")).toBeLessThan(out.indexOf("minor-rule"));
+  });
+
+  it("includes the ARIA widgets section only when widgets exist", () => {
+    const noAria = buildHtmlReportFrom(s(pageScan()));
+    expect(noAria).not.toMatch(/<h2>ARIA Widgets/);
+    const withAria = buildHtmlReportFrom(s(pageScan(), {
+      ariaWidgets: [{ role: "tablist", selector: "#x", label: "Tabs", html: "", checks: [], passCount: 0, failCount: 1 }],
+    }));
+    expect(withAria).toMatch(/<h2>ARIA Widgets/);
+  });
+
+  it("includes the Manual Review section only when ≥1 status was recorded", () => {
+    const none = buildHtmlReportFrom(s(pageScan()));
+    expect(none).not.toMatch(/<h2>Manual Review/);
+    const some = buildHtmlReportFrom(s(pageScan(), { manualReview: { "1.4.3": "pass" } }));
+    expect(some).toMatch(/<h2>Manual Review/);
+  });
+
+  it("filters Manual Review section by relevantWhen against pageElements", () => {
+    // 1.2.4 requires hasVideo; with hasVideo=false (default), the criterion is filtered out
+    const out = buildHtmlReportFrom(s(pageScan(), { manualReview: { "1.2.4": "pass", "1.4.3": "pass" } }));
+    expect(out).toMatch(/1\.4\.3/);
   });
 });
 
