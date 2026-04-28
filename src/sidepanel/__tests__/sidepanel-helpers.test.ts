@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared, switchTab, updateTabDisabledStates, state } from "../sidepanel";
+import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared, switchTab, updateTabDisabledStates, state, buildElementNotFoundToast } from "../sidepanel";
 
 describe("CVD_MATRICES — color-vision-deficiency simulation matrices (F08)", () => {
   it("includes the 8 documented CVD presets", () => {
@@ -187,6 +187,26 @@ describe("switchTab + updateTabDisabledStates", () => {
     updateTabDisabledStates();
     expect((document.getElementById("tab-sr") as HTMLButtonElement).disabled).toBe(false);
     expect((document.getElementById("tab-kb") as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+describe("buildElementNotFoundToast", () => {
+  it("creates a div with role=alert and aria-live=assertive", () => {
+    const toast = buildElementNotFoundToast();
+    expect(toast.tagName.toLowerCase()).toBe("div");
+    expect(toast.getAttribute("role")).toBe("alert");
+    expect(toast.getAttribute("aria-live")).toBe("assertive");
+  });
+  it("uses the default message 'Element not found on page'", () => {
+    expect(buildElementNotFoundToast().textContent).toBe("Element not found on page");
+  });
+  it("respects a custom message argument", () => {
+    expect(buildElementNotFoundToast("Custom").textContent).toBe("Custom");
+  });
+  it("applies sticky-top + red styling tokens", () => {
+    const toast = buildElementNotFoundToast();
+    expect(toast.style.cssText).toMatch(/sticky/);
+    expect(toast.style.cssText).toMatch(/--ds-red/);
   });
 });
 

@@ -17,6 +17,27 @@ import { renderAiChatTab, openAiHistoryPanel } from "./ai-tab";
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════
+   Pure helpers — exported for testing
+   ═══════════════════════════════════════════════════════════════════ */
+
+/**
+ * Build the "Element not found on page" toast that shows when a HIGHLIGHT
+ * message comes back with found=false. Returns the styled HTMLElement so
+ * callers can prepend it into the active tab panel and remove after 3s.
+ *
+ * Pure (depends only on document.createElement which is universally
+ * available); exported for tests.
+ */
+export function buildElementNotFoundToast(message = "Element not found on page"): HTMLElement {
+  const toast = document.createElement("div");
+  toast.setAttribute("role", "alert");
+  toast.setAttribute("aria-live", "assertive");
+  toast.textContent = message;
+  toast.style.cssText = "position:sticky;top:0;z-index:100;padding:8px 12px;background:var(--ds-red-50);border-bottom:1px solid var(--ds-red-300);color:var(--ds-red-700);font-size:11px;font-weight:700;text-align:center";
+  return toast;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Pure state reducers — exported for testing
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -416,11 +437,7 @@ function initMessageListener(): void {
         if (!(msg.payload as { found: boolean }).found) {
           const activePanel = document.querySelector<HTMLElement>(".tab-panel:not([hidden])");
           if (activePanel) {
-            const toast = document.createElement("div");
-            toast.setAttribute("role", "alert");
-            toast.setAttribute("aria-live", "assertive");
-            toast.textContent = "Element not found on page";
-            toast.style.cssText = "position:sticky;top:0;z-index:100;padding:8px 12px;background:var(--ds-red-50);border-bottom:1px solid var(--ds-red-300);color:var(--ds-red-700);font-size:11px;font-weight:700;text-align:center";
+            const toast = buildElementNotFoundToast();
             activePanel.prepend(toast);
             setTimeout(() => toast.remove(), 3000);
           }
