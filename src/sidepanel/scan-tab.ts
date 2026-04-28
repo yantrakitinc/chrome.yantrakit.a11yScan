@@ -227,11 +227,30 @@ function renderExpandedToggle(busy: boolean): string {
 }
 
 function renderCollapsedToggle(): string {
+  return renderCollapsedToggleHtml({
+    crawl: state.crawl,
+    observer: state.observer,
+    movie: state.movie,
+    mv: state.mv,
+    wcagVersion: state.wcagVersion,
+    wcagLevel: state.wcagLevel,
+  });
+}
+
+/**
+ * Render the collapsed settings toolbar showing the WCAG level + active
+ * scan-mode chips. ≤2 modes render as individual chips; ≥3 collapse to
+ * an "N modes" summary chip. Pure; exported for tests.
+ */
+export function renderCollapsedToggleHtml(s: {
+  crawl: boolean; observer: boolean; movie: boolean; mv: boolean;
+  wcagVersion: string; wcagLevel: string;
+}): string {
   const modes = [
-    state.crawl && "Crawl",
-    state.observer && "Observer",
-    state.movie && "Movie",
-    state.mv && "Multi-Viewport",
+    s.crawl && "Crawl",
+    s.observer && "Observer",
+    s.movie && "Movie",
+    s.mv && "Multi-Viewport",
   ].filter(Boolean);
 
   const modeColors: Record<string, string> = {
@@ -250,7 +269,7 @@ function renderCollapsedToggle(): string {
   }
 
   return `
-    <span style="font-size:11px;font-weight:600;color:var(--ds-zinc-700)">${state.wcagVersion} ${state.wcagLevel}</span>
+    <span style="font-size:11px;font-weight:600;color:var(--ds-zinc-700)">${s.wcagVersion} ${s.wcagLevel}</span>
     ${modeHtml}
     <span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--ds-zinc-500);margin-left:auto">
       <svg aria-hidden="true" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
@@ -259,11 +278,19 @@ function renderCollapsedToggle(): string {
 }
 
 function renderModeToggles(busy: boolean): string {
+  return renderModeTogglesHtml({ crawl: state.crawl, movie: state.movie, busy });
+}
+
+/**
+ * Render the Crawl / Observe / Movie mode-toggle row.
+ * Observe is intentionally hard-disabled (coming soon). Pure; exported for tests.
+ */
+export function renderModeTogglesHtml(s: { crawl: boolean; movie: boolean; busy: boolean }): string {
   return `
     <div class="mode-row" role="group" aria-label="Scan mode">
-      <button class="mode-btn mode-crawl" aria-pressed="${state.crawl}" ${busy ? "disabled" : ""} data-mode="crawl">Crawl</button>
+      <button class="mode-btn mode-crawl" aria-pressed="${s.crawl}" ${s.busy ? "disabled" : ""} data-mode="crawl">Crawl</button>
       <button class="mode-btn mode-observe" disabled aria-disabled="true" aria-label="Observe mode — coming soon" style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">Observe<span aria-hidden="true" style="font-size:8px;font-weight:800;color:var(--ds-amber-700);position:absolute;top:-2px;right:-2px;background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:3px;padding:0 3px;line-height:1.4">SOON</span></button>
-      <button class="mode-btn mode-movie" aria-pressed="${state.movie}" ${busy ? "disabled" : ""} data-mode="movie">Movie</button>
+      <button class="mode-btn mode-movie" aria-pressed="${s.movie}" ${s.busy ? "disabled" : ""} data-mode="movie">Movie</button>
     </div>
   `;
 }
@@ -1120,10 +1147,22 @@ function renderToolbar(): string {
 }
 
 function renderToolbarContent(): string {
-  // HTML/PDF reports are single-page only; crawl-only data has no compatible
-  // layout in those formats yet, so disable them when no single-page scan.
-  const singlePageScan = !!state.lastScanResult;
-  const disabledAttr = singlePageScan ? "" : 'disabled aria-disabled="true" title="Run a single-page scan to enable this export"';
+  return renderToolbarContentHtml({
+    hasSinglePageScan: !!state.lastScanResult,
+    violationsOverlayOn: state.violationsOverlayOn,
+  });
+}
+
+/**
+ * Render the export/overlay toolbar inside the scan tab. HTML/PDF exports
+ * are disabled when there's no single-page scan because those formats
+ * don't have a crawl-only layout. Pure; exported for tests.
+ */
+export function renderToolbarContentHtml(s: {
+  hasSinglePageScan: boolean;
+  violationsOverlayOn: boolean;
+}): string {
+  const disabledAttr = s.hasSinglePageScan ? "" : 'disabled aria-disabled="true" title="Run a single-page scan to enable this export"';
   return `
       <div class="toolbar-row">
         <span class="toolbar-label" id="export-label">Export</span>
@@ -1134,7 +1173,7 @@ function renderToolbarContent(): string {
       </div>
       <div class="toolbar-row">
         <span class="toolbar-label">Highlight</span>
-        <button class="toolbar-btn${state.violationsOverlayOn ? " active" : ""}" id="toggle-violations" aria-pressed="${state.violationsOverlayOn}" ${state.lastScanResult ? "" : 'disabled aria-disabled="true"'}>Violations</button>
+        <button class="toolbar-btn${s.violationsOverlayOn ? " active" : ""}" id="toggle-violations" aria-pressed="${s.violationsOverlayOn}" ${s.hasSinglePageScan ? "" : 'disabled aria-disabled="true"'}>Violations</button>
       </div>
   `;
 }

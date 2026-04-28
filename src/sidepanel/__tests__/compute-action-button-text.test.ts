@@ -6,6 +6,7 @@ import {
   renderEmptyState, renderSubTabsHtml, renderManualReviewHtml, renderAriaResultsHtml, renderResults,
   renderCrawlResultsHtml, renderObserverListInnerHtml,
   renderScanProgressHtml, renderCrawlProgressHtml, renderPageRuleWaitHtml,
+  renderModeTogglesHtml, renderCollapsedToggleHtml, renderToolbarContentHtml,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -370,6 +371,65 @@ describe("renderResults — single-page render shape", () => {
     }));
     // 3 violation nodes
     expect(out).toMatch(/>3<\/div>[\s\S]*?Violations/);
+  });
+});
+
+describe("renderModeTogglesHtml", () => {
+  it("aria-pressed mirrors crawl + movie booleans", () => {
+    const out = renderModeTogglesHtml({ crawl: true, movie: false, busy: false });
+    expect(out).toMatch(/mode-crawl[^>]*aria-pressed="true"/);
+    expect(out).toMatch(/mode-movie[^>]*aria-pressed="false"/);
+  });
+  it("disables every button when busy=true", () => {
+    const out = renderModeTogglesHtml({ crawl: false, movie: false, busy: true });
+    expect((out.match(/disabled/g) ?? []).length).toBeGreaterThanOrEqual(3);
+  });
+  it("Observe is always disabled (coming soon)", () => {
+    expect(renderModeTogglesHtml({ crawl: false, movie: false, busy: false }))
+      .toMatch(/mode-observe[^>]*disabled/);
+  });
+});
+
+describe("renderCollapsedToggleHtml", () => {
+  function s(overrides: Partial<Parameters<typeof renderCollapsedToggleHtml>[0]> = {}) {
+    return { crawl: false, observer: false, movie: false, mv: false, wcagVersion: "2.2", wcagLevel: "AA", ...overrides };
+  }
+  it("renders 'Single page' when no modes are active", () => {
+    expect(renderCollapsedToggleHtml(s())).toMatch(/Single page/);
+  });
+  it("renders one chip per active mode (≤2)", () => {
+    const out = renderCollapsedToggleHtml(s({ crawl: true, mv: true }));
+    expect(out).toMatch(/Crawl/);
+    expect(out).toMatch(/Multi-Viewport/);
+  });
+  it("collapses to 'N modes' summary when ≥3 modes are active", () => {
+    expect(renderCollapsedToggleHtml(s({ crawl: true, observer: true, movie: true }))).toMatch(/3 modes/);
+  });
+  it("shows the WCAG version + level prominently", () => {
+    expect(renderCollapsedToggleHtml(s({ wcagVersion: "2.1", wcagLevel: "A" }))).toMatch(/2\.1 A/);
+  });
+});
+
+describe("renderToolbarContentHtml", () => {
+  it("HTML + PDF buttons are disabled when no single-page scan", () => {
+    const out = renderToolbarContentHtml({ hasSinglePageScan: false, violationsOverlayOn: false });
+    expect(out).toMatch(/id="export-html"[^>]*disabled/);
+    expect(out).toMatch(/id="export-pdf"[^>]*disabled/);
+  });
+  it("HTML + PDF buttons are enabled when single-page scan exists", () => {
+    const out = renderToolbarContentHtml({ hasSinglePageScan: true, violationsOverlayOn: false });
+    expect(out).not.toMatch(/id="export-html"[^>]*disabled/);
+    expect(out).not.toMatch(/id="export-pdf"[^>]*disabled/);
+  });
+  it("violations toggle aria-pressed reflects current overlay state", () => {
+    expect(renderToolbarContentHtml({ hasSinglePageScan: true, violationsOverlayOn: true }))
+      .toMatch(/id="toggle-violations"[^>]*aria-pressed="true"/);
+    expect(renderToolbarContentHtml({ hasSinglePageScan: true, violationsOverlayOn: false }))
+      .toMatch(/id="toggle-violations"[^>]*aria-pressed="false"/);
+  });
+  it("violations toggle is disabled when no single-page scan", () => {
+    expect(renderToolbarContentHtml({ hasSinglePageScan: false, violationsOverlayOn: false }))
+      .toMatch(/id="toggle-violations"[^>]*disabled/);
   });
 });
 
