@@ -194,6 +194,59 @@ export function stripFragment(url: string): string {
   }
 }
 
+/**
+ * Find the page rule (if any) that matches a URL. Each rule's `pattern` is
+ * tried as a regex first; if compilation fails, falls back to substring
+ * match. Returns the first matching rule or null.
+ *
+ * Pure; exported for tests. Used by the crawl engine to decide when to
+ * pause and wait for user action (login, interaction, deferred-content).
+ */
+export function matchPageRule(
+  url: string,
+  pageRules: { pattern: string; waitType: string; description: string }[] | undefined,
+): { pattern: string; waitType: string; description: string } | null {
+  if (!pageRules || pageRules.length === 0) return null;
+  for (const rule of pageRules) {
+    let matched = false;
+    try {
+      matched = new RegExp(rule.pattern).test(url) || url.includes(rule.pattern);
+    } catch {
+      matched = url.includes(rule.pattern);
+    }
+    if (matched) return rule;
+  }
+  return null;
+}
+
+/**
+ * Apply testConfig wcag + rules overrides on top of a base remote config.
+ * Pure; exported for tests. Mutates a shallow clone of `config.rules` —
+ * the input is not modified.
+ *
+ * Source of truth: R-CONFIG. include and exclude are mutually exclusive
+ * by validator-time enforcement; this function applies whichever is set.
+ */
+export function applyTestConfigOverrides(
+  config: { wcagVersion?: string; wcagLevel?: string; rules?: Record<string, { enabled: boolean }> },
+  testConfig: iTestConfig | null,
+): { wcagVersion?: string; wcagLevel?: string; rules?: Record<string, { enabled: boolean }> } {
+  const out = { ...config, rules: { ...(config.rules || {}) } };
+  if (testConfig?.wcag?.version) out.wcagVersion = testConfig.wcag.version;
+  if (testConfig?.wcag?.level) out.wcagLevel = testConfig.wcag.level;
+  if (testConfig?.rules?.include) {
+    const overrideRules: Record<string, { enabled: boolean }> = {};
+    for (const id of Object.keys(out.rules)) overrideRules[id] = { enabled: false };
+    for (const id of testConfig.rules.include) overrideRules[id] = { enabled: true };
+    out.rules = overrideRules;
+  } else if (testConfig?.rules?.exclude) {
+    const overrideRules = { ...out.rules };
+    for (const id of testConfig.rules.exclude) overrideRules[id] = { enabled: false };
+    out.rules = overrideRules;
+  }
+  return out;
+}
+
 async function processCrawlQueue(): Promise<void> {
   while (crawlState.queue.length > 0) {
     if (shouldCancel) return;
@@ -212,26 +265,17 @@ async function processCrawlQueue(): Promise<void> {
     const isGated = isUrlGated(url, crawlOptions?.auth?.gatedUrls);
 
     // Check page rules
-    if (crawlOptions?.pageRules) {
-      const matchedRule = crawlOptions.pageRules.find((rule) => {
-        try {
-          return new RegExp(rule.pattern).test(url) || url.includes(rule.pattern);
-        } catch {
-          return url.includes(rule.pattern);
-        }
+    const matchedRule = matchPageRule(url, crawlOptions?.pageRules);
+    if (matchedRule) {
+      crawlState.currentUrl = url;
+      crawlState.status = "wait";
+      broadcastState();
+      chrome.runtime.sendMessage({
+        type: "CRAWL_WAITING_FOR_USER",
+        payload: { url, waitType: matchedRule.waitType, description: matchedRule.description },
       });
-
-      if (matchedRule) {
-        crawlState.currentUrl = url;
-        crawlState.status = "wait";
-        broadcastState();
-        chrome.runtime.sendMessage({
-          type: "CRAWL_WAITING_FOR_USER",
-          payload: { url, waitType: matchedRule.waitType, description: matchedRule.description },
-        });
-        shouldPause = true;
-        return; // wait for USER_CONTINUE
-      }
+      shouldPause = true;
+      return; // wait for USER_CONTINUE
     }
 
     // Navigate and scan
@@ -248,21 +292,8 @@ async function processCrawlQueue(): Promise<void> {
 
       // Inject and scan
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
-      const config = await getConfig();
-
-      // Apply testConfig overrides (wcag, rules) so crawl scans respect the loaded config
-      if (crawlTestConfig?.wcag?.version) config.wcagVersion = crawlTestConfig.wcag.version;
-      if (crawlTestConfig?.wcag?.level) config.wcagLevel = crawlTestConfig.wcag.level;
-      if (crawlTestConfig?.rules?.include) {
-        const overrideRules: Record<string, { enabled: boolean }> = {};
-        for (const [id] of Object.entries(config.rules || {})) overrideRules[id] = { enabled: false };
-        for (const id of crawlTestConfig.rules.include) overrideRules[id] = { enabled: true };
-        config.rules = overrideRules;
-      } else if (crawlTestConfig?.rules?.exclude) {
-        const overrideRules: Record<string, { enabled: boolean }> = { ...config.rules };
-        for (const id of crawlTestConfig.rules.exclude) overrideRules[id] = { enabled: false };
-        config.rules = overrideRules;
-      }
+      const baseConfig = await getConfig();
+      const config = applyTestConfigOverrides(baseConfig, crawlTestConfig) as typeof baseConfig;
 
       // Activate mocks before scanning if testConfig has mocks
       if (crawlTestConfig?.mocks && crawlTestConfig.mocks.length > 0) {

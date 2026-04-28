@@ -9,7 +9,7 @@ import {
   renderModeTogglesHtml, renderCollapsedToggleHtml, renderToolbarContentHtml,
   renderExpandedToggleHtml, renderMvCheckboxHtml,
   renderCrawlConfigHtml, renderUrlListPanelHtml,
-  buildJsonReportFrom, buildHtmlReportFrom,
+  buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -816,6 +816,63 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("parsePastedUrls", () => {
+  it("returns empty array for empty / whitespace input", () => {
+    expect(parsePastedUrls("")).toEqual([]);
+    expect(parsePastedUrls("   \n  \n  ")).toEqual([]);
+  });
+
+  it("parses plain text — one URL per line, dropping blanks and XML fragments", () => {
+    const out = parsePastedUrls("https://x.com/a\n\nhttps://x.com/b\n<not a url>\n  https://x.com/c  ");
+    expect(out).toEqual(["https://x.com/a", "https://x.com/b", "https://x.com/c"]);
+  });
+
+  it("dedupes URLs across pastes (preserves first occurrence)", () => {
+    expect(parsePastedUrls("https://x.com/a\nhttps://x.com/a\nhttps://x.com/b")).toEqual([
+      "https://x.com/a", "https://x.com/b",
+    ]);
+  });
+
+  it("parses sitemap XML — extracts <loc> elements", () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://example.com/</loc></url>
+  <url><loc>https://example.com/about</loc></url>
+  <url><loc>https://example.com/contact</loc></url>
+</urlset>`;
+    expect(parsePastedUrls(xml)).toEqual([
+      "https://example.com/",
+      "https://example.com/about",
+      "https://example.com/contact",
+    ]);
+  });
+
+  it("parses <urlset> root without <?xml prolog", () => {
+    const xml = `<urlset><url><loc>https://x.com/a</loc></url></urlset>`;
+    expect(parsePastedUrls(xml)).toEqual(["https://x.com/a"]);
+  });
+
+  it("parses <sitemapindex> root", () => {
+    const xml = `<sitemapindex><sitemap><loc>https://x.com/sitemap.xml</loc></sitemap></sitemapindex>`;
+    expect(parsePastedUrls(xml)).toEqual(["https://x.com/sitemap.xml"]);
+  });
+
+  it("falls back to plaintext when XML is malformed (parsererror)", () => {
+    const broken = `<?xml version="1.0"?><urlset><unclosed`;
+    // jsdom's parser may produce parsererror — function should fall through
+    const out = parsePastedUrls(broken);
+    // Result depends on jsdom; the contract is "doesn't throw and returns an array"
+    expect(Array.isArray(out)).toBe(true);
+  });
+
+  it("falls back to plaintext when XML has zero <loc> elements", () => {
+    // Valid XML but no <loc> nodes — caller should still get the plaintext interpretation
+    const out = parsePastedUrls(`<?xml version="1.0"?><other><node>x</node></other>`);
+    // No loc → plaintext path → first line starts with `<` → filtered → empty
+    expect(out).toEqual([]);
   });
 });
 

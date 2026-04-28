@@ -1252,6 +1252,41 @@ export function severityOrder(impact: string): number {
   return { critical: 0, serious: 1, moderate: 2, minor: 3 }[impact] ?? 4;
 }
 
+/**
+ * Parse a paste-area string into a deduplicated list of URLs. Recognizes
+ * three input shapes:
+ *
+ * 1. Sitemap XML (<?xml…> or <urlset> or <sitemapindex> root) — extracts
+ *    every <loc> element's text content.
+ * 2. Plaintext URL list (one per line) — used when input doesn't start with
+ *    XML, OR when XML parsing fails (parsererror), OR when XML had zero
+ *    <loc> elements. Lines starting with `<` are dropped so partial XML
+ *    fragments don't sneak through.
+ * 3. Empty / whitespace-only input — returns an empty array.
+ *
+ * Pure; exported for tests. Used by the URL-list paste-area handler.
+ */
+export function parsePastedUrls(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  let urls: string[] = [];
+  if (trimmed.startsWith("<?xml") || trimmed.startsWith("<urlset") || trimmed.startsWith("<sitemapindex")) {
+    try {
+      const doc = new DOMParser().parseFromString(trimmed, "application/xml");
+      if (!doc.querySelector("parsererror")) {
+        urls = Array.from(doc.querySelectorAll("loc"))
+          .map((el) => el.textContent?.trim() || "")
+          .filter(Boolean);
+      }
+    } catch { /* fall through to plaintext */ }
+  }
+  if (urls.length === 0) {
+    urls = trimmed.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith("<"));
+  }
+  // Dedupe while preserving order
+  return Array.from(new Set(urls));
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════
    Event Listeners
@@ -1626,28 +1661,8 @@ function attachScanTabListeners(): void {
   document.getElementById("url-paste-add")?.addEventListener("click", () => {
     const ta = document.getElementById("url-paste-area") as HTMLTextAreaElement | null;
     if (!ta) return;
-    const text = ta.value.trim();
-    if (!text) return;
-    let newUrls: string[] = [];
-    if (text.startsWith("<?xml") || text.startsWith("<urlset") || text.startsWith("<sitemapindex")) {
-      // Parse sitemap XML. parseFromString does NOT throw on bad XML — it
-      // returns a document with a <parsererror> root, so check for that and
-      // fall through to plaintext mode rather than silently swallowing input.
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, "application/xml");
-      const parseFailed = !!doc.querySelector("parsererror");
-      if (!parseFailed) {
-        newUrls = Array.from(doc.querySelectorAll("loc"))
-          .map((el) => el.textContent?.trim() || "")
-          .filter(Boolean);
-      }
-    }
-    // Fallback: if not XML, or XML produced zero URLs, treat input as plain
-    // line-separated URLs. Preserves the user's input intent rather than
-    // silently dropping it.
-    if (newUrls.length === 0) {
-      newUrls = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith("<"));
-    }
+    const newUrls = parsePastedUrls(ta.value);
+    if (newUrls.length === 0) return;
     let added = 0;
     for (const u of newUrls) {
       if (!crawlUrlList.includes(u)) {

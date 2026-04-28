@@ -3,9 +3,9 @@
   "crawl": {
     "mode": "urllist",
     "urlList": [
-      "https://a11yscan.yantrakit.com/demo/tutorials/site-crawl/page-1",
-      "https://a11yscan.yantrakit.com/demo/tutorials/site-crawl/page-2",
-      "https://a11yscan.yantrakit.com/demo/tutorials/site-crawl/page-3"
+      "http://a11yscan.local:31469/demo/tutorials/site-crawl/page-1",
+      "http://a11yscan.local:31469/demo/tutorials/site-crawl/page-2",
+      "http://a11yscan.local:31469/demo/tutorials/site-crawl/page-3"
     ]
   }
 }
