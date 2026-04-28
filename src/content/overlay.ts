@@ -70,12 +70,15 @@ export function showViolationOverlay(violations: iViolation[]): void {
       outline.style.cssText = `position:absolute;top:${rect.top + window.scrollY}px;left:${rect.left + window.scrollX}px;width:${rect.width}px;height:${rect.height}px;border:2px solid ${color};box-shadow:0 0 4px ${color}, inset 0 0 4px ${color};pointer-events:none;z-index:${Z_INDEX};`;
       container.appendChild(outline);
 
-      // Badge
+      // Badge — capture the index per-iteration so click handlers don't all
+      // close over the final value of badgeIndex (which would make every badge
+      // send the same — last — index when clicked).
+      const myIndex = badgeIndex - 1;
       const badge = document.createElement("div");
       badge.textContent = String(badgeIndex);
       badge.style.cssText = `position:absolute;top:${rect.top + window.scrollY - 10}px;left:${rect.right + window.scrollX - 10}px;width:20px;height:20px;border-radius:50%;background:${color};color:#fff;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer;z-index:${Z_INDEX + 1};box-shadow:0 1px 3px rgba(0,0,0,0.4);`;
       badge.addEventListener("click", () => {
-        chrome.runtime.sendMessage({ type: "VIOLATION_BADGE_CLICKED", payload: { index: badgeIndex - 1 } });
+        chrome.runtime.sendMessage({ type: "VIOLATION_BADGE_CLICKED", payload: { index: myIndex } });
       });
       container.appendChild(badge);
       badgeIndex++;
