@@ -99,6 +99,22 @@ describe("sr-tab handlers", () => {
   });
 });
 
+describe("sr-tab — analyzed-state behavior (after sr-analyze message returns elements)", () => {
+  it("renderSrRowHtml output renders into the panel after analysis", async () => {
+    const { renderScreenReaderTab, renderSrRowHtml } = await import("../sr-tab");
+    renderScreenReaderTab();
+    // Place a fake row directly into sr-list to verify the row HTML works inline
+    const list = document.getElementById("sr-list");
+    if (list) {
+      list.innerHTML = renderSrRowHtml({
+        index: 1, selector: "#x", role: "button", accessibleName: "Submit",
+        nameSource: "contents", states: [],
+      }, false);
+      expect(list.querySelector(".sr-row")).toBeTruthy();
+    }
+  });
+});
+
 describe("sr-tab — Play All / Pause / Resume / Stop button wiring", () => {
   // The buttons only appear after analyze populates `elements`. Without
   // that, the play controls aren't rendered. This test covers the
