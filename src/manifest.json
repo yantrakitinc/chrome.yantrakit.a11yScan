@@ -3,7 +3,7 @@
   "name": "A11y Scan",
   "version": "0.2.0",
   "description": "Accessibility audit toolkit: axe-core scans with WCAG 2.2 mapping, visual overlays, site crawling, multi-viewport, screen reader simulation, and keyboard movie mode.",
-  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "windows", "tabs", "contextMenus"],
+  "permissions": ["scripting", "storage", "sidePanel", "windows", "tabs", "contextMenus"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",

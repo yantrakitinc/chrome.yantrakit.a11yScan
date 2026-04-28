@@ -4,6 +4,7 @@
  */
 
 import type { iRemoteConfig } from "./types";
+import { logWarn } from "./log";
 
 const CACHE_KEY = "a11yscan_config";
 const CACHE_TIMESTAMP_KEY = "a11yscan_config_timestamp";
@@ -44,7 +45,17 @@ export async function forceUpdateConfig(): Promise<iRemoteConfig> {
 }
 
 async function getCachedConfig(): Promise<iRemoteConfig | null> {
-  const data = await chrome.storage.local.get([CACHE_KEY, CACHE_TIMESTAMP_KEY]);
+  // chrome.storage.local can reject if the extension context was invalidated
+  // (rare — happens when the extension is reloaded mid-call). Treat any
+  // failure here as a cache miss so the caller falls through to the fresh
+  // fetch path instead of propagating the storage error to the user.
+  let data: Record<string, unknown>;
+  try {
+    data = await chrome.storage.local.get([CACHE_KEY, CACHE_TIMESTAMP_KEY]);
+  } catch (err) {
+    logWarn("config.getCachedConfig", "storage.local.get failed — treating as cache miss", err);
+    return null;
+  }
   const config = data[CACHE_KEY] as iRemoteConfig | undefined;
   const timestamp = data[CACHE_TIMESTAMP_KEY] as number | undefined;
   if (!config || !timestamp) return null;

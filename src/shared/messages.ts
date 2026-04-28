@@ -35,7 +35,6 @@ export type iMessage =
   | { type: "RUN_SCAN"; payload: { config: iRemoteConfig; isCrawl?: boolean } }
   | { type: "SCAN_RESULT"; payload: iScanResult }
   | { type: "SCAN_ERROR"; payload: { message: string } }
-  | { type: "SCAN_PROGRESS"; payload: { status: string } }
 
   /* ── Config ── */
   | { type: "FORCE_CONFIG_UPDATE" }
