@@ -3,6 +3,8 @@
  * Uses Chrome's built-in Gemini Nano for local AI.
  */
 
+import { escHtml } from "@shared/utils";
+
 /* ═══════════════════════════════════════════════════════════════════
    Data structures
    ═══════════════════════════════════════════════════════════════════ */
@@ -41,15 +43,15 @@ let historyPanelOpen = false;
  * Converts a small subset of Markdown to safe HTML.
  * Handles code blocks, inline code, bold, italic, and line breaks.
  */
-function renderMarkdown(text: string): string {
-  // Escape HTML first, then selectively un-escape for markdown constructs
-  const escaped = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
-  return escaped
+/**
+ * Tiny markdown-to-HTML for AI chat replies. Order is critical: HTML-escape
+ * first so user-supplied text can't inject tags, then unescape only the
+ * specific markdown constructs we recognize. Pure; exported for tests.
+ *
+ * Supports: ```fenced``` blocks, `inline` code, **bold**, *italic*, newline.
+ */
+export function renderMarkdown(text: string): string {
+  return escHtml(text)
     .replace(/```([\s\S]*?)```/g, '<pre style="background:#18181b;color:#e4e4e7;border-radius:4px;padding:8px;font-size:11px;font-family:monospace;overflow-x:auto;white-space:pre-wrap;margin:4px 0">$1</pre>')
     .replace(/`([^`]+)`/g, '<code style="background:#e4e4e7;color:#18181b;border-radius:3px;padding:1px 4px;font-size:11px;font-family:monospace">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
@@ -437,10 +439,6 @@ export function openAiChatWithContext(ruleId: string, description: string): void
    Utilities
    ═══════════════════════════════════════════════════════════════════ */
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+/** Local alias kept so call sites don't need to change. Delegates to the
+ *  shared escHtml helper. */
+const escapeHtml = escHtml;
