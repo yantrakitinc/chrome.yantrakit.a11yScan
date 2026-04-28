@@ -201,4 +201,60 @@ describe("ARIA_PATTERNS — accordion heuristic", () => {
     expect(check("accordion", "buttons-have-controls").validate(el('<button aria-expanded="true" aria-controls="p1">x</button>')).pass).toBe(true);
     expect(check("accordion", "buttons-have-controls").validate(el('<button aria-expanded="true">x</button>')).pass).toBe(false);
   });
+
+  it("parent-has-multiple-expanded-buttons fails when element has no parent", () => {
+    // Manually build an orphan: parse, then remove the parent reference.
+    // DOMParser-built elements always have a parent, so we use a fragment.
+    const orphan = document.createElement("button");
+    orphan.setAttribute("aria-expanded", "true");
+    // Don't append to anything — orphan.parentElement is null
+    const r = check("accordion", "parent-has-multiple-expanded-buttons").validate(orphan);
+    expect(r.pass).toBe(false);
+    expect(r.message).toMatch(/no parent/i);
+  });
+});
+
+describe("ARIA_PATTERNS — additional check coverage", () => {
+  it("menu.has-orientation passes when aria-orientation is present, fails when missing", () => {
+    expect(check("menu", "has-orientation").validate(el('<div role="menu" aria-orientation="vertical"></div>')).pass).toBe(true);
+    expect(check("menu", "has-orientation").validate(el('<div role="menu"></div>')).pass).toBe(false);
+  });
+
+  it("slider.has-valuenow passes only with aria-valuenow", () => {
+    expect(check("slider", "has-valuenow").validate(el('<div role="slider" aria-valuenow="5"></div>')).pass).toBe(true);
+    expect(check("slider", "has-valuenow").validate(el('<div role="slider"></div>')).pass).toBe(false);
+  });
+
+  it("radiogroup.has-radio-children counts radio descendants", () => {
+    expect(check("radiogroup", "has-radio-children").validate(
+      el('<div role="radiogroup"><div role="radio"></div><div role="radio"></div></div>')
+    ).pass).toBe(true);
+    expect(check("radiogroup", "has-radio-children").validate(el('<div role="radiogroup"></div>')).pass).toBe(false);
+  });
+
+  it("checkbox.has-checked passes only with aria-checked", () => {
+    expect(check("checkbox", "has-checked").validate(el('<div role="checkbox" aria-checked="false"></div>')).pass).toBe(true);
+    expect(check("checkbox", "has-checked").validate(el('<div role="checkbox"></div>')).pass).toBe(false);
+  });
+
+  it("switch.has-name passes with aria-label", () => {
+    expect(check("switch", "has-name").validate(el('<div role="switch" aria-label="Wifi" aria-checked="true"></div>')).pass).toBe(true);
+    expect(check("switch", "has-name").validate(el('<div role="switch" aria-checked="true"></div>')).pass).toBe(false);
+  });
+
+  it("tree.treeitems-have-expanded — empty tree returns pass=true", () => {
+    expect(check("tree", "treeitems-have-expanded").validate(el('<div role="tree"></div>')).pass).toBe(true);
+  });
+
+  it("tree.treeitems-have-expanded — at least one treeitem with aria-expanded passes", () => {
+    expect(check("tree", "treeitems-have-expanded").validate(
+      el('<div role="tree"><div role="treeitem" aria-expanded="true"></div><div role="treeitem"></div></div>')
+    ).pass).toBe(true);
+  });
+
+  it("tree.treeitems-have-expanded — none with aria-expanded fails", () => {
+    expect(check("tree", "treeitems-have-expanded").validate(
+      el('<div role="tree"><div role="treeitem"></div><div role="treeitem"></div></div>')
+    ).pass).toBe(false);
+  });
 });
