@@ -661,6 +661,29 @@ describe("renderObserverListInnerHtml", () => {
   it("renders the no-match message when filter excludes everything", () => {
     expect(renderObserverListInnerHtml([entry()], "no-match")).toMatch(/No entries match/);
   });
+
+  it("uses url as fallback when title is empty", () => {
+    const out = renderObserverListInnerHtml([entry({ title: "", url: "https://only-url.com/p" })], "");
+    expect(out).toMatch(/https:\/\/only-url\.com\/p/);
+    expect(out).not.toMatch(/Page A/);
+  });
+
+  it("zero violationCount renders green color, non-zero renders red", () => {
+    const greenOut = renderObserverListInnerHtml([entry({ violationCount: 0 })], "");
+    expect(greenOut).toMatch(/color:var\(--ds-green-700\)/);
+    const redOut = renderObserverListInnerHtml([entry({ violationCount: 3 })], "");
+    expect(redOut).toMatch(/color:var\(--ds-red-700\)/);
+  });
+
+  it("source 'manual' renders 'manual' label", () => {
+    const out = renderObserverListInnerHtml([entry({ source: "manual" })], "");
+    expect(out).toMatch(/>manual<\/span>/);
+  });
+
+  it("missing viewportBucket suppresses the badge", () => {
+    const out = renderObserverListInnerHtml([entry({ viewportBucket: "" })], "");
+    expect(out).not.toMatch(/var\(--ds-blue-100\)/);
+  });
 });
 
 describe("renderScanProgressHtml", () => {
