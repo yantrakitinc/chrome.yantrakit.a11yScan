@@ -8,6 +8,7 @@ import type { iObserverState, iObserverEntry, iObserverSettings } from "@shared/
 import { OBSERVER_STORAGE_KEYS, DEFAULT_OBSERVER_SETTINGS } from "@shared/types";
 import { isScannableUrl, matchesDomain, uuid, isoNow, getViewportBucket, DEFAULT_VIEWPORTS } from "@shared/utils";
 import { getConfig } from "@shared/config";
+import { logError } from "@shared/log";
 
 /** In-memory throttle map: URL → last scan timestamp */
 const throttleMap = new Map<string, number>();
@@ -96,8 +97,12 @@ export async function onTabUpdated(tabId: number, tab: chrome.tabs.Tab): Promise
       // Notify sidepanel
       chrome.runtime.sendMessage({ type: "OBSERVER_SCAN_COMPLETE", payload: { entry } });
     }
-  } catch {
-    // Content script injection failed — page may not allow it
+  } catch (err) {
+    // Content script injection or scan dispatch failed — typical causes are
+    // pages that block injection (chrome://, edge://, the chrome web store)
+    // OR a tab that closed mid-scan. Log so a user reporting "Observer
+    // missed pages" can see why in DevTools console.
+    logError("observer.onTabUpdated", `auto-scan failed for ${tab.url}`, err);
   }
 }
 

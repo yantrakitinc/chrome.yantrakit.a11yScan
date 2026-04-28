@@ -13,6 +13,7 @@ import type { iScreenReaderElement } from "@shared/types";
 import { srState } from "./state";
 import { CONTAINER_ROLES, composeContainerSpeechText, elementToSpeechText } from "./pure";
 import { rerender } from "./callbacks";
+import { logWarn } from "@shared/log";
 
 /** Cancel any in-progress speech and reset playback state to idle. */
 export function stopPlayback(): void {
@@ -114,6 +115,11 @@ export async function getSpeakTextForElement(el: iScreenReaderElement): Promise<
     if (result && (result as { type: string }).type === "READING_ORDER_RESULT") {
       return composeContainerSpeechText(el, (result as { payload: iScreenReaderElement[] }).payload);
     }
-  } catch { /* fall through */ }
+  } catch (err) {
+    // Scoped subtree fetch failed — Speak still works, but only announces
+    // the container's own role+name without its children. Warn so a user
+    // reporting "Speak on a region read nothing inside" can diagnose.
+    logWarn("sr-tab.getSpeakTextForElement", `scoped reading-order fetch failed for ${el.selector}`, err);
+  }
   return elementToSpeechText(el);
 }

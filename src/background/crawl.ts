@@ -7,6 +7,7 @@ import type { iCrawlOptions, iCrawlState, iCrawlAuth, iScanResult, iTestConfig }
 import { getConfig } from "@shared/config";
 import { isScannableUrl } from "@shared/utils";
 import { setCrawlActive } from "./observer";
+import { logError, logWarn, logDebug } from "@shared/log";
 
 const CRAWL_STORAGE_KEY = "crawlState";
 
@@ -123,6 +124,7 @@ async function startCrawl(options: iCrawlOptions): Promise<void> {
     try {
       await performAuth(options.auth, tab.id!);
     } catch (err) {
+      logError("crawl.startCrawl", `auth failed at ${options.auth.loginUrl}`, err);
       crawlState.status = "complete";
       crawlState.failed["auth"] = `Login failed: ${String(err)}`;
       setCrawlActive(false);
@@ -174,7 +176,14 @@ export function isUrlGated(url: string, gatedUrls?: { mode: string; patterns: st
     case "list": return gatedUrls.patterns.some((p) => url === p);
     case "prefix": return gatedUrls.patterns.some((p) => url.startsWith(p));
     case "regex": return gatedUrls.patterns.some((p) => {
-      try { return new RegExp(p).test(url); } catch { return false; }
+      try { return new RegExp(p).test(url); }
+      catch (err) {
+        // Invalid regex from user-provided gatedUrls config — log a warning
+        // so the user can fix the testConfig instead of silently treating
+        // the URL as un-gated.
+        logWarn("crawl.isUrlGated", `invalid regex pattern in gatedUrls: ${p}`, err);
+        return false;
+      }
     });
     default: return false;
   }
@@ -211,7 +220,11 @@ export function matchPageRule(
     let matched = false;
     try {
       matched = new RegExp(rule.pattern).test(url) || url.includes(rule.pattern);
-    } catch {
+    } catch (err) {
+      // Invalid regex — fall back to substring match so the rule still works
+      // for the common case of "just type the path" patterns. Warn so the
+      // user can fix the regex if they intended one.
+      logWarn("crawl.matchPageRule", `invalid regex pattern '${rule.pattern}' — falling back to substring match`, err);
       matched = url.includes(rule.pattern);
     }
     if (matched) return rule;
@@ -321,7 +334,13 @@ async function processCrawlQueue(): Promise<void> {
       if (crawlTestConfig?.mocks && crawlTestConfig.mocks.length > 0) {
         try {
           await chrome.tabs.sendMessage(tab.id, { type: "ACTIVATE_MOCKS", payload: { mocks: crawlTestConfig.mocks } });
-        } catch { /* content script not ready */ }
+        } catch (err) {
+          // Content script not ready yet (race after page navigation). The
+          // RUN_SCAN call below will inject + retry; mocks may not be applied
+          // for this single page if they were defined. Warn so the user
+          // knows their testConfig.mocks didn't take effect on `url`.
+          logWarn("crawl.processCrawlQueue", `ACTIVATE_MOCKS failed before scan of ${url}`, err);
+        }
       }
 
       const result = await chrome.tabs.sendMessage(tab.id, { type: "RUN_SCAN", payload: { config, isCrawl: true } });
@@ -360,6 +379,7 @@ async function processCrawlQueue(): Promise<void> {
         await sleep(crawlOptions.delay);
       }
     } catch (err) {
+      logError("crawl.processCrawlQueue", `page failed: ${url}`, err);
       crawlState.failed[url] = String(err);
       crawlState.visited.push(url);
       crawlState.pagesVisited++;
@@ -427,7 +447,11 @@ async function collectLinks(tabId: number, scope: string): Promise<string[]> {
       args: [scope],
     });
     return result?.result || [];
-  } catch {
+  } catch (err) {
+    // Most likely cause: page closed or navigated away mid-collection. The
+    // crawl recovers by treating the page as having no outgoing links, but
+    // log so a user reporting "Follow mode missed pages" can diagnose.
+    logWarn("crawl.collectLinks", `failed to collect links from tab ${tabId}`, err);
     return [];
   }
 }

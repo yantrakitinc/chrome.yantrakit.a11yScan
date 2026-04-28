@@ -16,6 +16,7 @@ import {
 import { openConfigDialog } from "../config-dialog";
 import { rerender, loadManualReviewFor } from "./callbacks";
 import { showError } from "./dom-utils";
+import { logError } from "@shared/log";
 
 export function attachScanButtonListeners(): void {
   // Scan button — branches between START_CRAWL (when Crawl mode + idle) and
@@ -101,15 +102,20 @@ export function attachScanButtonListeners(): void {
           sendMessage({ type: "SET_MOVIE_SPEED", payload: { speed } });
           sendMessage({ type: "START_MOVIE_MODE" });
         }
-        // Background ARIA scan
+        // Background ARIA scan — best-effort, decoupled from primary scan
         sendMessage({ type: "RUN_ARIA_SCAN" }).then((ariaResult) => {
           if (ariaResult && (ariaResult as { type: string }).type === "ARIA_SCAN_RESULT") {
             state.ariaWidgets = (ariaResult as { payload: iAriaWidget[] }).payload;
           }
-        }).catch(() => { /* ARIA scan failed silently */ });
+        }).catch((err) => {
+          // ARIA scan rejected — usually means the content script choked
+          // mid-discovery. Don't block the user (primary scan already
+          // succeeded) but log so the empty ARIA tab is explainable.
+          logError("scan-button.background-aria", "RUN_ARIA_SCAN rejected", err);
+        });
       }
     } catch (err) {
-      console.error("[A11y Scan] Scan failed:", err);
+      logError("scan-button.scan-btn", "scan dispatch failed", err);
       state.scanPhase = "idle";
       showError(String(err));
     }

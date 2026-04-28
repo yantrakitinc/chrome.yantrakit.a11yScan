@@ -11,6 +11,7 @@ import { renderScanTab, invalidateObserverCache } from "./scan-tab";
 import { renderScreenReaderTab, setScopeFromInspect } from "./sr-tab";
 import { renderKeyboardTab, onMovieTick, onMovieComplete } from "./kb-tab";
 import { renderAiChatTab, openAiHistoryPanel } from "./ai-tab";
+import { logDebug } from "@shared/log";
 
 /* ═══════════════════════════════════════════════════════════════════
    CVD Matrices (F08) — verified from codebase
@@ -275,7 +276,8 @@ export function switchTab(tabId: iTopTab): void {
   if (targetButton?.disabled) return;
   state.topTab = tabId;
   // Persist so reopening the side panel returns to this tab.
-  try { chrome.storage.session.set({ [TOP_TAB_STORAGE_KEY]: tabId }); } catch { /* session storage may not be available in tests */ }
+  try { chrome.storage.session.set({ [TOP_TAB_STORAGE_KEY]: tabId }); }
+  catch (err) { logDebug("sidepanel.switchTab", "session.set failed (likely a test env without chrome.storage.session)", err); }
 
   // Update tab buttons
   document.querySelectorAll<HTMLButtonElement>("#top-tabs .tab").forEach((tab) => {
