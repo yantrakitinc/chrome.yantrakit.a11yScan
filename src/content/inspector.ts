@@ -213,14 +213,28 @@ function removeHighlight(): void {
   }
 }
 
-function getAccessibleName(el: HTMLElement): string {
+/**
+ * Compute the accessible name for the inspector tooltip. Simpler than the
+ * SR-tab resolver — falls back through aria-label → title → text content
+ * (truncated at 80 chars). Pure; exported for tests.
+ */
+export function inspectorAccessibleName(el: HTMLElement): string {
   return el.getAttribute("aria-label") || el.getAttribute("title") || el.textContent?.trim().substring(0, 80) || "";
 }
 
-function isFocusable(el: HTMLElement): boolean {
+/**
+ * Whether an element can receive keyboard focus, for the inspector "is
+ * focusable" badge. Native focusable tags (a/button/input/select/textarea)
+ * count unless disabled; everything else needs tabindex ≥ 0. Pure;
+ * exported for tests.
+ */
+export function inspectorIsFocusable(el: HTMLElement): boolean {
   const tag = el.tagName.toLowerCase();
   if (["a", "button", "input", "select", "textarea"].includes(tag)) return !el.hasAttribute("disabled");
   return el.tabIndex >= 0;
 }
+
+const getAccessibleName = inspectorAccessibleName;
+const isFocusable = inspectorIsFocusable;
 
 const getSelector = buildElementSelector;

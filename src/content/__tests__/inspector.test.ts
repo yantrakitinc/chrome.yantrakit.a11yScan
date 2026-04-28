@@ -1,10 +1,57 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { inspectorAccessibleName, inspectorIsFocusable } from "../inspector";
 
 if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS.escape !== "function") {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (globalThis as any).CSS = { escape: (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, (c) => "\\" + c) };
 }
+
+function elFromHtml(html: string): HTMLElement {
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+  return doc.body.firstElementChild!.firstElementChild! as HTMLElement;
+}
+
+describe("inspectorAccessibleName", () => {
+  it("prefers aria-label over title and text content", () => {
+    expect(inspectorAccessibleName(elFromHtml('<button aria-label="Close" title="X">×</button>'))).toBe("Close");
+  });
+  it("falls back to title when no aria-label", () => {
+    expect(inspectorAccessibleName(elFromHtml('<button title="Help">?</button>'))).toBe("Help");
+  });
+  it("falls back to trimmed text content (truncated at 80 chars)", () => {
+    const long = "a".repeat(120);
+    expect(inspectorAccessibleName(elFromHtml(`<button>${long}</button>`)).length).toBe(80);
+  });
+  it("returns empty string when nothing available", () => {
+    expect(inspectorAccessibleName(elFromHtml('<button></button>'))).toBe("");
+  });
+  it("trims whitespace from text content", () => {
+    expect(inspectorAccessibleName(elFromHtml('<button>  hi  </button>'))).toBe("hi");
+  });
+});
+
+describe("inspectorIsFocusable", () => {
+  it("returns true for native focusable tags (a/button/input/select/textarea)", () => {
+    expect(inspectorIsFocusable(elFromHtml('<a href="#">x</a>'))).toBe(true);
+    expect(inspectorIsFocusable(elFromHtml('<button>x</button>'))).toBe(true);
+    expect(inspectorIsFocusable(elFromHtml('<input/>'))).toBe(true);
+    expect(inspectorIsFocusable(elFromHtml('<select></select>'))).toBe(true);
+    expect(inspectorIsFocusable(elFromHtml('<textarea></textarea>'))).toBe(true);
+  });
+  it("returns false for native focusable tag with disabled attribute", () => {
+    expect(inspectorIsFocusable(elFromHtml('<button disabled>x</button>'))).toBe(false);
+  });
+  it("returns true for any element with tabindex=0", () => {
+    expect(inspectorIsFocusable(elFromHtml('<div tabindex="0">x</div>'))).toBe(true);
+  });
+  it("returns false for div without tabindex", () => {
+    expect(inspectorIsFocusable(elFromHtml('<div>x</div>'))).toBe(false);
+  });
+  it("returns false for tabindex=-1", () => {
+    expect(inspectorIsFocusable(elFromHtml('<div tabindex="-1">x</div>'))).toBe(false);
+  });
+});
 
 // chrome.runtime.sendMessage is called when the inspector clicks; stub it.
 beforeEach(() => {
