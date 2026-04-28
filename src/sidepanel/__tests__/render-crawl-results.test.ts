@@ -23,7 +23,7 @@ describe("renderCrawlResultsHtml — by-page view", () => {
         url: "https://x.com/a",
         violations: [{ id: "color-contrast", impact: "serious" as const, description: "Contrast", help: "", helpUrl: "", tags: [], nodes: [{ selector: "#a", html: "", failureSummary: "" }, { selector: "#b", html: "", failureSummary: "" }], wcagCriteria: ["1.4.3"] }],
       }),
-      "https://x.com/b": makeScan({ url: "https://x.com/b", violations: [], passes: [{ id: "html-lang", impact: null as never, description: "", help: "", helpUrl: "", tags: [], nodes: [{ selector: "html", html: "", failureSummary: "" }], wcagCriteria: ["3.1.1"] }] }),
+      "https://x.com/b": makeScan({ url: "https://x.com/b", violations: [], passes: [{ id: "html-lang", description: "", tags: [], nodes: [{ selector: "html", html: "" }], wcagCriteria: ["3.1.1"] }] }),
     };
     const html = renderCrawlResultsHtml(results, {}, "page");
     expect(html).toMatch(/https:\/\/x\.com\/a/);
@@ -78,8 +78,8 @@ describe("renderResults — passes section renders when scan has passes", () => 
       url: "https://x.com",
       violations: [],
       passes: [
-        { id: "html-lang", impact: null as never, description: "Has lang attr", help: "", helpUrl: "", tags: [], nodes: [{ selector: "html", html: "<html lang=\"en\">", failureSummary: "" }], wcagCriteria: ["3.1.1"] },
-        { id: "image-alt", impact: null as never, description: "Has alt text", help: "", helpUrl: "", tags: [], nodes: [{ selector: "img.a", html: "<img alt='x'>", failureSummary: "" }, { selector: "img.b", html: "<img alt='y'>", failureSummary: "" }], wcagCriteria: ["1.1.1"] },
+        { id: "html-lang", description: "Has lang attr", tags: [], nodes: [{ selector: "html", html: "<html lang=\"en\">" }], wcagCriteria: ["3.1.1"] },
+        { id: "image-alt", description: "Has alt text", tags: [], nodes: [{ selector: "img.a", html: "<img alt='x'>" }, { selector: "img.b", html: "<img alt='y'>" }], wcagCriteria: ["1.1.1"] },
       ],
     });
     const html = renderResults(result);

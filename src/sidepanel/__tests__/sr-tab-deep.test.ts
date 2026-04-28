@@ -250,7 +250,9 @@ describe("sr-tab — speakWithVoices fallback when voices not loaded", () => {
     // The handler registers onvoiceschanged
     expect(onvoicesChangedCb).toBeTruthy();
     // Fire the voiceschanged callback — should call doSpeak
-    onvoicesChangedCb?.();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cb: any = onvoicesChangedCb;
+    cb?.();
     await new Promise((r) => setTimeout(r, 5));
     expect(speakInvocations.length).toBeGreaterThan(0);
   });
