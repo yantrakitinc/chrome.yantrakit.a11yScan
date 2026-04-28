@@ -12,6 +12,7 @@ import {
   buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls, addViewport, removeViewport,
   buildStartCrawlPayload, mergeMvResultToScan, buildObserverEntry, resetScanStateSlice,
   mergeNewUrlsIntoList, parseTextFileUrls, clearScanResultsSlice,
+  addManualUrlToList, removeUrlAtIndex,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -818,6 +819,39 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("addManualUrlToList", () => {
+  it("appends a new URL and reports added=true", () => {
+    const out = addManualUrlToList(["a"], "b");
+    expect(out.list).toEqual(["a", "b"]);
+    expect(out.added).toBe(true);
+  });
+  it("returns the input unchanged for a duplicate URL", () => {
+    const list = ["a", "b"];
+    const out = addManualUrlToList(list, "a");
+    expect(out.list).toBe(list);
+    expect(out.added).toBe(false);
+  });
+  it("returns the input unchanged for empty string", () => {
+    const list = ["a"];
+    const out = addManualUrlToList(list, "");
+    expect(out.list).toBe(list);
+    expect(out.added).toBe(false);
+  });
+});
+
+describe("removeUrlAtIndex", () => {
+  it("removes the entry at idx and reports removed=true", () => {
+    const out = removeUrlAtIndex(["a", "b", "c"], 1);
+    expect(out.list).toEqual(["a", "c"]);
+    expect(out.removed).toBe(true);
+  });
+  it("returns input unchanged for negative or too-large idx", () => {
+    const list = ["a"];
+    expect(removeUrlAtIndex(list, -1).list).toBe(list);
+    expect(removeUrlAtIndex(list, 5).list).toBe(list);
   });
 });
 

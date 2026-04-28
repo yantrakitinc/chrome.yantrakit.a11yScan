@@ -1253,6 +1253,27 @@ export function severityOrder(impact: string): number {
 }
 
 /**
+ * Add one URL to the existing list. Returns the new list and whether it
+ * was added. Skips empty/duplicate. Caller is responsible for native
+ * URL validation (input type=url + checkValidity()) before calling.
+ *
+ * Pure; exported for tests.
+ */
+export function addManualUrlToList(existing: string[], url: string): { list: string[]; added: boolean } {
+  if (!url || existing.includes(url)) return { list: existing, added: false };
+  return { list: [...existing, url], added: true };
+}
+
+/**
+ * Remove a single URL by index. Returns the new list and whether the
+ * index was valid. Pure; exported for tests.
+ */
+export function removeUrlAtIndex(existing: string[], idx: number): { list: string[]; removed: boolean } {
+  if (idx < 0 || idx >= existing.length) return { list: existing, removed: false };
+  return { list: existing.filter((_, i) => i !== idx), removed: true };
+}
+
+/**
  * Merge a list of new URLs into an existing crawl URL list. Returns a
  * tuple of [updatedList, addedCount] where added counts unique URLs that
  * weren't already in the existing list. Preserves original list order.
@@ -1880,7 +1901,9 @@ function attachScanTabListeners(): void {
   document.querySelectorAll<HTMLButtonElement>(".url-remove-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = parseInt(btn.dataset.index ?? "0");
-      crawlUrlList.splice(idx, 1);
+      const { list } = removeUrlAtIndex(crawlUrlList, idx);
+      crawlUrlList.length = 0;
+      crawlUrlList.push(...list);
       renderScanTab();
     });
   });
