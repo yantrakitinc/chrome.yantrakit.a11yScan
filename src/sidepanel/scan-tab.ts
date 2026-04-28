@@ -9,8 +9,47 @@ import { openAiChatWithContext } from "./ai-tab";
 import { sendMessage } from "@shared/messages";
 import type { iScanResult, iAriaWidget, iManualReviewStatus, iObserverEntry, iTestConfig } from "@shared/types";
 import { getManualReviewCriteria, getWcagUrl } from "@shared/wcag-mapping";
-import { uuid, isoNow, getViewportBucket, escHtml } from "@shared/utils";
+import { uuid, isoNow, escHtml } from "@shared/utils";
 import { validateTestConfig } from "@shared/validate-test-config";
+
+// Re-export pure helpers split into their own modules. External callers
+// (sidepanel.ts, tests) keep importing them from "./scan-tab".
+export {
+  addManualUrlToList, removeUrlAtIndex, mergeNewUrlsIntoList,
+  parseTextFileUrls, parsePastedUrls,
+} from "./scan-tab/url-list";
+export { addViewport, removeViewport } from "./scan-tab/viewports";
+export {
+  severityOrder, manualReviewKey, urlToDomainSlug, formatDateStamp, computeReportSummary,
+} from "./scan-tab/formatting";
+export {
+  clearScanResultsSlice, resetScanStateSlice, buildObserverEntry,
+  mergeMvResultToScan, buildStartCrawlPayload,
+} from "./scan-tab/state-slices";
+
+// Local imports for inline call sites in this file.
+import {
+  addManualUrlToList,
+  removeUrlAtIndex,
+  mergeNewUrlsIntoList,
+  parseTextFileUrls,
+  parsePastedUrls,
+} from "./scan-tab/url-list";
+import { addViewport, removeViewport } from "./scan-tab/viewports";
+import {
+  severityOrder,
+  manualReviewKey,
+  urlToDomainSlug,
+  formatDateStamp,
+  computeReportSummary,
+} from "./scan-tab/formatting";
+import {
+  clearScanResultsSlice,
+  resetScanStateSlice,
+  buildObserverEntry,
+  mergeMvResultToScan,
+  buildStartCrawlPayload,
+} from "./scan-tab/state-slices";
 
 /** Tracks whether the config panel (F13) is currently expanded */
 let configPanelOpen = false;
@@ -18,26 +57,6 @@ let configPanelOpen = false;
 /* ═══════════════════════════════════════════════════════════════════
    Manual review per-page persistence (R-MANUAL)
    ═══════════════════════════════════════════════════════════════════ */
-
-/** Compute storage key for manual review state. Per-URL granularity so two
-   different pages on the same site don't share review status. Matches the
-   key format documented in R-MANUAL-review.md. */
-/**
- * Storage key for per-page manual review state. The key intentionally drops
- * the URL hash and query string — manual-review notes follow the page's
- * conceptual identity (origin + pathname), not the navigation state. Returns
- * null when the input isn't a parseable URL (e.g., chrome://, about:, "").
- *
- * Exported for unit testing.
- */
-export function manualReviewKey(url: string): string | null {
-  try {
-    const u = new URL(url);
-    return `manualReview_${u.origin}${u.pathname}`;
-  } catch {
-    return null;
-  }
-}
 
 /** Load saved manual review for the given URL, or {} if none saved. */
 function loadManualReviewFor(url: string): void {
@@ -1248,275 +1267,11 @@ export function renderToolbarContentHtml(s: {
  * minor(3) → unknown(4). Used to order violations highest-severity-first
  * in render output. Pure; exported for tests.
  */
-export function severityOrder(impact: string): number {
-  return { critical: 0, serious: 1, moderate: 2, minor: 3 }[impact] ?? 4;
-}
-
-/**
- * Add one URL to the existing list. Returns the new list and whether it
- * was added. Skips empty/duplicate. Caller is responsible for native
- * URL validation (input type=url + checkValidity()) before calling.
- *
- * Pure; exported for tests.
- */
-export function addManualUrlToList(existing: string[], url: string): { list: string[]; added: boolean } {
-  if (!url || existing.includes(url)) return { list: existing, added: false };
-  return { list: [...existing, url], added: true };
-}
-
-/**
- * Remove a single URL by index. Returns the new list and whether the
- * index was valid. Pure; exported for tests.
- */
-export function removeUrlAtIndex(existing: string[], idx: number): { list: string[]; removed: boolean } {
-  if (idx < 0 || idx >= existing.length) return { list: existing, removed: false };
-  return { list: existing.filter((_, i) => i !== idx), removed: true };
-}
-
-/**
- * Merge a list of new URLs into an existing crawl URL list. Returns a
- * tuple of [updatedList, addedCount] where added counts unique URLs that
- * weren't already in the existing list. Preserves original list order.
- *
- * Pure; exported for tests. The added-count drives whether the paste-area
- * textarea is cleared (only on success — leave it for fix-up if no new URLs).
- */
-export function mergeNewUrlsIntoList(existing: string[], incoming: string[]): { list: string[]; added: number } {
-  const list = [...existing];
-  let added = 0;
-  for (const u of incoming) {
-    if (!list.includes(u)) {
-      list.push(u);
-      added++;
-    }
-  }
-  return { list, added };
-}
-
-/**
- * Parse a plaintext URL list from a `.txt` file (one URL per line).
- * Strips blank lines and whitespace. Pure; exported for tests.
- */
-export function parseTextFileUrls(text: string): string[] {
-  return text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-}
-
-/**
- * Reset state slice on the Clear button. Wipes scan + crawl + MV cached
- * results, manual-review marks, ARIA widgets, and toggles overlays off.
- * Does NOT reset mode toggles or WCAG settings (that's Reset's job).
- *
- * Pure; exported for tests. Caller still owns the chrome message side
- * effects (HIDE_*_OVERLAY / CLEAR_HIGHLIGHTS / DEACTIVATE_MOCKS).
- *
- * Source of truth: F22 Clear All — clears every result-bearing slice.
- */
-export function clearScanResultsSlice(prev: {
-  scanPhase: import("./sidepanel").iScanPhase;
-  crawlPhase: import("./sidepanel").iCrawlPhase;
-  lastScanResult: iScanResult | null;
-  lastMvResult: import("@shared/types").iMultiViewportResult | null;
-  mvViewportFilter: number | null;
-  mvProgress: { current: number; total: number } | null;
-  crawlResults: Record<string, iScanResult> | null;
-  crawlFailed: Record<string, string> | null;
-  crawlWaitInfo: { url: string; waitType: string; description: string } | null;
-  accordionExpanded: boolean;
-  scanSubTab: "results" | "manual" | "aria" | "observe";
-  ariaWidgets: iAriaWidget[];
-  manualReview: Record<string, "pass" | "fail" | "na" | null>;
-  violationsOverlayOn: boolean;
-  tabOrderOverlayOn: boolean;
-  focusGapsOverlayOn: boolean;
-}): typeof prev {
-  return {
-    ...prev,
-    scanPhase: "idle",
-    crawlPhase: "idle",
-    lastScanResult: null,
-    lastMvResult: null,
-    mvViewportFilter: null,
-    mvProgress: null,
-    crawlResults: null,
-    crawlFailed: null,
-    crawlWaitInfo: null,
-    accordionExpanded: true,
-    scanSubTab: "results",
-    ariaWidgets: [],
-    manualReview: {},
-    violationsOverlayOn: false,
-    tabOrderOverlayOn: false,
-    focusGapsOverlayOn: false,
-  };
-}
-
-/**
- * Reset state slice on the Reset button. Restores all toggle modes to off,
- * default viewports [375, 768, 1280], default WCAG 2.2 AA, and clears
- * testConfig. Pure; exported for tests. Caller must also handle the
- * chrome.storage.local.remove side effect.
- *
- * Source of truth: R-MV "Reset restores defaults" + F13-AC7 "Reset also
- * clears test config".
- */
-export function resetScanStateSlice(prev: {
-  crawl: boolean; observer: boolean; movie: boolean; mv: boolean;
-  viewports: number[]; wcagVersion: string; wcagLevel: string;
-  testConfig: import("@shared/types").iTestConfig | null;
-}): typeof prev {
-  return {
-    ...prev,
-    crawl: false,
-    observer: false,
-    movie: false,
-    mv: false,
-    viewports: [375, 768, 1280],
-    wcagVersion: "2.2",
-    wcagLevel: "AA",
-    testConfig: null,
-  };
-}
-
-/**
- * Build an observer history entry from a manual scan result + the active
- * tab + viewport breakpoints. Pure-ish — depends on `id` and `timestamp`
- * being passed in so tests can pin the values; production passes
- * uuid()/isoNow().
- *
- * Used by F04-AC8 ("manual scans logged to observer when Observer is on").
- * Exported for tests.
- */
-export function buildObserverEntry(s: {
-  id: string;
-  timestamp: string;
-  scanResult: iScanResult;
-  tab: { url?: string; title?: string; width?: number };
-  viewports: number[];
-}): iObserverEntry {
-  const viewportWidth = s.tab.width ?? 1280;
-  return {
-    id: s.id,
-    url: s.tab.url || "",
-    title: s.tab.title || "",
-    timestamp: s.timestamp,
-    source: "manual",
-    violations: s.scanResult.violations,
-    passes: s.scanResult.passes,
-    violationCount: s.scanResult.violations.reduce((sum, v) => sum + v.nodes.length, 0),
-    viewportBucket: getViewportBucket(viewportWidth, s.viewports),
-  };
-}
-
-/**
- * Merge a multi-viewport scan result into a single iScanResult that the
- * results renderer can consume. Uses the first viewport's metadata
- * (url/timestamp/etc.) and concatenates `shared + viewportSpecific`
- * violations. Returns null if perViewport is empty.
- *
- * Pure; exported for tests. Used after MULTI_VIEWPORT_SCAN to populate
- * state.lastScanResult so the existing single-page Results UI works.
- */
-export function mergeMvResultToScan(
-  mv: import("@shared/types").iMultiViewportResult,
-): iScanResult | null {
-  const firstKey = Object.keys(mv.perViewport)[0];
-  if (!firstKey) return null;
-  const first = mv.perViewport[parseInt(firstKey)];
-  return {
-    ...first,
-    violations: [...mv.shared, ...mv.viewportSpecific] as import("@shared/types").iViolation[],
-  };
-}
-
-/**
- * Build the START_CRAWL message payload from sidepanel state. The
- * testConfig (when present) takes precedence over the manual UI controls
- * for every field, per F13-AC4. Pure; exported for tests.
- */
-export function buildStartCrawlPayload(s: {
-  testConfig: import("@shared/types").iTestConfig | null;
-  crawlMode: "follow" | "urllist";
-  crawlUrlList: string[];
-}): {
-  mode: "follow" | "urllist";
-  timeout: number;
-  delay: number;
-  scope: string;
-  urlList: string[];
-  pageRules: import("@shared/types").iPageRule[];
-  auth: import("@shared/types").iCrawlAuth | undefined;
-  testConfig: import("@shared/types").iTestConfig | undefined;
-} {
-  const tc = s.testConfig;
-  return {
-    mode: tc?.crawl?.mode ?? s.crawlMode,
-    timeout: tc?.timing?.pageLoadTimeout ?? 30000,
-    delay: tc?.timing?.delayBetweenPages ?? 1000,
-    scope: tc?.crawl?.scope ?? "",
-    urlList: s.crawlMode === "urllist" ? [...s.crawlUrlList] : (tc?.crawl?.urlList ?? []),
-    pageRules: tc?.pageRules ?? [],
-    auth: tc?.auth ?? undefined,
-    testConfig: tc ?? undefined,
-  };
-}
-
-/**
- * Add a new viewport to the list. Returns a sorted, deduplicated copy.
- * Caps at 6 entries (returns the input unchanged when already at cap).
- * Picks a value 200px wider than the current widest. Pure; exported for tests.
- */
-export function addViewport(viewports: number[], maxCount = 6): number[] {
-  if (viewports.length >= maxCount) return viewports;
-  const newVal = (viewports.length === 0 ? 320 : Math.max(...viewports) + 200);
-  if (viewports.includes(newVal)) return viewports;
-  return [...viewports, newVal].sort((a, b) => a - b);
-}
-
-/**
- * Remove the viewport at index `idx`. Refuses to remove the last entry
- * (can't have a 0-viewport MV scan). Returns the input unchanged when
- * idx is out of bounds. Pure; exported for tests.
- */
-export function removeViewport(viewports: number[], idx: number, minCount = 1): number[] {
-  if (viewports.length <= minCount) return viewports;
-  if (idx < 0 || idx >= viewports.length) return viewports;
-  return viewports.filter((_, i) => i !== idx);
-}
-
-/**
- * Parse a paste-area string into a deduplicated list of URLs. Recognizes
- * three input shapes:
- *
- * 1. Sitemap XML (<?xml…> or <urlset> or <sitemapindex> root) — extracts
- *    every <loc> element's text content.
- * 2. Plaintext URL list (one per line) — used when input doesn't start with
- *    XML, OR when XML parsing fails (parsererror), OR when XML had zero
- *    <loc> elements. Lines starting with `<` are dropped so partial XML
- *    fragments don't sneak through.
- * 3. Empty / whitespace-only input — returns an empty array.
- *
- * Pure; exported for tests. Used by the URL-list paste-area handler.
- */
-export function parsePastedUrls(text: string): string[] {
-  const trimmed = text.trim();
-  if (!trimmed) return [];
-  let urls: string[] = [];
-  if (trimmed.startsWith("<?xml") || trimmed.startsWith("<urlset") || trimmed.startsWith("<sitemapindex")) {
-    try {
-      const doc = new DOMParser().parseFromString(trimmed, "application/xml");
-      if (!doc.querySelector("parsererror")) {
-        urls = Array.from(doc.querySelectorAll("loc"))
-          .map((el) => el.textContent?.trim() || "")
-          .filter(Boolean);
-      }
-    } catch { /* fall through to plaintext */ }
-  }
-  if (urls.length === 0) {
-    urls = trimmed.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith("<"));
-  }
-  // Dedupe while preserving order
-  return Array.from(new Set(urls));
-}
+// Pure helpers (severityOrder, manualReviewKey, addManualUrlToList,
+// removeUrlAtIndex, mergeNewUrlsIntoList, parseTextFileUrls, parsePastedUrls,
+// addViewport, removeViewport, clearScanResultsSlice, resetScanStateSlice,
+// buildObserverEntry, mergeMvResultToScan, buildStartCrawlPayload) moved to
+// ./scan-tab/{url-list, viewports, formatting, state-slices}.ts.
 
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2129,46 +1884,8 @@ function getDomain(): string {
   return urlToDomainSlug(state.lastScanResult?.url || "");
 }
 
-/**
- * Convert a URL to a filename-safe domain slug: hostname with dots → hyphens.
- * Returns "unknown" when the input isn't a parseable URL. Used in export
- * filenames. Pure; exported for tests.
- */
-export function urlToDomainSlug(url: string): string {
-  try { return new URL(url).hostname.replace(/\./g, "-"); } catch { return "unknown"; }
-}
-
 function getDateStamp(): string {
   return formatDateStamp(new Date());
-}
-
-/**
- * Format a Date as YYYY-MM-DD_HH-mm for filename suffixes. Pure;
- * exported for tests so the formatter can be exercised on fixed Dates.
- */
-export function formatDateStamp(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}_${String(d.getHours()).padStart(2, "0")}-${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-/**
- * Compute the summary block of a JSON / HTML report from scan arrays.
- * `passRate` is the percent of rules that fully passed (out of violations +
- * passes). When totalRules is 0 (e.g., empty crawl), passRate is 100.
- *
- * Pure; exported for tests. Used by buildJsonReport / buildHtmlReport.
- */
-export function computeReportSummary(
-  violations: { nodes: unknown[] }[],
-  passes: unknown[],
-  incomplete: unknown[],
-): { violationCount: number; passCount: number; incompleteCount: number; passRate: number } {
-  const totalRules = violations.length + passes.length;
-  return {
-    violationCount: violations.reduce((s, v) => s + v.nodes.length, 0),
-    passCount: passes.length,
-    incompleteCount: incomplete.length,
-    passRate: totalRules > 0 ? Math.round((passes.length / totalRules) * 100) : 100,
-  };
 }
 
 /* ═══════════════════════════════════════════════════════════════════
