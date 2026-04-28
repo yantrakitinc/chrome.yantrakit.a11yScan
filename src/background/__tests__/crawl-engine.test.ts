@@ -119,3 +119,112 @@ describe("processCrawlQueue — page-rule pause", () => {
     expect(types).toContain("CRAWL_WAITING_FOR_USER");
   });
 });
+
+describe("processCrawlQueue — auth flow + Follow mode link collection", () => {
+  // Use a setTimeout-based fire so listeners are added BEFORE we fire them
+  // (the default beforeEach uses Promise.resolve().then which races the listener add).
+  function rewireTabsUpdateForListenerOrder(): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome.tabs.update = vi.fn(async (tabId: number) => {
+      setTimeout(() => {
+        for (const l of onUpdatedListeners) l(tabId, { status: "complete" });
+      }, 5);
+      return undefined;
+    });
+  }
+
+  it("with options.auth, fills credentials via scripting.executeScript before crawling", async () => {
+    rewireTabsUpdateForListenerOrder();
+    let scriptingCalls = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome.scripting.executeScript = vi.fn(async () => { scriptingCalls++; return undefined; });
+
+    const responses: unknown[] = [];
+    await handleCrawlMessage({
+      type: "START_CRAWL",
+      payload: {
+        mode: "urllist",
+        timeout: 5000,
+        delay: 0,
+        scope: "",
+        urlList: ["https://x.com/seed"],
+        pageRules: [],
+        auth: {
+          loginUrl: "https://x.com/login",
+          usernameSelector: "#user",
+          passwordSelector: "#pass",
+          submitSelector: "#go",
+          username: "alice",
+          password: "secret",
+        },
+      },
+    } as iMessage, (r) => responses.push(r));
+
+    // performAuth: 2× tabs.update + 2× waitForPageLoad (each ~500ms DOM-settle)
+    // + 2× scripting.executeScript = ~1.2s minimum
+    await new Promise((r) => setTimeout(r, 2500));
+
+    expect(scriptingCalls).toBeGreaterThanOrEqual(2);
+  });
+
+  it("Follow mode collects links from the page after a SCAN_RESULT", async () => {
+    rewireTabsUpdateForListenerOrder();
+    let collectLinksCallSeen = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome.scripting.executeScript = vi.fn(async (opts: { func?: unknown }) => {
+      const fnSrc = opts?.func ? String(opts.func) : "";
+      if (fnSrc.includes("a[href]")) {
+        collectLinksCallSeen = true;
+        return [{ result: ["https://x.com/seed/page2"] }];
+      }
+      return [{ result: [] }];
+    });
+
+    const responses: unknown[] = [];
+    await handleCrawlMessage({
+      type: "START_CRAWL",
+      payload: {
+        mode: "follow",
+        timeout: 5000,
+        delay: 0,
+        scope: "https://x.com",
+        urlList: [],
+        startUrl: "https://x.com/seed",
+        pageRules: [],
+      },
+    } as iMessage, (r) => responses.push(r));
+
+    await new Promise((r) => setTimeout(r, 2500));
+    expect(collectLinksCallSeen).toBe(true);
+  });
+});
+
+describe("processCrawlQueue — RUN_SCAN failure path", () => {
+  it("when RUN_SCAN returns a non-SCAN_RESULT response, the URL is added to crawlState.failed", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome.tabs.sendMessage = vi.fn(async () => ({
+      type: "SCAN_ERROR",
+      payload: { message: "axe-core blew up" },
+    }));
+
+    const responses: unknown[] = [];
+    await handleCrawlMessage({
+      type: "START_CRAWL",
+      payload: {
+        mode: "urllist",
+        timeout: 2000,
+        delay: 0,
+        scope: "",
+        urlList: ["https://x.com/seed"],
+        pageRules: [],
+      },
+    } as iMessage, (r) => responses.push(r));
+
+    await new Promise((r) => setTimeout(r, 2500));
+    // CRAWL_PROGRESS broadcasts include a failed entry
+    const progress = sentRuntimeMessages.find((m) => m.type === "CRAWL_PROGRESS");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const failed = (progress?.payload as any)?.failed || {};
+    expect(Object.keys(failed).length).toBeGreaterThan(0);
+  });
+});
