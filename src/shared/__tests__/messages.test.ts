@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { iMessage } from "../messages";
+import { sendMessage, sendTabMessage } from "../messages";
 
 describe("iMessage type coverage", () => {
   it("SCAN_REQUEST is a valid message", () => {
@@ -138,5 +139,34 @@ describe("iMessage type coverage", () => {
     };
     expect(msg.type).toBe("INSPECT_ELEMENT");
     expect(msg.payload.selector).toBe("#main");
+  });
+});
+
+describe("sendMessage / sendTabMessage", () => {
+  let mockRuntime: { sendMessage: ReturnType<typeof vi.fn> };
+  let mockTabs: { sendMessage: ReturnType<typeof vi.fn> };
+
+  beforeEach(() => {
+    mockRuntime = { sendMessage: vi.fn(async (m) => ({ echoed: m })) };
+    mockTabs = { sendMessage: vi.fn(async (id, m) => ({ tabId: id, echoed: m })) };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome = { runtime: mockRuntime, tabs: mockTabs };
+  });
+
+  afterEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (globalThis as any).chrome;
+  });
+
+  it("sendMessage delegates to chrome.runtime.sendMessage", async () => {
+    const result = await sendMessage({ type: "OBSERVER_ENABLE" });
+    expect(mockRuntime.sendMessage).toHaveBeenCalledWith({ type: "OBSERVER_ENABLE" });
+    expect((result as { echoed: { type: string } }).echoed.type).toBe("OBSERVER_ENABLE");
+  });
+
+  it("sendTabMessage delegates to chrome.tabs.sendMessage with the tabId", async () => {
+    const result = await sendTabMessage(42, { type: "RUN_ARIA_SCAN" });
+    expect(mockTabs.sendMessage).toHaveBeenCalledWith(42, { type: "RUN_ARIA_SCAN" });
+    expect((result as { tabId: number; echoed: { type: string } }).tabId).toBe(42);
   });
 });
