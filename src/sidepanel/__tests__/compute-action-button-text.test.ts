@@ -11,6 +11,7 @@ import {
   renderCrawlConfigHtml, renderUrlListPanelHtml,
   buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls, addViewport, removeViewport,
   buildStartCrawlPayload, mergeMvResultToScan, buildObserverEntry, resetScanStateSlice,
+  mergeNewUrlsIntoList, parseTextFileUrls,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -817,6 +818,51 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("mergeNewUrlsIntoList", () => {
+  it("appends new URLs to existing, dedupes, returns added count", () => {
+    const out = mergeNewUrlsIntoList(["a", "b"], ["b", "c", "d"]);
+    expect(out.list).toEqual(["a", "b", "c", "d"]);
+    expect(out.added).toBe(2);
+  });
+  it("returns added=0 when every incoming URL already in existing", () => {
+    const out = mergeNewUrlsIntoList(["a", "b"], ["a", "b"]);
+    expect(out.list).toEqual(["a", "b"]);
+    expect(out.added).toBe(0);
+  });
+  it("preserves the existing list order (new URLs appended at end)", () => {
+    const out = mergeNewUrlsIntoList(["c", "a", "b"], ["d", "e"]);
+    expect(out.list).toEqual(["c", "a", "b", "d", "e"]);
+  });
+  it("handles empty existing", () => {
+    expect(mergeNewUrlsIntoList([], ["a", "b"]).list).toEqual(["a", "b"]);
+  });
+  it("does not mutate the existing list", () => {
+    const existing = ["a"];
+    mergeNewUrlsIntoList(existing, ["b"]);
+    expect(existing).toEqual(["a"]);
+  });
+});
+
+describe("parseTextFileUrls", () => {
+  it("splits on newline, trims, drops blanks", () => {
+    expect(parseTextFileUrls("https://x.com/a\n\nhttps://x.com/b\n  \n")).toEqual([
+      "https://x.com/a", "https://x.com/b",
+    ]);
+  });
+  it("handles \\r\\n line endings", () => {
+    expect(parseTextFileUrls("https://x.com/a\r\nhttps://x.com/b\r\n")).toEqual([
+      "https://x.com/a", "https://x.com/b",
+    ]);
+  });
+  it("returns empty array for empty / whitespace-only input", () => {
+    expect(parseTextFileUrls("")).toEqual([]);
+    expect(parseTextFileUrls("   \n  ")).toEqual([]);
+  });
+  it("does NOT dedupe (caller deduplicates via mergeNewUrlsIntoList)", () => {
+    expect(parseTextFileUrls("a\na\nb")).toEqual(["a", "a", "b"]);
   });
 });
 

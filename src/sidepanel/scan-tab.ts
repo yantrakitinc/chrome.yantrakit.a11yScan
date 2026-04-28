@@ -1253,6 +1253,34 @@ export function severityOrder(impact: string): number {
 }
 
 /**
+ * Merge a list of new URLs into an existing crawl URL list. Returns a
+ * tuple of [updatedList, addedCount] where added counts unique URLs that
+ * weren't already in the existing list. Preserves original list order.
+ *
+ * Pure; exported for tests. The added-count drives whether the paste-area
+ * textarea is cleared (only on success — leave it for fix-up if no new URLs).
+ */
+export function mergeNewUrlsIntoList(existing: string[], incoming: string[]): { list: string[]; added: number } {
+  const list = [...existing];
+  let added = 0;
+  for (const u of incoming) {
+    if (!list.includes(u)) {
+      list.push(u);
+      added++;
+    }
+  }
+  return { list, added };
+}
+
+/**
+ * Parse a plaintext URL list from a `.txt` file (one URL per line).
+ * Strips blank lines and whitespace. Pure; exported for tests.
+ */
+export function parseTextFileUrls(text: string): string[] {
+  return text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+}
+
+/**
  * Reset state slice on the Reset button. Restores all toggle modes to off,
  * default viewports [375, 768, 1280], default WCAG 2.2 AA, and clears
  * testConfig. Pure; exported for tests. Caller must also handle the
@@ -1762,13 +1790,9 @@ function attachScanTabListeners(): void {
     if (!ta) return;
     const newUrls = parsePastedUrls(ta.value);
     if (newUrls.length === 0) return;
-    let added = 0;
-    for (const u of newUrls) {
-      if (!crawlUrlList.includes(u)) {
-        crawlUrlList.push(u);
-        added++;
-      }
-    }
+    const { list, added } = mergeNewUrlsIntoList(crawlUrlList, newUrls);
+    crawlUrlList.length = 0;
+    crawlUrlList.push(...list);
     // Only clear the textarea if we actually pulled URLs out of it. If nothing
     // was usable (typo'd XML, blank lines), leave the input so the user can fix.
     if (added > 0) ta.value = "";
@@ -1783,10 +1807,9 @@ function attachScanTabListeners(): void {
     const reader = new FileReader();
     reader.onload = () => {
       const text = typeof reader.result === "string" ? reader.result : "";
-      const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-      for (const u of lines) {
-        if (!crawlUrlList.includes(u)) crawlUrlList.push(u);
-      }
+      const { list } = mergeNewUrlsIntoList(crawlUrlList, parseTextFileUrls(text));
+      crawlUrlList.length = 0;
+      crawlUrlList.push(...list);
       renderScanTab();
     };
     reader.readAsText(file);
