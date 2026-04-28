@@ -5,9 +5,8 @@
 import type { iMessage } from "@shared/messages";
 import type { iCrawlOptions, iCrawlState, iCrawlAuth, iScanResult, iTestConfig } from "@shared/types";
 import { getConfig } from "@shared/config";
-import { isScannableUrl } from "@shared/utils";
 import { setCrawlActive } from "./observer";
-import { logError, logWarn, logDebug } from "@shared/log";
+import { logError, logWarn } from "@shared/log";
 
 const CRAWL_STORAGE_KEY = "crawlState";
 

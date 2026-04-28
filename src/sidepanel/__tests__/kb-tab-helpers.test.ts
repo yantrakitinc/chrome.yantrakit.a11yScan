@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { kbRoleClassFor, renderKbRowHtml, renderFocusGapsHtml, renderFocusIndicatorsHtml, renderKeyboardTrapsHtml, renderSkipLinksHtml } from "../kb-tab";
-import type { iTabOrderElement, iFocusGap, iFocusIndicator, iKeyboardTrap, iSkipLink } from "@shared/types";
+import type { iTabOrderElement, iFocusIndicator, iKeyboardTrap, iSkipLink } from "@shared/types";
 
 function el(overrides: Partial<iTabOrderElement> = {}): iTabOrderElement {
   return {

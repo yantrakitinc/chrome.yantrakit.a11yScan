@@ -40,8 +40,8 @@ export function activateMocks(mocks: iMockEndpoint[]): void {
     const urlStr = typeof url === "string" ? url : url.href;
     const mock = findMatch(urlStr, method);
     if (mock) {
-      // Override send to return mock response
-      const originalSend = this.send;
+      // Override send to short-circuit the network call. We don't fall
+      // through to the real XHR send — the mock fully replaces it.
       this.send = function (): void {
         Object.defineProperty(this, "status", { value: mock.status ?? 200, writable: false });
         Object.defineProperty(this, "responseText", { value: JSON.stringify(mock.body), writable: false });
