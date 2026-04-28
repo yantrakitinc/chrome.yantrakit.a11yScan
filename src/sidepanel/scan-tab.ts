@@ -26,6 +26,23 @@ export {
   clearScanResultsSlice, resetScanStateSlice, buildObserverEntry,
   mergeMvResultToScan, buildStartCrawlPayload,
 } from "./scan-tab/state-slices";
+export { buildJsonReportFrom, buildHtmlReportFrom } from "./scan-tab/reports";
+export {
+  computeActionButtonText, renderExpandedToggleHtml, renderCollapsedToggleHtml,
+  renderModeTogglesHtml, renderMvCheckboxHtml, renderSubTabsHtml,
+} from "./scan-tab/render-header";
+export { renderCrawlConfigHtml, renderUrlListPanelHtml } from "./scan-tab/render-crawl-config";
+export {
+  renderScanProgressHtml, renderCrawlProgressHtml, renderPageRuleWaitHtml,
+} from "./scan-tab/render-progress";
+export { renderEmptyState } from "./scan-tab/render-empty";
+export {
+  renderResults, renderViolation, renderCrawlResultsHtml,
+} from "./scan-tab/render-results";
+export { renderManualReviewHtml } from "./scan-tab/render-manual-review";
+export { renderAriaResultsHtml, renderAriaWidget } from "./scan-tab/render-aria";
+export { renderObserverListInnerHtml } from "./scan-tab/render-observer";
+export { renderToolbarContentHtml } from "./scan-tab/render-toolbar";
 
 // Local imports for inline call sites in this file.
 import {
@@ -50,6 +67,31 @@ import {
   mergeMvResultToScan,
   buildStartCrawlPayload,
 } from "./scan-tab/state-slices";
+import { buildJsonReportFrom, buildHtmlReportFrom } from "./scan-tab/reports";
+import {
+  computeActionButtonText,
+  renderExpandedToggleHtml,
+  renderCollapsedToggleHtml,
+  renderModeTogglesHtml,
+  renderMvCheckboxHtml,
+  renderSubTabsHtml,
+} from "./scan-tab/render-header";
+import { renderCrawlConfigHtml, renderUrlListPanelHtml } from "./scan-tab/render-crawl-config";
+import {
+  renderScanProgressHtml,
+  renderCrawlProgressHtml,
+  renderPageRuleWaitHtml,
+} from "./scan-tab/render-progress";
+import { renderEmptyState } from "./scan-tab/render-empty";
+import {
+  renderResults,
+  renderViolation,
+  renderCrawlResultsHtml,
+} from "./scan-tab/render-results";
+import { renderManualReviewHtml } from "./scan-tab/render-manual-review";
+import { renderAriaResultsHtml } from "./scan-tab/render-aria";
+import { renderObserverListInnerHtml } from "./scan-tab/render-observer";
+import { renderToolbarContentHtml } from "./scan-tab/render-toolbar";
 
 /** Tracks whether the config panel (F13) is currently expanded */
 let configPanelOpen = false;
@@ -105,38 +147,6 @@ function getActionButtonText(): string {
   });
 }
 
-/**
- * Compute the scan action button label from mode flags + phase.
- * Source of truth: R-SCAN AC4. Exported for unit testing.
- */
-export function computeActionButtonText(s: {
-  crawlPhase: "idle" | "crawling" | "wait" | "paused" | "complete";
-  scanPhase: "idle" | "scanning" | "results";
-  observer: boolean;
-  crawl: boolean;
-  mv: boolean;
-}): string {
-  const crawling = s.crawlPhase === "crawling" || s.crawlPhase === "wait";
-  const scanning = s.scanPhase === "scanning";
-
-  if (crawling) return "Crawling\u2026";
-  if (scanning) return "Scanning\u2026";
-
-  const paused = s.crawlPhase === "paused";
-  const idle = s.crawlPhase === "idle" && s.scanPhase === "idle";
-  const results = s.scanPhase === "results" || s.crawlPhase === "complete";
-
-  if (paused) return s.observer ? "Scan This Page" : "Scan Page";
-
-  if (idle || results) {
-    if (s.crawl) return "Start Crawl";
-    if (s.observer) return "Scan This Page";
-    if (s.mv) return "Scan All Viewports";
-    return "Scan Page";
-  }
-
-  return "Scan Page";
-}
 
 /** Per-sub-tab scroll positions so re-renders don't yank the user back to top. */
 const scanScrollMemory: Record<string, number> = {};
@@ -230,38 +240,6 @@ function renderExpandedToggle(busy: boolean): string {
   });
 }
 
-/**
- * Render the expanded settings toolbar: WCAG version + level dropdowns,
- * settings cog with config-loaded badge, Reset, Collapse. Pure; exported
- * for tests.
- */
-export function renderExpandedToggleHtml(s: {
-  wcagVersion: string; wcagLevel: string;
-  hasTestConfig: boolean; configPanelOpen: boolean; busy: boolean;
-}): string {
-  return `
-    <select id="wcag-version" aria-label="WCAG version" ${s.busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
-      <option ${s.wcagVersion === "2.2" ? "selected" : ""}>2.2</option>
-      <option ${s.wcagVersion === "2.1" ? "selected" : ""}>2.1</option>
-      <option ${s.wcagVersion === "2.0" ? "selected" : ""}>2.0</option>
-    </select>
-    <select id="wcag-level" aria-label="Conformance level" ${s.busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
-      <option ${s.wcagLevel === "AA" ? "selected" : ""}>AA</option>
-      <option ${s.wcagLevel === "A" ? "selected" : ""}>A</option>
-      <option ${s.wcagLevel === "AAA" ? "selected" : ""}>AAA</option>
-    </select>
-    <div style="display:flex;align-items:center;gap:2px">
-      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${s.configPanelOpen}" ${s.busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${s.configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${s.hasTestConfig ? "var(--ds-amber-600)" : "var(--ds-zinc-500)"}">
-        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
-      </button>
-      ${s.hasTestConfig ? '<span style="font-size:10px;font-weight:700;color:var(--ds-amber-600);background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
-    </div>
-    <button id="reset-btn" aria-label="Reset all settings" ${s.busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px">Reset</button>
-    <button id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:4px;color:var(--ds-zinc-500);margin-left:auto">
-      <svg aria-hidden="true" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l4-4 4 4"/></svg>
-    </button>
-  `;
-}
 
 function renderCollapsedToggle(): string {
   return renderCollapsedToggleHtml({
@@ -274,63 +252,11 @@ function renderCollapsedToggle(): string {
   });
 }
 
-/**
- * Render the collapsed settings toolbar showing the WCAG level + active
- * scan-mode chips. ≤2 modes render as individual chips; ≥3 collapse to
- * an "N modes" summary chip. Pure; exported for tests.
- */
-export function renderCollapsedToggleHtml(s: {
-  crawl: boolean; observer: boolean; movie: boolean; mv: boolean;
-  wcagVersion: string; wcagLevel: string;
-}): string {
-  const modes = [
-    s.crawl && "Crawl",
-    s.observer && "Observer",
-    s.movie && "Movie",
-    s.mv && "Multi-Viewport",
-  ].filter(Boolean);
-
-  const modeColors: Record<string, string> = {
-    Crawl: "background:var(--ds-blue-100);color:var(--ds-sky-900)",
-    Observer: "background:var(--ds-emerald-100);color:var(--ds-green-900)",
-    Movie: "background:var(--ds-violet-100);color:var(--ds-violet-900)",
-    "Multi-Viewport": "background:var(--ds-amber-100);color:var(--ds-amber-800)",
-  };
-  let modeHtml = "";
-  if (modes.length === 0) {
-    modeHtml = '<span style="font-size:11px;color:var(--ds-zinc-500)">Single page</span>';
-  } else if (modes.length <= 2) {
-    modeHtml = modes.map((m) => `<span style="font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;${modeColors[m as string] || "background:var(--ds-zinc-200);color:var(--ds-zinc-700)"}">${m}</span>`).join(" ");
-  } else {
-    modeHtml = `<span style="font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--ds-zinc-200);color:var(--ds-zinc-700)">${modes.length} modes</span>`;
-  }
-
-  return `
-    <span style="font-size:11px;font-weight:600;color:var(--ds-zinc-700)">${s.wcagVersion} ${s.wcagLevel}</span>
-    ${modeHtml}
-    <span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--ds-zinc-500);margin-left:auto">
-      <svg aria-hidden="true" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
-    </span>
-  `;
-}
 
 function renderModeToggles(busy: boolean): string {
   return renderModeTogglesHtml({ crawl: state.crawl, movie: state.movie, busy });
 }
 
-/**
- * Render the Crawl / Observe / Movie mode-toggle row.
- * Observe is intentionally hard-disabled (coming soon). Pure; exported for tests.
- */
-export function renderModeTogglesHtml(s: { crawl: boolean; movie: boolean; busy: boolean }): string {
-  return `
-    <div class="mode-row" role="group" aria-label="Scan mode">
-      <button class="mode-btn mode-crawl" aria-pressed="${s.crawl}" ${s.busy ? "disabled" : ""} data-mode="crawl">Crawl</button>
-      <button class="mode-btn mode-observe" disabled aria-disabled="true" aria-label="Observe mode — coming soon" style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">Observe<span aria-hidden="true" style="font-size:8px;font-weight:800;color:var(--ds-amber-700);position:absolute;top:-2px;right:-2px;background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:3px;padding:0 3px;line-height:1.4">SOON</span></button>
-      <button class="mode-btn mode-movie" aria-pressed="${s.movie}" ${s.busy ? "disabled" : ""} data-mode="movie">Movie</button>
-    </div>
-  `;
-}
 
 function renderMvCheckbox(busy: boolean): string {
   return renderMvCheckboxHtml({
@@ -341,53 +267,6 @@ function renderMvCheckbox(busy: boolean): string {
   });
 }
 
-/**
- * Render the Multi-Viewport checkbox + viewport chips/editor row.
- * When mv=false, just the checkbox. When mv=true, chip row showing each
- * viewport width; in editing mode, an inline editor with +add and done.
- * Pure; exported for tests.
- */
-export function renderMvCheckboxHtml(s: {
-  mv: boolean;
-  viewports: number[];
-  viewportEditing: boolean;
-  busy: boolean;
-}): string {
-  const chipsRow = s.mv
-    ? s.mv && s.viewportEditing
-      ? `<div style="padding-left:24px;margin-top:4px">
-          <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:4px">
-            ${s.viewports.map((v, i) => `
-              <input type="number" min="320" value="${v}" data-index="${i}" class="vp-input font-mono min-h-24" aria-label="Viewport ${i + 1} width in pixels"
-                style="width:60px;font-size:11px;font-weight:600;padding:2px 4px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800);box-sizing:border-box">
-              <button type="button" class="vp-remove cur-pointer min-h-24" data-index="${i}" aria-label="Remove ${v}px viewport"
-                style="font-size:12px;font-weight:700;line-height:1;padding:2px 5px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-600)"
-                ${s.viewports.length <= 1 ? "disabled" : ""}>×</button>
-            `).join("")}
-          </div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <button type="button" id="vp-add"
-              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800)"
-              ${s.viewports.length >= 6 ? "disabled" : ""}>+ add</button>
-            <button type="button" id="vp-done"
-              class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid var(--ds-amber-600);border-radius:4px;background:var(--ds-amber-100);color:var(--ds-amber-800)">done</button>
-          </div>
-        </div>`
-      : `<div style="display:flex;align-items:center;gap:4px;padding-left:24px;flex-wrap:wrap">
-          ${s.viewports.map((v) => `<span class="font-mono" style="font-size:11px;font-weight:600;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px;padding:2px 6px">${v}</span>`).join("")}
-          <button type="button" id="vp-edit"
-            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:1px 6px;border:none;background:none;color:var(--ds-indigo-700);text-decoration:underline">edit</button>
-        </div>`
-    : "";
-
-  return `
-    <label class="cur-pointer" style="display:flex;align-items:center;gap:6px;${s.busy ? "opacity:0.4;pointer-events:none" : ""}">
-      <input type="checkbox" id="mv-check" ${s.mv ? "checked" : ""} ${s.busy ? "disabled" : ""} class="cur-pointer" style="width:16px;height:16px;accent-color:var(--ds-amber-600)">
-      <span style="font-size:12px;font-weight:600;color:var(--ds-zinc-800)">Multi-Viewport</span>
-    </label>
-    ${chipsRow}
-  `;
-}
 
 function renderCrawlConfig(busy: boolean): string {
   return renderCrawlConfigHtml({
@@ -398,95 +277,11 @@ function renderCrawlConfig(busy: boolean): string {
   });
 }
 
-/**
- * Render the crawl-config row: the Crawl mode dropdown (Follow / URL list)
- * plus, in URL-list mode, the open-list button and inline panel. Pure;
- * exported for tests.
- */
-export function renderCrawlConfigHtml(s: {
-  crawlMode: "follow" | "urllist";
-  urlListPanelOpen: boolean;
-  urlList: string[];
-  busy: boolean;
-}): string {
-  const urlCount = s.urlList.length;
-  const urlListBtn = s.crawlMode === "urllist"
-    ? `<button type="button" id="url-list-open" aria-expanded="${s.urlListPanelOpen}" aria-controls="url-list-panel"
-        class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800);margin-top:4px">
-        ${urlCount === 0 ? "Set up URL list" : `${urlCount} URL${urlCount === 1 ? "" : "s"} \u2014 Edit list`}
-      </button>`
-    : "";
-
-  const panel = (s.crawlMode === "urllist" && s.urlListPanelOpen) ? renderUrlListPanelHtml(s.urlList) : "";
-
-  return `
-    <div style="display:flex;align-items:center;gap:8px">
-      <span class="scan-caption-strong">Crawl mode</span>
-      <select id="crawl-mode" aria-label="Crawl mode" ${s.busy ? "disabled" : ""} class="f-1" style="font-size:12px;padding:4px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
-        <option value="follow" ${s.crawlMode === "follow" ? "selected" : ""}>Follow all links</option>
-        <option value="urllist" ${s.crawlMode === "urllist" ? "selected" : ""}>URL list</option>
-      </select>
-    </div>
-    ${urlListBtn}
-    ${panel}
-  `;
-}
 
 function renderUrlListPanel(): string {
   return renderUrlListPanelHtml(crawlUrlList);
 }
 
-/**
- * Render the URL-list editor panel: paste textarea + add buttons + the
- * read-only list rows. Pure; exported for tests.
- */
-export function renderUrlListPanelHtml(urlList: string[]): string {
-  const listRows = urlList.map((url, i) => `
-    <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
-      <input type="text" readonly value="${escHtml(url)}"
-        class="f-1 font-mono" style="font-size:11px;padding:3px 6px;border:1px solid var(--ds-zinc-200);border-radius:3px;background:var(--ds-zinc-50);color:var(--ds-zinc-800);min-width:0">
-      <button type="button" class="url-remove-btn fs-0 cur-pointer min-h-24" data-index="${i}"
-        aria-label="Remove URL"
-        style="font-size:12px;font-weight:700;color:var(--ds-red-700);background:none;border:none;padding:0 4px">&times;</button>
-    </div>
-  `).join("");
-
-  const summary = urlList.length > 0
-    ? `<div style="font-size:11px;font-weight:600;color:var(--ds-zinc-600);margin-bottom:6px">${urlList.length} URL${urlList.length === 1 ? "" : "s"} will be scanned</div>`
-    : "";
-
-  return `
-    <div id="url-list-panel" style="margin-top:6px;border:1px solid var(--ds-zinc-300);border-radius:6px;background:var(--ds-zinc-50);padding:8px">
-      <div style="font-size:11px;font-weight:800;color:var(--ds-zinc-800);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">URL List</div>
-
-      <div style="margin-bottom:8px">
-        <textarea id="url-paste-area" rows="3" aria-label="Paste URLs or sitemap XML" placeholder="Paste URLs (one per line) or sitemap XML (&lt;?xml\u2026)"
-          class="font-mono" style="width:100%;box-sizing:border-box;font-size:11px;padding:6px;border:1px solid var(--ds-zinc-300);border-radius:4px;resize:vertical;background:#fff;color:var(--ds-zinc-800)"></textarea>
-        <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
-          <button type="button" id="url-paste-add"
-            class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:var(--ds-amber-500);color:var(--ds-amber-cta-fg)">Add from textarea</button>
-          <label class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-700);display:flex;align-items:center">
-            Upload .txt
-            <input type="file" id="url-file-input" accept=".txt,text/plain" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0)">
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:4px;margin-bottom:8px">
-        <input type="url" id="url-manual-input" aria-label="Add URL to crawl list" placeholder="https://example.com/page"
-          class="f-1" style="font-size:11px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800);min-width:0">
-        <button type="button" id="url-manual-add"
-          class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:none;border-radius:4px;background:var(--ds-amber-500);color:var(--ds-amber-cta-fg)">Add</button>
-      </div>
-
-      ${summary}
-      <div id="url-list-rows" style="max-height:160px;overflow-y:auto">${listRows}</div>
-
-      <button type="button" id="url-list-done"
-        class="cur-pointer min-h-24" style="width:100%;margin-top:8px;font-size:11px;font-weight:800;padding:5px;border:none;border-radius:4px;background:var(--ds-amber-500);color:var(--ds-amber-cta-fg)">Done</button>
-    </div>
-  `;
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    Test Configuration Panel (F13)
@@ -626,110 +421,21 @@ function renderScanProgress(): string {
   });
 }
 
-/**
- * Render the scanning progress bar. Pure; exported for tests.
- */
-export function renderScanProgressHtml(s: {
-  mv: boolean;
-  mvProgress: { current: number; total: number } | null;
-  viewports: number[];
-}): string {
-  return `
-    <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span class="font-mono" style="font-size:11px;color:var(--ds-zinc-600)">${s.mv ? `viewport ${s.mvProgress ? `${s.mvProgress.current}/${s.mvProgress.total}` : `1/${s.viewports.length}`}` : "analyzing page\u2026"}</span>
-        <button id="cancel-scan" aria-label="Cancel scan" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
-          <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
-        </button>
-      </div>
-      <div class="progress-track"><div class="progress-fill" style="width:60%;animation:pulse 1.5s ease infinite"></div></div>
-    </div>
-  `;
-}
 
 function renderCrawlProgress(): string {
   return renderCrawlProgressHtml(state.crawlProgress, state.crawlPhase);
 }
 
-/**
- * Render the crawl progress bar. Shows pages-visited/total + current URL,
- * pause/resume button matching crawlPhase, and a percent-fill bar.
- * Pure; exported for tests.
- */
-export function renderCrawlProgressHtml(
-  progress: { pagesVisited: number; pagesTotal: number; currentUrl: string },
-  crawlPhase: "idle" | "crawling" | "wait" | "paused" | "complete",
-): string {
-  const { pagesVisited, pagesTotal, currentUrl } = progress;
-  const pageLabel = pagesTotal > 0 ? `${pagesVisited}/${pagesTotal} pages` : "scanning\u2026";
-  const urlDisplay = currentUrl
-    ? (() => { try { return new URL(currentUrl).pathname || currentUrl; } catch { return currentUrl; } })()
-    : "";
-  const progressPct = pagesTotal > 0 ? Math.round((pagesVisited / pagesTotal) * 100) : 42;
-  return `
-    <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
-      <div style="display:flex;align-items:center;margin-bottom:4px;gap:8px">
-        <span class="fs-0 font-mono" style="font-size:11px;font-weight:700;color:var(--ds-zinc-600)">${pageLabel}</span>
-        ${urlDisplay ? `<span class="truncate f-1 font-mono" style="font-size:10px;color:var(--ds-zinc-500);min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
-        <div class="fs-0" style="display:flex;gap:4px">
-          ${crawlPhase === "crawling"
-            ? '<button id="pause-crawl" aria-label="Pause crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
-            : '<button id="resume-crawl" aria-label="Resume crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><path d="M0 0l8 5-8 5z"/></svg></button>'
-          }
-          <button id="cancel-crawl" aria-label="Cancel crawl" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
-            <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="progress-track"><div class="progress-fill" style="width:${progressPct}%${crawlPhase === "crawling" ? ";animation:pulse 1.5s ease infinite" : ""}"></div></div>
-    </div>
-  `;
-}
 
 function renderPageRuleWait(): string {
   return renderPageRuleWaitHtml(state.crawlWaitInfo);
 }
 
-/**
- * Render the alert banner shown when a page rule pauses the crawl. Pure;
- * exported for tests.
- */
-export function renderPageRuleWaitHtml(info: { url: string; description: string; waitType?: string } | null): string {
-  return `
-    <div role="alert" aria-live="assertive" class="fs-0" style="padding:8px 12px;border-bottom:2px solid var(--ds-yellow-400);background:var(--ds-amber-50)">
-      <div style="font-size:11px;font-weight:700;color:var(--ds-amber-900);margin-bottom:6px">\u26a0 Page rule triggered</div>
-      ${info?.description ? `<div style="font-size:11px;color:var(--ds-zinc-800);margin-bottom:4px">${escHtml(info.description)}</div>` : ""}
-      ${info?.url ? `<div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-500);margin-bottom:6px" title="${escHtml(info.url)}">${escHtml(info.url)}</div>` : ""}
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button id="continue-crawl" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Continue</button>
-        <button id="scan-then-continue" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px">Scan page, then continue</button>
-        <button id="cancel-wait" class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;margin-left:auto;padding:4px 10px">Cancel</button>
-      </div>
-    </div>
-  `;
-}
 
 function renderSubTabs(): string {
   return renderSubTabsHtml({ observer: state.observer, activeSubTab: state.scanSubTab });
 }
 
-/**
- * Render the sub-tab nav row (Results / Manual / ARIA, plus Observe when
- * Observer mode is on). Pure; exported for tests.
- */
-export function renderSubTabsHtml(s: { observer: boolean; activeSubTab: string }): string {
-  const tabs = ["results", "manual", "aria"];
-  if (s.observer) tabs.push("observe");
-  return `
-    <div class="sub-tabs" role="tablist" aria-label="Scan results sections">
-      ${tabs.map((t) => {
-        const label = t === "results" ? "Results" : t === "manual" ? "Manual" : t === "aria" ? "ARIA" : "Observe";
-        const isActive = t === s.activeSubTab;
-        return `<button role="tab" id="subtab-${t}" aria-selected="${isActive}" aria-controls="scan-content" tabindex="${isActive ? "0" : "-1"}" class="sub-tab ${isActive ? "active" : ""}" data-subtab="${t}">${label}</button>`;
-      }).join("")}
-    </div>
-  `;
-}
 
 function renderContent(): string {
   if (state.scanPhase === "idle" && state.crawlPhase === "idle") {
@@ -761,29 +467,6 @@ function renderContent(): string {
   }
 }
 
-export function renderEmptyState(): string {
-  return `
-    <div style="padding:16px">
-      <h2 style="font-size:14px;font-weight:800;color:var(--ds-zinc-900);margin-bottom:4px">Get started</h2>
-      <p style="font-size:12px;color:var(--ds-zinc-600);line-height:1.5">Click the button above to check this page for accessibility issues.</p>
-      <div style="margin-top:16px">
-        <h3 style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Scan modes</h3>
-        <div style="padding-left:12px;border-left:2px solid var(--ds-sky-400);margin-bottom:8px">
-          <div class="scan-section-title">Crawl</div>
-          <div class="scan-body">Automatically visits every page on your website and checks each one for issues.</div>
-        </div>
-        <div style="padding-left:12px;border-left:2px solid var(--ds-emerald-400);margin-bottom:8px">
-          <div class="scan-section-title">Observer</div>
-          <div class="scan-body">Watches your browsing and checks every page you visit. Everything stays on your computer.</div>
-        </div>
-        <div style="padding-left:12px;border-left:2px solid var(--ds-violet-400);margin-bottom:8px">
-          <div class="scan-section-title">Movie</div>
-          <div class="scan-body">After each scan, shows you how keyboard-only users navigate the page step by step.</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    Crawl Results Display (F03-AC13–AC16)
@@ -793,239 +476,8 @@ function renderCrawlResults(): string {
   return renderCrawlResultsHtml(state.crawlResults!, state.crawlFailed ?? {}, crawlViewMode);
 }
 
-/**
- * Render the crawl-results table. Supports two view modes:
- * - "page": one row per crawled URL with violation count + collapsible body
- * - "wcag": violations grouped by WCAG criterion across all pages
- *
- * Pure; exported for tests.
- */
-export function renderCrawlResultsHtml(
-  results: Record<string, iScanResult>,
-  failed: Record<string, string>,
-  crawlViewMode: "page" | "wcag",
-): string {
-  const allUrls = [...Object.keys(results), ...Object.keys(failed).filter((u) => !(u in results))];
 
-  const toggle = `
-    <div role="group" aria-label="Group crawl results by" style="display:flex;gap:0;border:1px solid var(--ds-zinc-300);border-radius:4px;overflow:hidden;margin-bottom:8px">
-      <button type="button" id="crawl-view-page" aria-pressed="${crawlViewMode === "page"}"
-        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;background:${crawlViewMode === "page" ? "var(--ds-amber-100)" : "#fff"};color:${crawlViewMode === "page" ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">By page</button>
-      <button type="button" id="crawl-view-wcag" aria-pressed="${crawlViewMode === "wcag"}"
-        class="f-1 cur-pointer min-h-24" style="padding:4px 8px;font-size:11px;font-weight:700;border:none;border-left:1px solid var(--ds-zinc-300);background:${crawlViewMode === "wcag" ? "var(--ds-amber-100)" : "#fff"};color:${crawlViewMode === "wcag" ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">By WCAG</button>
-    </div>
-  `;
 
-  const totalViolations = Object.values(results).reduce((sum, r) => sum + r.violations.reduce((s, v) => s + v.nodes.length, 0), 0);
-  const totalFailed = Object.keys(failed).length;
-  const summary = `
-    <div class="scan-stats-grid scan-stats-grid--3">
-      <div><div style="font-size:15px;font-weight:800;color:var(--ds-zinc-800)">${allUrls.length}</div><div class="scan-sublabel">Pages</div></div>
-      <div><div style="font-size:15px;font-weight:800;color:var(--ds-red-700)">${totalViolations}</div><div class="scan-sublabel">Violations</div></div>
-      <div><div style="font-size:15px;font-weight:800;color:var(--ds-red-600)">${totalFailed}</div><div class="scan-sublabel">Failed</div></div>
-    </div>
-  `;
-
-  let body = "";
-  if (crawlViewMode === "page") {
-    body = allUrls.map((url) => {
-      const r = results[url];
-      const err = failed[url];
-      if (err) {
-        return `
-          <details style="border:1px solid var(--ds-red-200);border-radius:4px;margin-bottom:4px;background:var(--ds-red-50)">
-            <summary class="scan-detail-summary">
-              <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-              <span class="fs-0" style="color:var(--ds-red-600);font-weight:700">\u2717</span>
-              <span class="truncate f-1 font-mono" style="color:var(--ds-zinc-800)" title="${escHtml(url)}">${escHtml(url)}</span>
-            </summary>
-            <div style="padding:4px 8px 8px;font-size:11px;color:var(--ds-red-700)">${escHtml(err)}</div>
-          </details>
-        `;
-      }
-      const violationCount = r.violations.reduce((s, v) => s + v.nodes.length, 0);
-      const passCount = r.passes.length;
-      const hasViolations = violationCount > 0;
-      return `
-        <details style="border:1px solid ${hasViolations ? "var(--ds-red-200)" : "var(--ds-green-200)"};border-radius:4px;margin-bottom:4px;background:${hasViolations ? "var(--ds-red-50)" : "var(--ds-green-50)"}">
-          <summary class="scan-detail-summary">
-            <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-            <span class="fs-0" style="color:${hasViolations ? "var(--ds-red-600)" : "var(--ds-green-700)"};font-weight:700">${hasViolations ? "\u2717" : "\u2713"}</span>
-            <span class="truncate f-1 font-mono" style="color:var(--ds-zinc-800)" title="${escHtml(url)}">${escHtml(url)}</span>
-            <span class="fs-0" style="font-size:10px;font-weight:700;color:${hasViolations ? "var(--ds-red-700)" : "var(--ds-green-700)"}">${hasViolations ? violationCount + " issue" + (violationCount === 1 ? "" : "s") : passCount + " pass"}</span>
-          </summary>
-          <div class="scan-detail-body">
-            ${r.violations.sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact)).map((v) => renderViolation(v)).join("") || '<div style="font-size:11px;color:var(--ds-green-700);padding:4px 0">No violations found.</div>'}
-          </div>
-        </details>
-      `;
-    }).join("");
-  } else {
-    // By WCAG — group all violations across all pages by criterion
-    const byCriterion = new Map<string, { violation: iScanResult["violations"][0]; pages: string[] }[]>();
-    for (const [url, r] of Object.entries(results)) {
-      for (const v of r.violations) {
-        const criteria = v.wcagCriteria && v.wcagCriteria.length > 0 ? v.wcagCriteria : [v.id];
-        for (const criterion of criteria) {
-          if (!byCriterion.has(criterion)) byCriterion.set(criterion, []);
-          byCriterion.get(criterion)!.push({ violation: v, pages: [url] });
-        }
-      }
-    }
-
-    if (byCriterion.size === 0) {
-      body = '<div style="padding:12px;font-size:12px;color:var(--ds-green-700);font-weight:600;text-align:center">No violations found across all pages.</div>';
-    } else {
-      body = Array.from(byCriterion.entries()).map(([criterion, entries]) => {
-        const totalNodes = entries.reduce((s, e) => s + e.violation.nodes.length, 0);
-        const uniquePages = [...new Set(entries.map((e) => e.pages[0]))];
-        return `
-          <details class="severity-${entries[0].violation.impact}" style="border-radius:0 4px 4px 0;margin-bottom:4px">
-            <summary class="scan-detail-summary">
-              <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-              <b class="truncate f-1" style="color:var(--ds-zinc-900)">
-                <a href="https://a11yscan.yantrakit.com/wcag/${criterion}" target="_blank" rel="noopener" style="color:var(--ds-indigo-700);text-decoration:underline">${criterion}</a>
-              </b>
-              <span class="fs-0" style="font-size:10px;color:var(--ds-zinc-600)">${uniquePages.length} page${uniquePages.length === 1 ? "" : "s"}</span>
-              <span class="fs-0 font-mono" style="color:var(--ds-zinc-600);font-weight:700">${totalNodes}</span>
-            </summary>
-            <div class="scan-detail-body">
-              ${uniquePages.map((pageUrl) => {
-                const pageEntries = entries.filter((e) => e.pages[0] === pageUrl);
-                return `
-                  <div style="margin-bottom:4px">
-                    <div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-600)margin-bottom:2px" title="${escHtml(pageUrl)}">${escHtml(pageUrl)}</div>
-                    ${pageEntries.map((e) => renderViolation(e.violation)).join("")}
-                  </div>
-                `;
-              }).join("")}
-            </div>
-          </details>
-        `;
-      }).join("");
-    }
-  }
-
-  return `<div class="scan-pane">${toggle}${summary}${body}</div>`;
-}
-
-/**
- * Render the Results tab body for a single scan: stats grid, MV banner +
- * filter chips when an MV scan exists, sorted violations, then a collapsed
- * passes section. Reads MV state from the closure for parity with the
- * production caller; the violation-shape and stat math is fully testable
- * via the result argument.
- */
-export function renderResults(result: iScanResult): string {
-  const mvResult = state.lastMvResult;
-  const mvFilter = state.mvViewportFilter;
-
-  // Determine which violations to display based on MV filter (F02)
-  let displayViolations = result.violations;
-  if (mvResult && mvFilter !== null) {
-    const perViewportResult = mvResult.perViewport[mvFilter];
-    displayViolations = perViewportResult ? perViewportResult.violations : [];
-  }
-
-  const totalPasses = result.passes.length;
-  const totalRules = displayViolations.length + totalPasses;
-  const passRate = totalRules > 0 ? Math.round((totalPasses / totalRules) * 100) : 100;
-  const totalViolationNodes = displayViolations.reduce((sum, v) => sum + v.nodes.length, 0);
-
-  // Map of viewport-specific violation id → viewport widths for badge rendering
-  const viewportSpecificMap = new Map(mvResult ? mvResult.viewportSpecific.map((v) => [v.id, v.viewports]) : []);
-
-  // MV summary banner and filter chips (F02-AC10, AC11)
-  const mvBanner = mvResult ? `
-    <div style="padding:6px 10px;background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:6px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--ds-amber-800)">
-      Multi-Viewport: ${mvResult.shared.length} shared &middot; ${mvResult.viewportSpecific.length} viewport-specific
-    </div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
-      <button class="mv-filter-chip cur-pointer min-h-24" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === null ? "var(--ds-amber-600)" : "var(--ds-zinc-300)"};background:${mvFilter === null ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === null ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">All</button>
-      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip font-mono cur-pointer min-h-24" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid ${mvFilter === vp ? "var(--ds-amber-600)" : "var(--ds-zinc-300)"};background:${mvFilter === vp ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === vp ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">${vp}px</button>`).join("")}
-    </div>
-  ` : "";
-
-  return `
-    <div class="scan-pane">
-      ${mvBanner}
-      <div class="scan-stats-grid scan-stats-grid--4">
-        <div><div style="font-size:16px;font-weight:800;color:var(--ds-red-700)">${totalViolationNodes}</div><div class="scan-caption-strong">Violations</div></div>
-        <div><div style="font-size:16px;font-weight:800;color:var(--ds-green-700)">${result.passes.length}</div><div class="scan-caption-strong">Passes</div></div>
-        <div><div style="font-size:16px;font-weight:800;color:var(--ds-amber-700)">${result.incomplete.length}</div><div class="scan-caption-strong">Review</div></div>
-        <div><div style="font-size:16px;font-weight:800;color:var(--ds-zinc-700)">${passRate}%</div><div class="scan-caption-strong">Pass rate</div></div>
-      </div>
-
-      ${displayViolations
-        .sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact))
-        .map((v) => {
-          const vpWidths = viewportSpecificMap.has(v.id) ? (viewportSpecificMap.get(v.id) ?? null) : null;
-          return renderViolation(v, vpWidths);
-        })
-        .join("")}
-
-      <details style="margin-top:8px">
-        <summary class="cur-pointer" style="list-style:none;font-size:12px;font-weight:700;color:var(--ds-green-700);padding:6px 0;display:flex;align-items:center;gap:6px">
-          <svg aria-hidden="true" class="chevron fs-0" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.15s"><path d="M2 4l3 3 3-3"/></svg>
-          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6l3 3 5-5"/></svg>
-          ${result.passes.length} rules passed
-        </summary>
-        <div>
-          ${result.passes.map((p) => `
-            <details style="border-bottom:1px solid var(--ds-zinc-100)">
-              <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:11px">
-                <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-                <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>
-                <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${p.id}</span>
-                <span class="fs-0" style="color:var(--ds-zinc-500)">${p.wcagCriteria?.join(", ") || ""}</span>
-                <span class="fs-0" style="color:var(--ds-green-700);font-weight:700">${p.nodes.length}</span>
-              </summary>
-              <div style="padding:2px 8px 6px 28px">
-                <div style="font-size:11px;color:var(--ds-zinc-600);margin-bottom:4px">${escHtml(p.description)}</div>
-                ${p.nodes.map((n) => `
-                  <div class="font-mono" style="font-size:11px;color:var(--ds-green-700);padding:2px 8px;margin:1px 0;background:var(--ds-green-50);border-radius:3px;display:flex;align-items:center;gap:6px;overflow:hidden">
-                    <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fs-0"><path d="M1 4l2 2 4-4"/></svg>
-                    <span class="truncate">${escHtml(n.selector)}</span>
-                  </div>
-                `).join("")}
-              </div>
-            </details>
-          `).join("")}
-        </div>
-      </details>
-    </div>
-  `;
-}
-
-export function renderViolation(v: iScanResult["violations"][0], viewportWidths: number[] | null = null): string {
-  // Viewport-specific badge shown when violation only appears at some widths (F02-AC13)
-  const vpBadge = viewportWidths && viewportWidths.length > 0
-    ? viewportWidths.map((w) => `<span class="font-mono" style="font-size:10px;font-weight:700;padding:1px 4px;background:var(--ds-blue-100);color:var(--ds-sky-700);border-radius:3px;margin-left:2px">${w}px</span>`).join("")
-    : "";
-  return `
-    <details class="severity-${v.impact} sr-details" style="border-radius:0 4px 4px 0;margin-bottom:4px">
-      <summary class="scan-detail-summary">
-        <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-        <b class="truncate f-1" style="color:var(--ds-zinc-900)">${v.wcagCriteria?.join(", ") || v.id}${vpBadge}</b>
-        <span class="fs-0" style="font-weight:700;padding:2px 6px;border-radius:4px;font-size:11px">${v.impact}</span>
-        <span class="fs-0 font-mono" style="color:var(--ds-zinc-600);font-weight:700">${v.nodes.length}</span>
-      </summary>
-      <div class="scan-detail-body">
-        ${v.wcagCriteria && v.wcagCriteria.length > 0 ? `<div style="margin-bottom:6px">${v.wcagCriteria.map((c) => `<a href="${getWcagUrl(c)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;color:var(--ds-indigo-700);text-decoration:underline;margin-right:8px">${c} — Learn more \u2197</a>`).join("")}</div>` : ""}
-        ${v.nodes.map((n) => `
-          <div style="background:#fff;border:1px solid var(--ds-zinc-200);border-radius:4px;padding:6px;margin-bottom:4px;font-size:11px">
-            <div style="display:flex;justify-content:space-between;gap:4px">
-              <span class="truncate font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(n.selector)}</span>
-              <button class="highlight-btn fs-0 cur-pointer min-h-24" data-selector="${escHtml(n.selector)}" aria-label="Highlight ${escHtml(n.selector)} on the page" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);background:none;border:none">Highlight</button>
-            </div>
-            <div style="color:var(--ds-red-700);margin-top:2px">${escHtml(n.failureSummary)}</div>
-            <button class="explain-btn cur-pointer min-h-24" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:11px;font-weight:700;color:var(--ds-indigo-700);background:none;border:none;margin-top:4px">Chat about it \u2192</button>
-          </div>
-        `).join("")}
-      </div>
-    </details>
-  `;
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    Manual Review (F09)
@@ -1040,52 +492,6 @@ function renderManualReview(): string {
   });
 }
 
-/**
- * Render the Manual Review tab body. Filters criteria by relevantWhen
- * against pageElements, then per-criterion shows pass/fail/na buttons with
- * aria-pressed reflecting current state. Pure; exported for tests.
- */
-export function renderManualReviewHtml(s: {
-  wcagVersion: string;
-  wcagLevel: string;
-  pageElements: import("@shared/types").iPageElements | null;
-  manualReview: Record<string, "pass" | "fail" | "na" | null>;
-}): string {
-  const criteria = getManualReviewCriteria(s.wcagVersion, s.wcagLevel);
-  const filtered = s.pageElements
-    ? criteria.filter((c) => {
-        if (!c.relevantWhen) return true;
-        return s.pageElements![c.relevantWhen as keyof typeof s.pageElements];
-      })
-    : criteria;
-
-  const reviewed = Object.values(s.manualReview).filter((v) => v !== null).length;
-
-  return `
-    <div class="scan-pane">
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:11px;color:var(--ds-zinc-600);font-weight:600">${filtered.length} criteria need human review</span>
-        <span style="font-size:11px;font-weight:700;color:var(--ds-amber-700)">${reviewed} of ${filtered.length} reviewed</span>
-      </div>
-      ${filtered.map((c) => {
-        const status = s.manualReview[c.id] || null;
-        return `
-          <div style="padding:8px;border:1px solid var(--ds-zinc-200);border-radius:4px;background:#fff;margin-bottom:6px" data-criterion="${c.id}">
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="f-1" style="font-size:11px;font-weight:700;color:var(--ds-zinc-800);min-width:0">${c.id} ${c.name}</span>
-              <div class="fs-0" style="display:flex;gap:2px">
-                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="pass" aria-pressed="${status === "pass"}" aria-label="Mark ${c.id} ${c.name} as Pass" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "pass" ? "background:var(--ds-green-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">Pass</button>
-                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="fail" aria-pressed="${status === "fail"}" aria-label="Mark ${c.id} ${c.name} as Fail" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "fail" ? "background:var(--ds-red-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">Fail</button>
-                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="na" aria-pressed="${status === "na"}" aria-label="Mark ${c.id} ${c.name} as Not Applicable" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "na" ? "background:var(--ds-zinc-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">N/A</button>
-              </div>
-            </div>
-            <div style="font-size:11px;color:var(--ds-zinc-600);line-height:1.5;margin-top:4px">${c.manualCheck}</div>
-          </div>
-        `;
-      }).join("")}
-    </div>
-  `;
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    ARIA Validation (F10)
@@ -1095,61 +501,7 @@ function renderAriaResults(): string {
   return renderAriaResultsHtml(state.ariaWidgets);
 }
 
-/**
- * Render the ARIA tab body. Empty state shows a 'Scan ARIA Patterns' button.
- * Otherwise splits widgets into compliant + issues sections. Pure; exported
- * for tests.
- */
-export function renderAriaResultsHtml(widgets: iAriaWidget[]): string {
-  if (widgets.length === 0) {
-    return `
-      <div style="padding:16px;text-align:center">
-        <div style="font-size:12px;color:var(--ds-zinc-500)">No ARIA widgets scanned yet.</div>
-        <button id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:8px;padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Scan ARIA Patterns</button>
-      </div>
-    `;
-  }
 
-  const issues = widgets.filter((w) => w.failCount > 0);
-  const compliant = widgets.filter((w) => w.failCount === 0);
-
-  return `
-    <div class="scan-pane">
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:11px;color:var(--ds-zinc-600);font-weight:600">${widgets.length} widgets detected</span>
-        <span style="font-size:11px;font-weight:700;color:var(--ds-red-700)">${issues.length} issues \u00b7 ${compliant.length} compliant</span>
-      </div>
-      ${issues.length > 0 ? `<div style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Issues</div>` : ""}
-      ${issues.map((w) => renderAriaWidget(w, false)).join("")}
-      ${compliant.length > 0 ? `<div style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin:8px 0 4px">Compliant</div>` : ""}
-      ${compliant.map((w) => renderAriaWidget(w, true)).join("")}
-    </div>
-  `;
-}
-
-export function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
-  // Per R-ARIA: 'Passing widgets are collapsed by default; failing are open
-  // by default'. So issues are open, compliant are closed.
-  return `
-    <details${pass ? "" : " open"} style="border:1px solid ${pass ? "var(--ds-green-200)" : "var(--ds-red-200)"};border-radius:4px;background:${pass ? "var(--ds-green-50)" : "var(--ds-red-50)"};margin-bottom:4px">
-      <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;font-size:11px">
-        <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-        <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:var(--ds-green-200);color:var(--ds-green-900)" : "background:var(--ds-red-200);color:var(--ds-red-900)"}">${escHtml(w.role)}</span>
-        <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(w.label)}</span>
-        <span style="font-weight:700;${pass ? "color:var(--ds-green-700)" : "color:var(--ds-red-700)"}">${pass ? "\u2713" : w.failCount + " issues"}</span>
-      </summary>
-      <div class="scan-detail-body">
-        ${w.checks.filter((c) => !c.pass).map((c) => `
-          <div style="font-size:11px;color:var(--ds-red-700);padding:2px 0 2px 8px;border-left:2px solid var(--ds-red-200)">${escHtml(c.message)}</div>
-        `).join("")}
-        ${w.checks.filter((c) => c.pass).map((c) => `
-          <div style="font-size:11px;color:var(--ds-green-700);padding:2px 0 2px 8px;border-left:2px solid var(--ds-green-200)">${escHtml(c.message)}</div>
-        `).join("")}
-        <button class="aria-highlight cur-pointer min-h-24" data-selector="${escHtml(w.selector)}" aria-label="Highlight ${escHtml(w.role)} ${escHtml(w.label)} on the page" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);background:none;border:none;margin-top:4px">Highlight on page</button>
-      </div>
-    </details>
-  `;
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    Observer History (F04)
@@ -1196,35 +548,6 @@ function renderObserverListInner(): string {
   return renderObserverListInnerHtml(observerEntries, observerFilter);
 }
 
-/**
- * Render the inner observer list (no chrome). Pure; exported for tests.
- * Returns the empty-state copy when entries is empty, the no-match copy
- * when the filter excludes everything, otherwise one row per entry.
- */
-export function renderObserverListInnerHtml(
-  entries: iObserverEntry[],
-  filter: string,
-): string {
-  if (entries.length === 0) {
-    return '<div class="scan-empty">Observer history will appear here as you browse with Observer mode on. Data stays local to your browser.</div>';
-  }
-  const filtered = filter
-    ? entries.filter((e) => e.url.includes(filter) || (e.title || "").toLowerCase().includes(filter.toLowerCase()))
-    : entries;
-  if (filtered.length === 0) return '<div class="scan-empty">No entries match that domain.</div>';
-  return filtered.map((entry) => `
-    <div role="button" tabindex="0" aria-label="Open observer entry: ${escHtml(entry.title || entry.url)}" style="padding:8px;border:1px solid var(--ds-zinc-200);border-radius:4px;background:#fff;margin-bottom:4px" class="observer-entry cur-pointer" data-url="${escHtml(entry.url)}">
-      <div style="display:flex;align-items:center;gap:6px">
-        <span class="fs-0" style="font-size:11px;font-weight:700;color:${entry.violationCount > 0 ? "var(--ds-red-700)" : "var(--ds-green-700)"}">${entry.violationCount}</span>
-        <span class="truncate f-1" style="font-size:11px;font-weight:600;color:var(--ds-zinc-800)">${escHtml(entry.title || entry.url)}</span>
-        <span class="fs-0" style="font-size:10px;color:var(--ds-zinc-500)">${entry.source === "auto" ? "auto" : "manual"}</span>
-        ${entry.viewportBucket ? `<span class="fs-0" style="font-size:10px;color:var(--ds-sky-700);background:var(--ds-blue-100);padding:1px 4px;border-radius:3px">${escHtml(entry.viewportBucket)}</span>` : ""}
-      </div>
-      <div class="truncate font-mono" style="font-size:10px;color:var(--ds-zinc-500);margin-top:2px">${escHtml(entry.url)}</div>
-      <div style="font-size:10px;color:var(--ds-zinc-500);margin-top:1px">${new Date(entry.timestamp).toLocaleString()}</div>
-    </div>
-  `).join("");
-}
 
 function renderToolbar(): string {
   return `<div class="toolbar">${renderToolbarContent()}</div>`;
@@ -1237,30 +560,6 @@ function renderToolbarContent(): string {
   });
 }
 
-/**
- * Render the export/overlay toolbar inside the scan tab. HTML/PDF exports
- * are disabled when there's no single-page scan because those formats
- * don't have a crawl-only layout. Pure; exported for tests.
- */
-export function renderToolbarContentHtml(s: {
-  hasSinglePageScan: boolean;
-  violationsOverlayOn: boolean;
-}): string {
-  const disabledAttr = s.hasSinglePageScan ? "" : 'disabled aria-disabled="true" title="Run a single-page scan to enable this export"';
-  return `
-      <div class="toolbar-row">
-        <span class="toolbar-label" id="export-label">Export</span>
-        <button class="toolbar-btn" id="export-json" aria-labelledby="export-label export-json">JSON</button>
-        <button class="toolbar-btn" id="export-html" aria-labelledby="export-label export-html" ${disabledAttr}>HTML</button>
-        <button class="toolbar-btn" id="export-pdf" aria-labelledby="export-label export-pdf" ${disabledAttr}>PDF</button>
-        <button class="toolbar-btn accent" id="export-copy" aria-label="Copy report JSON to clipboard">Copy</button>
-      </div>
-      <div class="toolbar-row">
-        <span class="toolbar-label">Highlight</span>
-        <button class="toolbar-btn${s.violationsOverlayOn ? " active" : ""}" id="toggle-violations" aria-pressed="${s.violationsOverlayOn}" ${s.hasSinglePageScan ? "" : 'disabled aria-disabled="true"'}>Violations</button>
-      </div>
-  `;
-}
 
 /**
  * Sort key for impact severity: critical(0) → serious(1) → moderate(2) →
@@ -1909,87 +1208,6 @@ function buildJsonReport(): import("@shared/types").iJsonReport {
   });
 }
 
-/**
- * Build the JSON export report from a snapshot of sidepanel state.
- * Pure; exported for tests. The closure-bound caller passes live state +
- * tab-order + focus-gap data; tests can pass any shape they want to
- * exercise the conditional sections (manualReview, ariaWidgets, tabOrder,
- * focusGaps, viewportAnalysis, crawl).
- */
-export function buildJsonReportFrom(s: {
-  lastScanResult: iScanResult | null;
-  crawlResults: Record<string, iScanResult> | null;
-  crawlFailed: Record<string, string> | null;
-  wcagVersion: string;
-  wcagLevel: string;
-  manualReview: Record<string, "pass" | "fail" | "na" | null>;
-  ariaWidgets: iAriaWidget[];
-  lastMvResult: import("@shared/types").iMultiViewportResult | null;
-  tabOrder: import("@shared/types").iTabOrderElement[];
-  focusGaps: import("@shared/types").iFocusGap[];
-  documentTitle: string;
-  nowIso: string;
-}): import("@shared/types").iJsonReport {
-  const r = s.lastScanResult;
-  const firstCrawlPage = !r && s.crawlResults
-    ? Object.values(s.crawlResults)[0] ?? null
-    : null;
-  const anchor = r ?? firstCrawlPage;
-  const violations = r ? r.violations : [];
-  const passes = r ? r.passes : [];
-  const incomplete = r ? r.incomplete : [];
-
-  const report: import("@shared/types").iJsonReport = {
-    metadata: {
-      url: anchor?.url ?? "",
-      title: s.documentTitle || anchor?.url || "",
-      timestamp: anchor?.timestamp ?? s.nowIso,
-      wcagVersion: s.wcagVersion,
-      wcagLevel: s.wcagLevel,
-      toolVersion: "1.0.0",
-      scanDurationMs: anchor?.scanDurationMs ?? 0,
-    },
-    summary: computeReportSummary(violations, passes, incomplete),
-    violations,
-    passes,
-    incomplete,
-  };
-
-  // F12-AC8: manual review criteria with statuses
-  const allCriteria = getManualReviewCriteria(s.wcagVersion, s.wcagLevel);
-  const pageElements = s.lastScanResult?.pageElements;
-  const filteredCriteria = pageElements
-    ? allCriteria.filter((c) => !c.relevantWhen || pageElements[c.relevantWhen as keyof typeof pageElements])
-    : allCriteria;
-  const reviewedCount = Object.values(s.manualReview).filter((v) => v !== null).length;
-  if (reviewedCount > 0) {
-    report.manualReview = {
-      reviewed: reviewedCount,
-      total: filteredCriteria.length,
-      criteria: filteredCriteria.map((c) => ({
-        id: c.id,
-        name: c.name,
-        status: s.manualReview[c.id] ?? null,
-      })),
-    };
-  }
-
-  if (s.ariaWidgets.length > 0) report.ariaWidgets = s.ariaWidgets;
-  if (s.tabOrder.length > 0) report.tabOrder = s.tabOrder;
-  if (s.focusGaps.length > 0) report.focusGaps = s.focusGaps;
-  if (s.lastMvResult) report.viewportAnalysis = s.lastMvResult;
-
-  if (s.crawlResults && Object.keys(s.crawlResults).length > 0) {
-    const failedEntries = s.crawlFailed ?? {};
-    report.crawl = {
-      pagesScanned: Object.keys(s.crawlResults).length,
-      pagesFailed: Object.keys(failedEntries).length,
-      results: s.crawlResults,
-    };
-  }
-
-  return report;
-}
 
 function buildHtmlReport(): string {
   if (!state.lastScanResult) throw new Error("buildHtmlReport called without a single-page scan result");
@@ -2002,99 +1220,4 @@ function buildHtmlReport(): string {
   });
 }
 
-/**
- * Build a self-contained HTML report. The output is downloaded by the user
- * and opened standalone, so all CSS is inlined and color literals are used
- * directly (the design tokens aren't available outside the side panel).
- *
- * Pure; exported for tests. Throws if `scan` is null since the caller
- * gates on state.lastScanResult.
- */
-export function buildHtmlReportFrom(s: {
-  scan: iScanResult;
-  wcagVersion: string;
-  wcagLevel: string;
-  manualReview: Record<string, "pass" | "fail" | "na" | null>;
-  ariaWidgets: iAriaWidget[];
-}): string {
-  const r = s.scan;
-  const totalViolationNodes = r.violations.reduce((sum, v) => sum + v.nodes.length, 0);
-  const totalRules = r.violations.length + r.passes.length;
-  const passRate = totalRules > 0 ? Math.round((r.passes.length / totalRules) * 100) : 100;
-  const severityColor: Record<string, string> = { critical: "#991b1b", serious: "#c2410c", moderate: "#a16207", minor: "#4b5563" };
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<title>A11y Scan Report — ${escHtml(r.url)}</title>
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 900px; margin: 0 auto; padding: 24px; color: #18181b; }
-  h1 { font-size: 20px; margin-bottom: 4px; }
-  .meta { font-size: 13px; color: #52525b; margin-bottom: 24px; }
-  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-  .summary-card { text-align: center; padding: 16px; border: 1px solid #e4e4e7; border-radius: 8px; }
-  .summary-card .num { font-size: 28px; font-weight: 800; }
-  .summary-card .label { font-size: 12px; color: #52525b; }
-  .violation { border-left: 4px solid; padding: 12px; margin-bottom: 8px; background: #fff; border-radius: 0 4px 4px 0; }
-  .violation h3 { margin: 0 0 4px; font-size: 14px; }
-  .violation .impact { font-size: 12px; font-weight: 700; text-transform: uppercase; }
-  .node { font-size: 12px; font-family: monospace; background: #f4f4f5; padding: 6px 8px; border-radius: 4px; margin: 4px 0; }
-  .pass { font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f4f4f5; color: #047857; }
-  @media print { body { padding: 0; } .violation { break-inside: avoid; } }
-</style>
-</head>
-<body>
-<h1>Accessibility Scan Report</h1>
-<div class="meta">
-  <div><strong>URL:</strong> ${escHtml(r.url)}</div>
-  <div><strong>Scanned:</strong> ${new Date(r.timestamp).toLocaleString()}</div>
-  <div><strong>WCAG:</strong> ${s.wcagVersion} ${s.wcagLevel} &middot; <strong>Duration:</strong> ${r.scanDurationMs}ms</div>
-</div>
-<div class="summary">
-  <div class="summary-card"><div class="num" style="color:var(--ds-red-700)">${totalViolationNodes}</div><div class="label">Violations</div></div>
-  <div class="summary-card"><div class="num" style="color:var(--ds-green-700)">${r.passes.length}</div><div class="label">Passes</div></div>
-  <div class="summary-card"><div class="num" style="color:var(--ds-amber-700)">${r.incomplete.length}</div><div class="label">Review</div></div>
-  <div class="summary-card"><div class="num">${passRate}%</div><div class="label">Pass Rate</div></div>
-</div>
-<h2>Violations (${r.violations.length} rules)</h2>
-${r.violations.sort((a, b) => severityOrder(a.impact) - severityOrder(b.impact)).map((v) => `
-<div class="violation" style="border-color:${severityColor[v.impact] || "#4b5563"}">
-  <h3>${escHtml(v.help || v.description)}</h3>
-  <div class="impact" style="color:${severityColor[v.impact] || "#4b5563"}">${v.impact} &middot; ${v.wcagCriteria?.join(", ") || v.id}</div>
-  ${v.nodes.map((n) => `<div class="node">${escHtml(n.selector)}<br>${escHtml(n.failureSummary)}</div>`).join("")}
-</div>`).join("")}
-<h2>Passed Rules (${r.passes.length})</h2>
-${r.passes.map((p) => `<div class="pass">&check; ${escHtml(p.id)} — ${escHtml(p.description)} (${p.nodes.length} elements)</div>`).join("")}
-${s.ariaWidgets.length > 0 ? `
-<h2>ARIA Widgets (${s.ariaWidgets.length})</h2>
-${s.ariaWidgets.map((w) => `<div class="pass">${w.failCount > 0 ? "&cross" : "&check"} ${escHtml(w.role)} — ${escHtml(w.label)} (${w.failCount} issues)</div>`).join("")}
-` : ""}
-${(() => {
-  const allCriteria = getManualReviewCriteria(s.wcagVersion, s.wcagLevel);
-  const pageElements = r.pageElements;
-  const filteredCriteria = pageElements
-    ? allCriteria.filter((c) => !c.relevantWhen || pageElements[c.relevantWhen as keyof typeof pageElements])
-    : allCriteria;
-  const reviewedCount = Object.values(s.manualReview).filter((v) => v !== null).length;
-  if (reviewedCount === 0) return "";
-  const rows = filteredCriteria.map((c) => {
-    const status = s.manualReview[c.id] ?? null;
-    const color = status === "pass" ? "#047857" : status === "fail" ? "#b91c1c" : status === "na" ? "#52525b" : "#a1a1aa";
-    const label = status === "pass" ? "Pass" : status === "fail" ? "Fail" : status === "na" ? "N/A" : "Not reviewed";
-    return `<tr><td style="padding:4px 8px;font-size:12px">${escHtml(c.id)}</td><td style="padding:4px 8px;font-size:12px">${escHtml(c.name)}</td><td style="padding:4px 8px;font-size:12px;font-weight:700;color:${color}">${label}</td></tr>`;
-  }).join("");
-  return `<h2>Manual Review (${reviewedCount}/${filteredCriteria.length} reviewed)</h2>
-<table style="width:100%;border-collapse:collapse;margin-bottom:16px">
-  <thead><tr style="background:var(--ds-zinc-100)"><th style="padding:6px 8px;text-align:left;font-size:12px">Criterion</th><th style="padding:6px 8px;text-align:left;font-size:12px">Name</th><th style="padding:6px 8px;text-align:left;font-size:12px">Status</th></tr></thead>
-  <tbody>${rows}</tbody>
-</table>`;
-})()}
-<footer style="margin-top:32px;padding-top:16px;border-top:1px solid var(--ds-zinc-200);font-size:11px;color:var(--ds-zinc-500)">
-  Generated by A11y Scan &middot; ${new Date().toISOString()}
-</footer>
-</body>
-</html>`;
-}
 
