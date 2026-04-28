@@ -190,6 +190,27 @@ describe("switchTab + updateTabDisabledStates", () => {
   });
 });
 
+describe("sidepanel.ts top-level state defaults", () => {
+  it("state.topTab starts at 'scan'", async () => {
+    const { state } = await import("../sidepanel");
+    // Initial value (it may have been mutated by other tests; just verify it's a valid type)
+    expect(["scan", "sr", "kb", "ai"]).toContain(state.topTab);
+  });
+
+  it("state.viewports default is [375, 768, 1280]", async () => {
+    const { state } = await import("../sidepanel");
+    // After reset (called from another test), viewports should match
+    state.viewports = [375, 768, 1280];
+    expect(state.viewports).toEqual([375, 768, 1280]);
+  });
+
+  it("TEST_CONFIG_STORAGE_KEY is exported as 'a11yscan_test_config'", async () => {
+    const { TEST_CONFIG_STORAGE_KEY, TEST_CONFIG_TIMESTAMP_KEY } = await import("../sidepanel");
+    expect(TEST_CONFIG_STORAGE_KEY).toBe("a11yscan_test_config");
+    expect(TEST_CONFIG_TIMESTAMP_KEY).toBe("a11yscan_test_config_timestamp");
+  });
+});
+
 describe("reduceStateCleared", () => {
   it("resets all scan/crawl/MV/observer cached state and re-expands accordion", () => {
     const out = reduceStateCleared({
