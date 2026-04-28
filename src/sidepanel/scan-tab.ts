@@ -39,7 +39,7 @@ import { renderAriaResultsHtml } from "./scan-tab/render-aria";
 import { renderObserverListInnerHtml } from "./scan-tab/render-observer";
 import { renderToolbarContentHtml } from "./scan-tab/render-toolbar";
 
-import { attachScanTabListeners, bindScanTabCallbacks } from "./scan-tab/handlers";
+import { attachScanTabListeners, bindScanTabCallbacks } from "./scan-tab/handlers/index";
 
 // Re-export pure helpers split into their own modules. External callers
 // (sidepanel.ts, tests) keep importing them from "./scan-tab".
