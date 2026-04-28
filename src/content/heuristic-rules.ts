@@ -97,13 +97,25 @@ function isAriaHidden(el: Element): boolean {
 }
 
 /* ── Color/contrast helpers ── */
-function parseColor(color: string): [number, number, number] | null {
+
+/**
+ * Parse an rgb()/rgba() CSS color string into an [r, g, b] tuple.
+ * Returns null on parse failure (non-rgb format, malformed, etc.).
+ * Pure; exported for tests.
+ */
+export function parseColor(color: string): [number, number, number] | null {
   const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (!m) return null;
   return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
 }
 
-function luminance(r: number, g: number, b: number): number {
+/**
+ * Relative luminance per WCAG 2.x. Each channel is 0-255; returns a 0-1
+ * relative-luminance value. Pure; exported for tests.
+ *
+ * Implements the formula at https://www.w3.org/TR/WCAG22/#dfn-relative-luminance.
+ */
+export function luminance(r: number, g: number, b: number): number {
   const [rs, gs, bs] = [r, g, b].map(c => {
     c = c / 255;
     return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
@@ -111,7 +123,11 @@ function luminance(r: number, g: number, b: number): number {
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 
-function contrastRatio(c1: [number, number, number], c2: [number, number, number]): number {
+/**
+ * WCAG contrast ratio between two colors (each as [r, g, b], 0-255).
+ * Output is 1-21. Pure; exported for tests.
+ */
+export function contrastRatio(c1: [number, number, number], c2: [number, number, number]): number {
   const l1 = luminance(...c1);
   const l2 = luminance(...c2);
   const lighter = Math.max(l1, l2);

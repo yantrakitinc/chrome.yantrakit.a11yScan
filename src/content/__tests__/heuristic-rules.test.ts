@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { runHeuristicRules } from "../heuristic-rules";
+import { runHeuristicRules, parseColor, luminance, contrastRatio } from "../heuristic-rules";
 
 if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS.escape !== "function") {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -384,6 +384,68 @@ describe("runHeuristicRules — link-indistinguishable (rule 15) and SPA (rule 3
   it("rule 30 does NOT flag a page that has an aria-live region", () => {
     document.body.innerHTML = `<div aria-live="polite"></div><p>x</p>`;
     expect(find(runHeuristicRules(false), "spa-route-focus")).toBeUndefined();
+  });
+});
+
+describe("parseColor", () => {
+  it("parses 'rgb(r, g, b)'", () => {
+    expect(parseColor("rgb(255, 128, 64)")).toEqual([255, 128, 64]);
+  });
+  it("parses 'rgba(r, g, b, a)'", () => {
+    expect(parseColor("rgba(0, 0, 0, 0.5)")).toEqual([0, 0, 0]);
+  });
+  it("returns null for non-rgb formats", () => {
+    expect(parseColor("#ff0000")).toBeNull();
+    expect(parseColor("hsl(120, 100%, 50%)")).toBeNull();
+    expect(parseColor("transparent")).toBeNull();
+    expect(parseColor("")).toBeNull();
+  });
+  it("handles whitespace variations", () => {
+    expect(parseColor("rgb(255,128,64)")).toEqual([255, 128, 64]);
+    expect(parseColor("rgb(255, 128, 64)")).toEqual([255, 128, 64]);
+  });
+});
+
+describe("luminance (WCAG relative luminance)", () => {
+  it("pure black is 0", () => {
+    expect(luminance(0, 0, 0)).toBeCloseTo(0, 5);
+  });
+  it("pure white is 1", () => {
+    expect(luminance(255, 255, 255)).toBeCloseTo(1, 5);
+  });
+  it("pure red has the documented relative luminance ≈ 0.2126", () => {
+    expect(luminance(255, 0, 0)).toBeCloseTo(0.2126, 3);
+  });
+  it("pure green has ≈ 0.7152", () => {
+    expect(luminance(0, 255, 0)).toBeCloseTo(0.7152, 3);
+  });
+  it("pure blue has ≈ 0.0722", () => {
+    expect(luminance(0, 0, 255)).toBeCloseTo(0.0722, 3);
+  });
+});
+
+describe("contrastRatio (WCAG)", () => {
+  it("black on white = 21", () => {
+    expect(contrastRatio([0, 0, 0], [255, 255, 255])).toBeCloseTo(21, 0);
+  });
+  it("identical colors = 1", () => {
+    expect(contrastRatio([128, 128, 128], [128, 128, 128])).toBeCloseTo(1, 5);
+  });
+  it("order-independent (swapping fg and bg returns same ratio)", () => {
+    const a = contrastRatio([100, 100, 100], [200, 200, 200]);
+    const b = contrastRatio([200, 200, 200], [100, 100, 100]);
+    expect(a).toBeCloseTo(b, 5);
+  });
+  it("medium gray on white passes 4.5:1 threshold", () => {
+    // #595959 on white — definitely above WCAG-AA 4.5:1
+    const r = contrastRatio([0x59, 0x59, 0x59], [255, 255, 255]);
+    expect(r).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("light gray on white fails the 4.5:1 threshold", () => {
+    // #aaaaaa on white — fails AA
+    const r = contrastRatio([0xaa, 0xaa, 0xaa], [255, 255, 255]);
+    expect(r).toBeLessThan(4.5);
   });
 });
 
