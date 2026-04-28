@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared, switchTab, updateTabDisabledStates, state, buildElementNotFoundToast } from "../sidepanel";
+import { CVD_MATRICES, reduceCrawlProgress, reduceStateCleared, switchTab, updateTabDisabledStates, state, buildElementNotFoundToast, pickViolationScrollTarget } from "../sidepanel";
 
 describe("CVD_MATRICES — color-vision-deficiency simulation matrices (F08)", () => {
   it("includes the 8 documented CVD presets", () => {
@@ -187,6 +187,27 @@ describe("switchTab + updateTabDisabledStates", () => {
     updateTabDisabledStates();
     expect((document.getElementById("tab-sr") as HTMLButtonElement).disabled).toBe(false);
     expect((document.getElementById("tab-kb") as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+describe("pickViolationScrollTarget", () => {
+  it("returns -1 when there are no violation details on the page", () => {
+    expect(pickViolationScrollTarget({ index: 5 }, 0)).toBe(-1);
+  });
+  it("returns the requested index when in range", () => {
+    expect(pickViolationScrollTarget({ index: 3 }, 10)).toBe(3);
+  });
+  it("returns 0 when index is undefined (no payload)", () => {
+    expect(pickViolationScrollTarget(undefined, 5)).toBe(0);
+  });
+  it("returns 0 when index is negative", () => {
+    expect(pickViolationScrollTarget({ index: -5 }, 5)).toBe(0);
+  });
+  it("returns 0 when index is past the end", () => {
+    expect(pickViolationScrollTarget({ index: 99 }, 5)).toBe(0);
+  });
+  it("returns 0 when payload is empty object", () => {
+    expect(pickViolationScrollTarget({}, 5)).toBe(0);
   });
 });
 

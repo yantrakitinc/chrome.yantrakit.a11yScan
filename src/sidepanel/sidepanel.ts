@@ -21,6 +21,18 @@ import { renderAiChatTab, openAiHistoryPanel } from "./ai-tab";
    ═══════════════════════════════════════════════════════════════════ */
 
 /**
+ * Pick the violation-detail element to scroll to / open after a badge
+ * click in the page overlay (F05-AC4). Returns the targeted index out
+ * of [0..count) — clamped to 0 if out of range. Pure; exported for tests.
+ */
+export function pickViolationScrollTarget(payload: { index?: number } | undefined, totalDetails: number): number {
+  if (totalDetails === 0) return -1;
+  const i = payload?.index;
+  if (i === undefined || i < 0 || i >= totalDetails) return 0;
+  return i;
+}
+
+/**
  * Build the "Element not found on page" toast that shows when a HIGHLIGHT
  * message comes back with found=false. Returns the styled HTMLElement so
  * callers can prepend it into the active tab panel and remove after 3s.
@@ -450,11 +462,11 @@ function initMessageListener(): void {
         state.scanSubTab = "results";
         renderScanTab();
         requestAnimationFrame(() => {
-          const index = (msg.payload as { index?: number } | undefined)?.index;
           const details = document.querySelectorAll<HTMLDetailsElement>(
             "#scan-content details.severity-critical, #scan-content details.severity-serious, #scan-content details.severity-moderate, #scan-content details.severity-minor"
           );
-          const target = (index !== undefined && index >= 0 && index < details.length) ? details[index] : details[0];
+          const targetIdx = pickViolationScrollTarget(msg.payload as { index?: number } | undefined, details.length);
+          const target = targetIdx >= 0 ? details[targetIdx] : null;
           if (target) {
             target.open = true;
             target.scrollIntoView({ behavior: "smooth", block: "start" });
