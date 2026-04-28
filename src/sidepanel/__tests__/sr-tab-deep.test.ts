@@ -231,6 +231,31 @@ describe("sr-tab — speak button on a leaf element", () => {
   });
 });
 
+describe("sr-tab — speakWithVoices fallback when voices not loaded", () => {
+  it("when getVoices() returns [], registers onvoiceschanged then triggers doSpeak when fired", async () => {
+    let onvoicesChangedCb: (() => void) | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).speechSynthesis.getVoices = vi.fn(() => []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Object.defineProperty((globalThis as any).speechSynthesis, "onvoiceschanged", {
+      configurable: true,
+      get() { return onvoicesChangedCb; },
+      set(v: (() => void) | null) { onvoicesChangedCb = v; },
+    });
+
+    await analyzeWith(fixtureElements);
+    const speakBtn = document.querySelector<HTMLButtonElement>(".sr-speak");
+    speakBtn?.click();
+    await new Promise((r) => setTimeout(r, 30));
+    // The handler registers onvoiceschanged
+    expect(onvoicesChangedCb).toBeTruthy();
+    // Fire the voiceschanged callback — should call doSpeak
+    onvoicesChangedCb?.();
+    await new Promise((r) => setTimeout(r, 5));
+    expect(speakInvocations.length).toBeGreaterThan(0);
+  });
+});
+
 describe("sr-tab — Escape handler", () => {
   it("Escape during inspect mode exits inspect", async () => {
     const { renderScreenReaderTab } = await import("../sr-tab");
