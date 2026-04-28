@@ -220,6 +220,28 @@ export function matchPageRule(
 }
 
 /**
+ * Push newly-collected links into the crawl queue, skipping any URL that's
+ * already visited or already enqueued. Returns a new queue array (does
+ * not mutate the input). The reversal preserves depth-first order: the
+ * first link on the page should pop first, but the queue is a LIFO stack.
+ *
+ * Pure; exported for tests.
+ */
+export function pushLinksToQueue(
+  queue: string[],
+  visited: string[],
+  links: string[],
+): string[] {
+  const out = [...queue];
+  for (const link of [...links].reverse()) {
+    if (!visited.includes(link) && !out.includes(link)) {
+      out.push(link);
+    }
+  }
+  return out;
+}
+
+/**
  * Apply testConfig wcag + rules overrides on top of a base remote config.
  * Pure; exported for tests. Mutates a shallow clone of `config.rules` —
  * the input is not modified.
@@ -314,12 +336,7 @@ async function processCrawlQueue(): Promise<void> {
         // In Follow mode, collect links from the page
         if (crawlOptions?.mode === "follow") {
           const links = await collectLinks(tab.id, crawlOptions.scope || new URL(url).origin);
-          // Push in reverse so first links are popped first (depth-first natural order)
-          for (const link of links.reverse()) {
-            if (!crawlState.visited.includes(link) && !crawlState.queue.includes(link)) {
-              crawlState.queue.push(link);
-            }
-          }
+          crawlState.queue = pushLinksToQueue(crawlState.queue, crawlState.visited, links);
         }
       } else {
         crawlState.failed[url] = result?.payload?.message || "Scan failed";

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { isUrlGated, stripFragment, handleCrawlMessage, matchPageRule, applyTestConfigOverrides } from "../crawl";
+import { isUrlGated, stripFragment, handleCrawlMessage, matchPageRule, applyTestConfigOverrides, pushLinksToQueue } from "../crawl";
 import type { iMessage } from "@shared/messages";
 
 describe("isUrlGated", () => {
@@ -116,6 +116,51 @@ describe("handleCrawlMessage — routing", () => {
       (r) => responses.push(r),
     );
     expect(responses[0]).toEqual({ success: true });
+  });
+});
+
+describe("pushLinksToQueue", () => {
+  it("appends new links to the queue, skipping already-visited URLs", () => {
+    const out = pushLinksToQueue(
+      ["https://x.com/seed"],
+      ["https://x.com/visited"],
+      ["https://x.com/new", "https://x.com/visited", "https://x.com/another"],
+    );
+    expect(out).toContain("https://x.com/seed");
+    expect(out).toContain("https://x.com/another");
+    expect(out).not.toContain("https://x.com/visited");
+  });
+
+  it("skips URLs already in the queue", () => {
+    const out = pushLinksToQueue(
+      ["https://x.com/a"],
+      [],
+      ["https://x.com/a", "https://x.com/b"],
+    );
+    expect(out.filter((u) => u === "https://x.com/a").length).toBe(1);
+    expect(out).toContain("https://x.com/b");
+  });
+
+  it("reverses incoming order so the first link in the page pops first (depth-first)", () => {
+    // queue is a LIFO stack — to make link[0] pop first, we push in reverse.
+    const out = pushLinksToQueue([], [], ["a", "b", "c"]);
+    // Inputs reversed → pushed [c, b, a] → a will be popped first
+    expect(out).toEqual(["c", "b", "a"]);
+  });
+
+  it("does not mutate the input queue or links arrays", () => {
+    const queue = ["x"];
+    const links = ["a", "b"];
+    pushLinksToQueue(queue, [], links);
+    expect(queue).toEqual(["x"]);
+    expect(links).toEqual(["a", "b"]);
+  });
+
+  it("returns a copy of the input queue when no new links", () => {
+    const queue = ["a", "b"];
+    const out = pushLinksToQueue(queue, [], []);
+    expect(out).toEqual(["a", "b"]);
+    expect(out).not.toBe(queue);
   });
 });
 
