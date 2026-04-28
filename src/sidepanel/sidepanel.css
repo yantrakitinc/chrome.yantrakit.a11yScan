@@ -820,6 +820,16 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
 .toolbar-btn:hover { background: #fafafa; }
 .toolbar-btn.accent { color: #b45309; border-color: #fcd34d; }
 .toolbar-btn.accent:hover { background: #fffbeb; }
+/* Active/pressed state — Highlight toggles use this to show the overlay
+   is currently on. Without this rule the .active class added by the
+   handler is invisible. Amber-100 background + amber-700 text + amber-500
+   border so it reads as "pressed" against the inactive sibling buttons. */
+.toolbar-btn.active {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #f59e0b;
+}
+.toolbar-btn.active:hover { background: #fde68a; }
 
 .progress-bar {
   padding: 8px 12px;

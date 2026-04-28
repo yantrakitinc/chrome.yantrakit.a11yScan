@@ -287,10 +287,12 @@ export function switchTab(tabId: iTopTab): void {
     tab.setAttribute("tabindex", isActive ? "0" : "-1");
   });
 
-  // Update panels
+  // Update panel visibility. The `[hidden]` attribute drives `.tab-panel[hidden]
+  // { display: none }` in CSS — that's the single source of truth for which
+  // panel renders. Don't also toggle a `.active` class: there's no rule for
+  // it, so it's invisible and adds nothing but cycles to every tab switch.
   document.querySelectorAll<HTMLDivElement>(".tab-panel").forEach((panel) => {
     panel.hidden = panel.id !== `panel-${tabId}`;
-    panel.classList.toggle("active", panel.id === `panel-${tabId}`);
   });
 
   // Render tab content
