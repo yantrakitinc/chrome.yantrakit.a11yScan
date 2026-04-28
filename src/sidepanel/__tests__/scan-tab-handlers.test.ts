@@ -277,6 +277,29 @@ describe("scan-tab handlers — overlay toggle + crawl view mode", () => {
   });
 });
 
+describe("scan-tab handlers — scan-btn dispatch", () => {
+  function pageScan() {
+    return {
+      url: "https://x.com", timestamp: "2026-01-01",
+      violations: [], passes: [], incomplete: [],
+      summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 0,
+    };
+  }
+
+  it("scan-btn exists after renderScanTab in idle phase", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "idle";
+    state.crawl = false;
+    state.mv = false;
+    state.accordionExpanded = true;
+    renderScanTab();
+    expect(document.getElementById("scan-btn")).toBeTruthy();
+  });
+});
+
 describe("scan-tab handlers — viewport editor", () => {
   it("vp-edit click flips viewportEditing on (UI shows the inline editor)", async () => {
     const { renderScanTab } = await import("../scan-tab");
