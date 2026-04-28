@@ -1253,6 +1253,29 @@ export function severityOrder(impact: string): number {
 }
 
 /**
+ * Add a new viewport to the list. Returns a sorted, deduplicated copy.
+ * Caps at 6 entries (returns the input unchanged when already at cap).
+ * Picks a value 200px wider than the current widest. Pure; exported for tests.
+ */
+export function addViewport(viewports: number[], maxCount = 6): number[] {
+  if (viewports.length >= maxCount) return viewports;
+  const newVal = (viewports.length === 0 ? 320 : Math.max(...viewports) + 200);
+  if (viewports.includes(newVal)) return viewports;
+  return [...viewports, newVal].sort((a, b) => a - b);
+}
+
+/**
+ * Remove the viewport at index `idx`. Refuses to remove the last entry
+ * (can't have a 0-viewport MV scan). Returns the input unchanged when
+ * idx is out of bounds. Pure; exported for tests.
+ */
+export function removeViewport(viewports: number[], idx: number, minCount = 1): number[] {
+  if (viewports.length <= minCount) return viewports;
+  if (idx < 0 || idx >= viewports.length) return viewports;
+  return viewports.filter((_, i) => i !== idx);
+}
+
+/**
  * Parse a paste-area string into a deduplicated list of URLs. Recognizes
  * three input shapes:
  *
@@ -1353,11 +1376,7 @@ function attachScanTabListeners(): void {
 
   // Viewport editor — add button
   document.getElementById("vp-add")?.addEventListener("click", () => {
-    if (state.viewports.length >= 6) return;
-    const newVal = Math.max(...state.viewports) + 200;
-    if (!state.viewports.includes(newVal)) {
-      state.viewports = [...state.viewports, newVal].sort((a, b) => a - b);
-    }
+    state.viewports = addViewport(state.viewports);
     renderScanTab();
   });
 
@@ -1365,8 +1384,7 @@ function attachScanTabListeners(): void {
   document.querySelectorAll<HTMLButtonElement>(".vp-remove").forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = parseInt(btn.dataset.index ?? "0");
-      if (state.viewports.length <= 1) return;
-      state.viewports = state.viewports.filter((_, i) => i !== idx);
+      state.viewports = removeViewport(state.viewports, idx);
       renderScanTab();
     });
   });

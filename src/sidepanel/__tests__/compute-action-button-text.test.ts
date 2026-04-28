@@ -9,7 +9,7 @@ import {
   renderModeTogglesHtml, renderCollapsedToggleHtml, renderToolbarContentHtml,
   renderExpandedToggleHtml, renderMvCheckboxHtml,
   renderCrawlConfigHtml, renderUrlListPanelHtml,
-  buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls,
+  buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls, addViewport, removeViewport,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -816,6 +816,47 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("addViewport", () => {
+  it("adds 200px wider than the current widest, sorted", () => {
+    expect(addViewport([375, 768, 1280])).toEqual([375, 768, 1280, 1480]);
+  });
+  it("starts at 320 when the input is empty", () => {
+    expect(addViewport([])).toEqual([320]);
+  });
+  it("returns the input unchanged at the 6-entry cap", () => {
+    const at6 = [320, 480, 640, 800, 1024, 1280];
+    expect(addViewport(at6)).toBe(at6);
+  });
+  it("respects a custom maxCount", () => {
+    expect(addViewport([320, 480], 2)).toEqual([320, 480]);
+    expect(addViewport([320, 480], 4)).toEqual([320, 480, 680]);
+  });
+  it("the new value is always greater than the previous max (sorted output stays sorted)", () => {
+    const out = addViewport([320, 768, 1024]);
+    expect(out[out.length - 1]).toBeGreaterThan(1024);
+    expect([...out].sort((a, b) => a - b)).toEqual(out);
+  });
+});
+
+describe("removeViewport", () => {
+  it("removes the entry at the given index", () => {
+    expect(removeViewport([375, 768, 1280], 1)).toEqual([375, 1280]);
+  });
+  it("returns the input unchanged when only one entry remains", () => {
+    const lone = [375];
+    expect(removeViewport(lone, 0)).toBe(lone);
+  });
+  it("returns the input unchanged for out-of-bounds indexes", () => {
+    const list = [320, 768];
+    expect(removeViewport(list, -1)).toBe(list);
+    expect(removeViewport(list, 5)).toBe(list);
+  });
+  it("respects a custom minCount", () => {
+    // Allow removing down to 0 by passing minCount=0
+    expect(removeViewport([320], 0, 0)).toEqual([]);
   });
 });
 
