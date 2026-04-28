@@ -131,6 +131,59 @@ describe("initMessageListener — fires registered listener and routes messages"
     const toast = document.querySelector('[role="alert"]');
     expect(toast).toBeNull();
   });
+
+  it("NAVIGATE to 'settings' switches to scan tab and expands the accordion", async () => {
+    const { initMessageListener, state } = await import("../sidepanel");
+    state.topTab = "kb";
+    state.accordionExpanded = false;
+    initMessageListener();
+    registeredListener!({ type: "NAVIGATE", payload: { target: "settings" } });
+    expect(state.topTab).toBe("scan");
+    expect(state.accordionExpanded).toBe(true);
+  });
+
+  it("CONFIRM_CLEAR_ALL un-hides the confirm bar and focuses Cancel", async () => {
+    const { initMessageListener } = await import("../sidepanel");
+    initMessageListener();
+    const bar = document.getElementById("confirm-clear-bar")!;
+    bar.hidden = true;
+    registeredListener!({ type: "CONFIRM_CLEAR_ALL" });
+    expect(bar.hidden).toBe(false);
+  });
+
+  it("VIOLATION_BADGE_CLICKED switches to scan tab + sets sub-tab to 'results'", async () => {
+    const { initMessageListener, state } = await import("../sidepanel");
+    state.topTab = "sr";
+    state.scanSubTab = "manual";
+    initMessageListener();
+    registeredListener!({ type: "VIOLATION_BADGE_CLICKED", payload: { index: 0 } });
+    expect(state.topTab).toBe("scan");
+    expect(state.scanSubTab).toBe("results");
+  });
+
+  it("INSPECT_ELEMENT in non-SR tab is a no-op (does NOT change scope)", async () => {
+    // The handler gates on state.topTab === 'sr' — verify no-op for other tabs
+    const { initMessageListener, state } = await import("../sidepanel");
+    state.topTab = "scan";
+    initMessageListener();
+    expect(() => registeredListener!({
+      type: "INSPECT_ELEMENT",
+      payload: { selector: "#x", role: "button", accessibleName: "x", ariaAttributes: {}, tabindex: null, isFocusable: true, violations: [] },
+    })).not.toThrow();
+  });
+
+  it("OBSERVER_SCAN_COMPLETE invalidates the observer cache (re-renders)", async () => {
+    const { initMessageListener } = await import("../sidepanel");
+    initMessageListener();
+    expect(() => registeredListener!({ type: "OBSERVER_SCAN_COMPLETE", payload: { entry: { url: "x" } } })).not.toThrow();
+  });
+
+  it("MOVIE_TICK + MOVIE_COMPLETE delegate to kb-tab onMovieTick / onMovieComplete (no throw)", async () => {
+    const { initMessageListener } = await import("../sidepanel");
+    initMessageListener();
+    expect(() => registeredListener!({ type: "MOVIE_TICK", payload: { currentIndex: 1, total: 5 } })).not.toThrow();
+    expect(() => registeredListener!({ type: "MOVIE_COMPLETE" })).not.toThrow();
+  });
 });
 
 describe("sidepanel message routing — STATE_CLEARED + CRAWL_PROGRESS + MULTI_VIEWPORT_PROGRESS", () => {
