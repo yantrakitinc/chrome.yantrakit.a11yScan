@@ -8,6 +8,8 @@ import {
   renderScanProgressHtml, renderCrawlProgressHtml, renderPageRuleWaitHtml,
   renderModeTogglesHtml, renderCollapsedToggleHtml, renderToolbarContentHtml,
   renderExpandedToggleHtml, renderMvCheckboxHtml,
+  renderCrawlConfigHtml, renderUrlListPanelHtml,
+  buildJsonReportFrom,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -375,6 +377,79 @@ describe("renderResults — single-page render shape", () => {
   });
 });
 
+describe("renderCrawlConfigHtml", () => {
+  function s(overrides: Partial<Parameters<typeof renderCrawlConfigHtml>[0]> = {}) {
+    return { crawlMode: "follow" as const, urlListPanelOpen: false, urlList: [], busy: false, ...overrides };
+  }
+
+  it("renders the Crawl mode dropdown with the active option selected", () => {
+    expect(renderCrawlConfigHtml(s({ crawlMode: "urllist" }))).toMatch(/value="urllist" selected/);
+    expect(renderCrawlConfigHtml(s({ crawlMode: "follow" }))).toMatch(/value="follow" selected/);
+  });
+
+  it("hides the URL-list button in 'follow' mode", () => {
+    expect(renderCrawlConfigHtml(s({ crawlMode: "follow" }))).not.toMatch(/id="url-list-open"/);
+  });
+
+  it("shows 'Set up URL list' when urllist mode + zero urls", () => {
+    expect(renderCrawlConfigHtml(s({ crawlMode: "urllist", urlList: [] }))).toMatch(/Set up URL list/);
+  });
+
+  it("shows '<count> URLs — Edit list' when urllist mode + ≥1 url", () => {
+    expect(renderCrawlConfigHtml(s({ crawlMode: "urllist", urlList: ["a", "b", "c"] }))).toMatch(/3 URLs/);
+    expect(renderCrawlConfigHtml(s({ crawlMode: "urllist", urlList: ["a"] }))).toMatch(/1 URL[^s]/);
+  });
+
+  it("toggles aria-expanded on the URL-list button", () => {
+    expect(renderCrawlConfigHtml(s({ crawlMode: "urllist", urlListPanelOpen: true }))).toMatch(/id="url-list-open"[^>]*aria-expanded="true"/);
+    expect(renderCrawlConfigHtml(s({ crawlMode: "urllist", urlListPanelOpen: false }))).toMatch(/id="url-list-open"[^>]*aria-expanded="false"/);
+  });
+
+  it("renders the URL-list panel when both urllist mode + panel open", () => {
+    const out = renderCrawlConfigHtml(s({ crawlMode: "urllist", urlListPanelOpen: true, urlList: ["https://x.com/a"] }));
+    expect(out).toMatch(/id="url-list-panel"/);
+  });
+
+  it("does NOT render the URL-list panel when urllist mode but panel closed", () => {
+    expect(renderCrawlConfigHtml(s({ crawlMode: "urllist", urlListPanelOpen: false }))).not.toMatch(/id="url-list-panel"/);
+  });
+
+  it("disables crawl-mode select when busy=true", () => {
+    expect(renderCrawlConfigHtml(s({ busy: true }))).toMatch(/id="crawl-mode"[^>]*disabled/);
+  });
+});
+
+describe("renderUrlListPanelHtml", () => {
+  it("renders one row per URL", () => {
+    const out = renderUrlListPanelHtml(["https://x.com/a", "https://y.com/b"]);
+    expect((out.match(/class="url-remove-btn/g) ?? []).length).toBe(2);
+    expect(out).toMatch(/https:\/\/x\.com\/a/);
+    expect(out).toMatch(/https:\/\/y\.com\/b/);
+  });
+
+  it("escapes html-injection in URLs", () => {
+    const out = renderUrlListPanelHtml(["https://x.com/<script>"]);
+    expect(out).not.toMatch(/<script>/);
+    expect(out).toMatch(/&lt;script&gt;/);
+  });
+
+  it("renders 'N URLs will be scanned' summary when at least one URL", () => {
+    expect(renderUrlListPanelHtml(["a", "b"])).toMatch(/2 URLs will be scanned/);
+    expect(renderUrlListPanelHtml(["a"])).toMatch(/1 URL will be scanned/);
+  });
+
+  it("hides the summary when zero URLs", () => {
+    expect(renderUrlListPanelHtml([])).not.toMatch(/will be scanned/);
+  });
+
+  it("includes the paste textarea, manual-add input, and Done button", () => {
+    const out = renderUrlListPanelHtml([]);
+    expect(out).toMatch(/id="url-paste-area"/);
+    expect(out).toMatch(/id="url-manual-input"/);
+    expect(out).toMatch(/id="url-list-done"/);
+  });
+});
+
 describe("renderExpandedToggleHtml", () => {
   function s(overrides: Partial<Parameters<typeof renderExpandedToggleHtml>[0]> = {}) {
     return { wcagVersion: "2.2", wcagLevel: "AA", hasTestConfig: false, configPanelOpen: false, busy: false, ...overrides };
@@ -630,6 +705,117 @@ describe("renderPageRuleWaitHtml", () => {
     const out = renderPageRuleWaitHtml({ url: "https://x.com/<a>", description: "<script>alert(1)</script>" });
     expect(out).not.toMatch(/<script>alert\(1\)/);
     expect(out).toMatch(/&lt;script&gt;/);
+  });
+});
+
+describe("buildJsonReportFrom", () => {
+  function pageScan(overrides: Partial<iScanResult> = {}): iScanResult {
+    return {
+      url: "https://example.com",
+      timestamp: "2026-01-01T00:00:00Z",
+      violations: [],
+      passes: [],
+      incomplete: [],
+      summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: {
+        hasVideo: false, hasAudio: false, hasForms: false, hasImages: false,
+        hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false,
+        hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false,
+      },
+      scanDurationMs: 100,
+      ...overrides,
+    };
+  }
+  const baseState = {
+    lastScanResult: null as iScanResult | null,
+    crawlResults: null as Record<string, iScanResult> | null,
+    crawlFailed: null as Record<string, string> | null,
+    wcagVersion: "2.2",
+    wcagLevel: "AA",
+    manualReview: {} as Record<string, "pass" | "fail" | "na" | null>,
+    ariaWidgets: [] as iAriaWidget[],
+    lastMvResult: null,
+    tabOrder: [],
+    focusGaps: [],
+    documentTitle: "Page Title",
+    nowIso: "2026-01-15T12:00:00Z",
+  };
+
+  it("uses lastScanResult as the metadata anchor when present", () => {
+    const report = buildJsonReportFrom({ ...baseState, lastScanResult: pageScan({ url: "https://x.com/a" }) });
+    expect(report.metadata.url).toBe("https://x.com/a");
+    expect(report.metadata.timestamp).toBe("2026-01-01T00:00:00Z");
+  });
+
+  it("falls back to the first crawl page when no single-page scan", () => {
+    const report = buildJsonReportFrom({
+      ...baseState,
+      crawlResults: { "https://x.com/a": pageScan({ url: "https://x.com/a" }) },
+    });
+    expect(report.metadata.url).toBe("https://x.com/a");
+  });
+
+  it("uses nowIso for metadata.timestamp when there's no scan to anchor", () => {
+    const report = buildJsonReportFrom(baseState);
+    expect(report.metadata.timestamp).toBe("2026-01-15T12:00:00Z");
+  });
+
+  it("threads wcag version + level into metadata", () => {
+    const report = buildJsonReportFrom({ ...baseState, wcagVersion: "2.1", wcagLevel: "AAA" });
+    expect(report.metadata.wcagVersion).toBe("2.1");
+    expect(report.metadata.wcagLevel).toBe("AAA");
+  });
+
+  it("omits manualReview when nothing has been reviewed", () => {
+    expect(buildJsonReportFrom(baseState).manualReview).toBeUndefined();
+  });
+
+  it("includes manualReview with reviewed-count when ≥1 status set", () => {
+    const report = buildJsonReportFrom({
+      ...baseState,
+      manualReview: { "1.4.3": "pass", "2.4.3": "fail" },
+    });
+    expect(report.manualReview).toBeDefined();
+    expect(report.manualReview!.reviewed).toBe(2);
+    expect(report.manualReview!.criteria.find((c) => c.id === "1.4.3")?.status).toBe("pass");
+  });
+
+  it("filters manualReview criteria by relevantWhen when pageElements supply that info", () => {
+    const noVideo = buildJsonReportFrom({
+      ...baseState,
+      lastScanResult: pageScan(),
+      manualReview: { "1.2.4": "pass" },
+    });
+    // 1.2.4 (Captions Live) is gated on hasVideo; pageElements has hasVideo=false, so it's filtered out of the total
+    expect(noVideo.manualReview!.criteria.find((c) => c.id === "1.2.4")).toBeUndefined();
+  });
+
+  it("includes ariaWidgets only when array is non-empty", () => {
+    expect(buildJsonReportFrom(baseState).ariaWidgets).toBeUndefined();
+    expect(buildJsonReportFrom({ ...baseState, ariaWidgets: [{ role: "tablist", selector: "#x", label: "x", html: "", checks: [], passCount: 0, failCount: 0 }] }).ariaWidgets?.length).toBe(1);
+  });
+
+  it("includes crawl block only when crawlResults has entries", () => {
+    expect(buildJsonReportFrom(baseState).crawl).toBeUndefined();
+    const report = buildJsonReportFrom({
+      ...baseState,
+      crawlResults: { "https://x.com/a": pageScan(), "https://x.com/b": pageScan() },
+      crawlFailed: { "https://x.com/c": "timeout" },
+    });
+    expect(report.crawl?.pagesScanned).toBe(2);
+    expect(report.crawl?.pagesFailed).toBe(1);
+  });
+
+  it("includes tabOrder + focusGaps only when they have entries", () => {
+    expect(buildJsonReportFrom(baseState).tabOrder).toBeUndefined();
+    expect(buildJsonReportFrom(baseState).focusGaps).toBeUndefined();
+    const r2 = buildJsonReportFrom({
+      ...baseState,
+      tabOrder: [{ index: 1, selector: "#a", role: "button", accessibleName: "x", tabindex: null, hasFocusIndicator: true }],
+      focusGaps: [{ selector: "#b", role: "div", reason: "no-tabindex" }],
+    });
+    expect(r2.tabOrder?.length).toBe(1);
+    expect(r2.focusGaps?.length).toBe(1);
   });
 });
 

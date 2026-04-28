@@ -371,22 +371,41 @@ export function renderMvCheckboxHtml(s: {
 }
 
 function renderCrawlConfig(busy: boolean): string {
-  const urlCount = crawlUrlList.length;
-  const urlListBtn = _crawlMode === "urllist"
-    ? `<button type="button" id="url-list-open" aria-expanded="${urlListPanelOpen}" aria-controls="url-list-panel"
+  return renderCrawlConfigHtml({
+    crawlMode: _crawlMode,
+    urlListPanelOpen,
+    urlList: crawlUrlList,
+    busy,
+  });
+}
+
+/**
+ * Render the crawl-config row: the Crawl mode dropdown (Follow / URL list)
+ * plus, in URL-list mode, the open-list button and inline panel. Pure;
+ * exported for tests.
+ */
+export function renderCrawlConfigHtml(s: {
+  crawlMode: "follow" | "urllist";
+  urlListPanelOpen: boolean;
+  urlList: string[];
+  busy: boolean;
+}): string {
+  const urlCount = s.urlList.length;
+  const urlListBtn = s.crawlMode === "urllist"
+    ? `<button type="button" id="url-list-open" aria-expanded="${s.urlListPanelOpen}" aria-controls="url-list-panel"
         class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:3px 10px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800);margin-top:4px">
         ${urlCount === 0 ? "Set up URL list" : `${urlCount} URL${urlCount === 1 ? "" : "s"} \u2014 Edit list`}
       </button>`
     : "";
 
-  const panel = (_crawlMode === "urllist" && urlListPanelOpen) ? renderUrlListPanel() : "";
+  const panel = (s.crawlMode === "urllist" && s.urlListPanelOpen) ? renderUrlListPanelHtml(s.urlList) : "";
 
   return `
     <div style="display:flex;align-items:center;gap:8px">
       <span class="scan-caption-strong">Crawl mode</span>
-      <select id="crawl-mode" aria-label="Crawl mode" ${busy ? "disabled" : ""} class="f-1" style="font-size:12px;padding:4px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
-        <option value="follow" ${_crawlMode === "follow" ? "selected" : ""}>Follow all links</option>
-        <option value="urllist" ${_crawlMode === "urllist" ? "selected" : ""}>URL list</option>
+      <select id="crawl-mode" aria-label="Crawl mode" ${s.busy ? "disabled" : ""} class="f-1" style="font-size:12px;padding:4px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
+        <option value="follow" ${s.crawlMode === "follow" ? "selected" : ""}>Follow all links</option>
+        <option value="urllist" ${s.crawlMode === "urllist" ? "selected" : ""}>URL list</option>
       </select>
     </div>
     ${urlListBtn}
@@ -395,7 +414,15 @@ function renderCrawlConfig(busy: boolean): string {
 }
 
 function renderUrlListPanel(): string {
-  const listRows = crawlUrlList.map((url, i) => `
+  return renderUrlListPanelHtml(crawlUrlList);
+}
+
+/**
+ * Render the URL-list editor panel: paste textarea + add buttons + the
+ * read-only list rows. Pure; exported for tests.
+ */
+export function renderUrlListPanelHtml(urlList: string[]): string {
+  const listRows = urlList.map((url, i) => `
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
       <input type="text" readonly value="${escHtml(url)}"
         class="f-1 font-mono" style="font-size:11px;padding:3px 6px;border:1px solid var(--ds-zinc-200);border-radius:3px;background:var(--ds-zinc-50);color:var(--ds-zinc-800);min-width:0">
@@ -405,8 +432,8 @@ function renderUrlListPanel(): string {
     </div>
   `).join("");
 
-  const summary = crawlUrlList.length > 0
-    ? `<div style="font-size:11px;font-weight:600;color:var(--ds-zinc-600);margin-bottom:6px">${crawlUrlList.length} URL${crawlUrlList.length === 1 ? "" : "s"} will be scanned</div>`
+  const summary = urlList.length > 0
+    ? `<div style="font-size:11px;font-weight:600;color:var(--ds-zinc-600);margin-bottom:6px">${urlList.length} URL${urlList.length === 1 ? "" : "s"} will be scanned</div>`
     : "";
 
   return `
@@ -1956,11 +1983,46 @@ export function computeReportSummary(
    ═══════════════════════════════════════════════════════════════════ */
 
 function buildJsonReport(): import("@shared/types").iJsonReport {
-  const r = state.lastScanResult;
-  // For crawl-only reports (no single-page scan), top-level fields use the
-  // first crawl page as the metadata anchor and summary aggregates across pages.
-  const firstCrawlPage = !r && state.crawlResults
-    ? Object.values(state.crawlResults)[0] ?? null
+  return buildJsonReportFrom({
+    lastScanResult: state.lastScanResult,
+    crawlResults: state.crawlResults,
+    crawlFailed: state.crawlFailed,
+    wcagVersion: state.wcagVersion,
+    wcagLevel: state.wcagLevel,
+    manualReview: state.manualReview,
+    ariaWidgets: state.ariaWidgets,
+    lastMvResult: state.lastMvResult,
+    tabOrder: getTabOrder(),
+    focusGaps: getFocusGaps(),
+    documentTitle: document.title,
+    nowIso: new Date().toISOString(),
+  });
+}
+
+/**
+ * Build the JSON export report from a snapshot of sidepanel state.
+ * Pure; exported for tests. The closure-bound caller passes live state +
+ * tab-order + focus-gap data; tests can pass any shape they want to
+ * exercise the conditional sections (manualReview, ariaWidgets, tabOrder,
+ * focusGaps, viewportAnalysis, crawl).
+ */
+export function buildJsonReportFrom(s: {
+  lastScanResult: iScanResult | null;
+  crawlResults: Record<string, iScanResult> | null;
+  crawlFailed: Record<string, string> | null;
+  wcagVersion: string;
+  wcagLevel: string;
+  manualReview: Record<string, "pass" | "fail" | "na" | null>;
+  ariaWidgets: iAriaWidget[];
+  lastMvResult: import("@shared/types").iMultiViewportResult | null;
+  tabOrder: import("@shared/types").iTabOrderElement[];
+  focusGaps: import("@shared/types").iFocusGap[];
+  documentTitle: string;
+  nowIso: string;
+}): import("@shared/types").iJsonReport {
+  const r = s.lastScanResult;
+  const firstCrawlPage = !r && s.crawlResults
+    ? Object.values(s.crawlResults)[0] ?? null
     : null;
   const anchor = r ?? firstCrawlPage;
   const violations = r ? r.violations : [];
@@ -1970,10 +2032,10 @@ function buildJsonReport(): import("@shared/types").iJsonReport {
   const report: import("@shared/types").iJsonReport = {
     metadata: {
       url: anchor?.url ?? "",
-      title: document.title || anchor?.url || "",
-      timestamp: anchor?.timestamp ?? new Date().toISOString(),
-      wcagVersion: state.wcagVersion,
-      wcagLevel: state.wcagLevel,
+      title: s.documentTitle || anchor?.url || "",
+      timestamp: anchor?.timestamp ?? s.nowIso,
+      wcagVersion: s.wcagVersion,
+      wcagLevel: s.wcagLevel,
       toolVersion: "1.0.0",
       scanDurationMs: anchor?.scanDurationMs ?? 0,
     },
@@ -1983,13 +2045,13 @@ function buildJsonReport(): import("@shared/types").iJsonReport {
     incomplete,
   };
 
-  // Include manual review in documented shape (F12-AC8)
-  const allCriteria = getManualReviewCriteria(state.wcagVersion, state.wcagLevel);
-  const pageElements = state.lastScanResult?.pageElements;
+  // F12-AC8: manual review criteria with statuses
+  const allCriteria = getManualReviewCriteria(s.wcagVersion, s.wcagLevel);
+  const pageElements = s.lastScanResult?.pageElements;
   const filteredCriteria = pageElements
     ? allCriteria.filter((c) => !c.relevantWhen || pageElements[c.relevantWhen as keyof typeof pageElements])
     : allCriteria;
-  const reviewedCount = Object.values(state.manualReview).filter((v) => v !== null).length;
+  const reviewedCount = Object.values(s.manualReview).filter((v) => v !== null).length;
   if (reviewedCount > 0) {
     report.manualReview = {
       reviewed: reviewedCount,
@@ -1997,38 +2059,22 @@ function buildJsonReport(): import("@shared/types").iJsonReport {
       criteria: filteredCriteria.map((c) => ({
         id: c.id,
         name: c.name,
-        status: state.manualReview[c.id] ?? null,
+        status: s.manualReview[c.id] ?? null,
       })),
     };
   }
 
-  // Include ARIA widgets if scanned (F12-AC9)
-  if (state.ariaWidgets.length > 0) {
-    report.ariaWidgets = state.ariaWidgets;
-  }
+  if (s.ariaWidgets.length > 0) report.ariaWidgets = s.ariaWidgets;
+  if (s.tabOrder.length > 0) report.tabOrder = s.tabOrder;
+  if (s.focusGaps.length > 0) report.focusGaps = s.focusGaps;
+  if (s.lastMvResult) report.viewportAnalysis = s.lastMvResult;
 
-  // Include tab order and focus gaps if collected (F12-AC1)
-  const currentTabOrder = getTabOrder();
-  if (currentTabOrder.length > 0) {
-    report.tabOrder = currentTabOrder;
-  }
-  const currentFocusGaps = getFocusGaps();
-  if (currentFocusGaps.length > 0) {
-    report.focusGaps = currentFocusGaps;
-  }
-
-  // Include viewport analysis if MV scan was done (F12-AC11)
-  if (state.lastMvResult) {
-    report.viewportAnalysis = state.lastMvResult;
-  }
-
-  // Include crawl results when crawl is complete or paused (F12-AC1)
-  if (state.crawlResults && Object.keys(state.crawlResults).length > 0) {
-    const failedEntries = state.crawlFailed ?? {};
+  if (s.crawlResults && Object.keys(s.crawlResults).length > 0) {
+    const failedEntries = s.crawlFailed ?? {};
     report.crawl = {
-      pagesScanned: Object.keys(state.crawlResults).length,
+      pagesScanned: Object.keys(s.crawlResults).length,
       pagesFailed: Object.keys(failedEntries).length,
-      results: state.crawlResults,
+      results: s.crawlResults,
     };
   }
 
