@@ -1253,6 +1253,38 @@ export function severityOrder(impact: string): number {
 }
 
 /**
+ * Build the START_CRAWL message payload from sidepanel state. The
+ * testConfig (when present) takes precedence over the manual UI controls
+ * for every field, per F13-AC4. Pure; exported for tests.
+ */
+export function buildStartCrawlPayload(s: {
+  testConfig: import("@shared/types").iTestConfig | null;
+  crawlMode: "follow" | "urllist";
+  crawlUrlList: string[];
+}): {
+  mode: "follow" | "urllist";
+  timeout: number;
+  delay: number;
+  scope: string;
+  urlList: string[];
+  pageRules: import("@shared/types").iPageRule[];
+  auth: import("@shared/types").iCrawlAuth | undefined;
+  testConfig: import("@shared/types").iTestConfig | undefined;
+} {
+  const tc = s.testConfig;
+  return {
+    mode: tc?.crawl?.mode ?? s.crawlMode,
+    timeout: tc?.timing?.pageLoadTimeout ?? 30000,
+    delay: tc?.timing?.delayBetweenPages ?? 1000,
+    scope: tc?.crawl?.scope ?? "",
+    urlList: s.crawlMode === "urllist" ? [...s.crawlUrlList] : (tc?.crawl?.urlList ?? []),
+    pageRules: tc?.pageRules ?? [],
+    auth: tc?.auth ?? undefined,
+    testConfig: tc ?? undefined,
+  };
+}
+
+/**
  * Add a new viewport to the list. Returns a sorted, deduplicated copy.
  * Caps at 6 entries (returns the input unchanged when already at cap).
  * Picks a value 200px wider than the current widest. Pure; exported for tests.
@@ -1457,16 +1489,11 @@ function attachScanTabListeners(): void {
       sendMessage({ type: "CLEAR_HIGHLIGHTS" });
       updateTabDisabledStates();
       renderScanTab();
-      await sendMessage({ type: "START_CRAWL", payload: {
-        mode: state.testConfig?.crawl?.mode ?? _crawlMode,
-        timeout: state.testConfig?.timing?.pageLoadTimeout ?? 30000,
-        delay: state.testConfig?.timing?.delayBetweenPages ?? 1000,
-        scope: state.testConfig?.crawl?.scope ?? "",
-        urlList: _crawlMode === "urllist" ? [...crawlUrlList] : (state.testConfig?.crawl?.urlList ?? []),
-        pageRules: state.testConfig?.pageRules ?? [],
-        auth: state.testConfig?.auth ?? undefined,
-        testConfig: state.testConfig ?? undefined,
-      } });
+      await sendMessage({ type: "START_CRAWL", payload: buildStartCrawlPayload({
+        testConfig: state.testConfig,
+        crawlMode: _crawlMode,
+        crawlUrlList,
+      }) });
     } else {
       const wasResults = state.scanPhase === "results";
       state.scanPhase = "scanning";

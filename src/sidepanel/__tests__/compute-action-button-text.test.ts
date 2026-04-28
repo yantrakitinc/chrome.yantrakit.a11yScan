@@ -10,6 +10,7 @@ import {
   renderExpandedToggleHtml, renderMvCheckboxHtml,
   renderCrawlConfigHtml, renderUrlListPanelHtml,
   buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls, addViewport, removeViewport,
+  buildStartCrawlPayload,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -816,6 +817,69 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("buildStartCrawlPayload", () => {
+  it("uses defaults when no testConfig", () => {
+    const out = buildStartCrawlPayload({ testConfig: null, crawlMode: "follow", crawlUrlList: [] });
+    expect(out.mode).toBe("follow");
+    expect(out.timeout).toBe(30000);
+    expect(out.delay).toBe(1000);
+    expect(out.scope).toBe("");
+    expect(out.urlList).toEqual([]);
+    expect(out.pageRules).toEqual([]);
+    expect(out.auth).toBeUndefined();
+    expect(out.testConfig).toBeUndefined();
+  });
+
+  it("testConfig overrides UI mode + scope (F13-AC4)", () => {
+    const out = buildStartCrawlPayload({
+      testConfig: { crawl: { mode: "urllist", scope: "https://x.com/", urlList: ["https://x.com/p"] }, timing: { pageLoadTimeout: 60000, delayBetweenPages: 2000 } },
+      crawlMode: "follow",
+      crawlUrlList: ["should-be-ignored"],
+    });
+    expect(out.mode).toBe("urllist");
+    expect(out.timeout).toBe(60000);
+    expect(out.delay).toBe(2000);
+    expect(out.scope).toBe("https://x.com/");
+  });
+
+  it("uses manual crawlUrlList in urllist mode when no testConfig.crawl.urlList", () => {
+    const out = buildStartCrawlPayload({
+      testConfig: null,
+      crawlMode: "urllist",
+      crawlUrlList: ["https://x.com/a", "https://x.com/b"],
+    });
+    expect(out.urlList).toEqual(["https://x.com/a", "https://x.com/b"]);
+  });
+
+  it("manual crawlUrlList is ignored in follow mode", () => {
+    const out = buildStartCrawlPayload({
+      testConfig: null,
+      crawlMode: "follow",
+      crawlUrlList: ["should-be-ignored"],
+    });
+    expect(out.urlList).toEqual([]);
+  });
+
+  it("testConfig.pageRules + auth are passed through", () => {
+    const auth = { loginUrl: "x", usernameSelector: "x", passwordSelector: "x", submitSelector: "x", username: "x", password: "x" };
+    const pr = [{ pattern: "/admin", waitType: "login" as const, description: "x" }];
+    const out = buildStartCrawlPayload({
+      testConfig: { auth, pageRules: pr },
+      crawlMode: "follow",
+      crawlUrlList: [],
+    });
+    expect(out.auth).toBe(auth);
+    expect(out.pageRules).toBe(pr);
+  });
+
+  it("makes a defensive copy of urlList (caller can't mutate state)", () => {
+    const list = ["https://x.com/a"];
+    const out = buildStartCrawlPayload({ testConfig: null, crawlMode: "urllist", crawlUrlList: list });
+    out.urlList.push("https://x.com/b");
+    expect(list).toEqual(["https://x.com/a"]);
   });
 });
 
