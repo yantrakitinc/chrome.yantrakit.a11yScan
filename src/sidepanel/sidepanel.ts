@@ -382,7 +382,7 @@ export function initConfirmClearBar(): void {
    Message Listener
    ═══════════════════════════════════════════════════════════════════ */
 
-function initMessageListener(): void {
+export function initMessageListener(): void {
   chrome.runtime.onMessage.addListener((msg: iMessage) => {
     switch (msg.type) {
       case "NAVIGATE":
