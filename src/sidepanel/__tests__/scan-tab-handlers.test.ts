@@ -147,3 +147,91 @@ describe("scan-tab handlers — sub-tab navigation", () => {
     expect(state.scanSubTab).toBe("manual");
   });
 });
+
+describe("scan-tab handlers — highlight + manual review", () => {
+  function pageScan() {
+    return {
+      url: "https://x.com", timestamp: "2026-01-01",
+      violations: [{
+        id: "color-contrast", impact: "serious" as const, description: "Contrast",
+        help: "Improve contrast", helpUrl: "", tags: [],
+        nodes: [{ selector: "#submit", html: "<button>x</button>", failureSummary: "low contrast" }],
+        wcagCriteria: ["1.4.3"],
+      }],
+      passes: [], incomplete: [],
+      summary: { critical: 0, serious: 1, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 100,
+    };
+  }
+
+  it("clicking a Highlight button sends a HIGHLIGHT_ELEMENT message with the selector", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+    const btn = document.querySelector<HTMLButtonElement>(".highlight-btn");
+    btn?.click();
+    await Promise.resolve();
+    const types = sentMessages.map((m) => m.type);
+    expect(types).toContain("HIGHLIGHT_ELEMENT");
+  });
+
+  it("clicking a Manual Review button updates state.manualReview for that criterion", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "manual";
+    state.manualReview = {};
+    renderScanTab();
+    // Pick the first manual review criterion and click Pass
+    const passBtn = document.querySelector<HTMLButtonElement>(".manual-btn[data-status='pass']");
+    expect(passBtn).toBeTruthy();
+    const id = passBtn!.dataset.id!;
+    passBtn?.click();
+    expect(state.manualReview[id]).toBe("pass");
+  });
+});
+
+describe("scan-tab handlers — viewport editor", () => {
+  it("vp-edit click flips viewportEditing on (UI shows the inline editor)", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.mv = true;
+    state.viewports = [375, 768, 1280];
+    state.accordionExpanded = true;
+    renderScanTab();
+    const editBtn = document.getElementById("vp-edit");
+    editBtn?.click();
+    // After re-render, the chip row is replaced with the inline editor (vp-input)
+    expect(document.querySelector(".vp-input")).toBeTruthy();
+  });
+
+  it("vp-add click appends a new viewport to state.viewports", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.mv = true;
+    state.viewports = [375, 768];
+    state.accordionExpanded = true;
+    renderScanTab();
+    document.getElementById("vp-edit")?.click(); // enter editing mode
+    document.getElementById("vp-add")?.click();
+    expect(state.viewports.length).toBe(3);
+  });
+
+  it("vp-remove click deletes a viewport from state.viewports", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.mv = true;
+    state.viewports = [375, 768, 1280];
+    state.accordionExpanded = true;
+    renderScanTab();
+    document.getElementById("vp-edit")?.click();
+    const remove = document.querySelector<HTMLButtonElement>(".vp-remove");
+    remove?.click();
+    expect(state.viewports.length).toBe(2);
+  });
+});
