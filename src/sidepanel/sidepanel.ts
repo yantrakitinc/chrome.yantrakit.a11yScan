@@ -16,7 +16,7 @@ import { renderAiChatTab, openAiHistoryPanel } from "./ai-tab";
    CVD Matrices (F08) — verified from codebase
    ═══════════════════════════════════════════════════════════════════ */
 
-const CVD_MATRICES: Record<string, number[]> = {
+export const CVD_MATRICES: Record<string, number[]> = {
   protanopia:     [0.567, 0.433, 0,     0.558, 0.442, 0,     0,     0.242, 0.758],
   deuteranopia:   [0.625, 0.375, 0,     0.7,   0.3,   0,     0,     0.3,   0.7  ],
   protanomaly:    [0.817, 0.183, 0,     0.333, 0.667, 0,     0,     0.125, 0.875],
