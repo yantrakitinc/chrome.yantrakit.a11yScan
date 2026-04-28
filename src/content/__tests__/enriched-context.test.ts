@@ -96,4 +96,66 @@ describe("collectEnrichedContext — file path guesses", () => {
     document.body.innerHTML = `<div id="plain" class="bg-red-500"></div>`;
     expect(collectEnrichedContext(["#plain"])["#plain"].filePathGuesses).toEqual([]);
   });
+
+  it("BEM class with only -- (modifier-without-block) still returns a guess", () => {
+    document.body.innerHTML = `<div id="m" class="primary--large"></div>`;
+    const guesses = collectEnrichedContext(["#m"])["#m"].filePathGuesses;
+    expect(guesses[0]?.guess).toBe("components/primary");
+  });
+
+  it("data-component appended after a BEM-classes guess (both fire)", () => {
+    document.body.innerHTML = `<div id="z" class="card__body" data-component="Card"></div>`;
+    const guesses = collectEnrichedContext(["#z"])["#z"].filePathGuesses;
+    expect(guesses).toHaveLength(2);
+    expect(guesses[0].guess).toBe("components/card");
+    expect(guesses[1].guess).toBe("components/Card");
+  });
+});
+
+describe("collectEnrichedContext — framework detection branches", () => {
+  it("detects React via __reactFiber$ property", () => {
+    document.body.innerHTML = `<div id="r"></div>`;
+    const el = document.getElementById("r")!;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (el as any).__reactFiber$abc = { type: function FooComponent() { /* noop */ } };
+    const out = collectEnrichedContext(["#r"])["#r"];
+    expect(out.framework.detected).toBe("React");
+    expect(out.framework.componentName).toBe("FooComponent");
+  });
+
+  it("detects React via __reactInternalInstance$ property (older fiber name)", () => {
+    document.body.innerHTML = `<div id="r2"></div>`;
+    const el = document.getElementById("r2")!;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (el as any).__reactInternalInstance$x = {};
+    expect(collectEnrichedContext(["#r2"])["#r2"].framework.detected).toBe("React");
+  });
+
+  it("detects Vue via __vue__ property", () => {
+    document.body.innerHTML = `<div id="v"></div>`;
+    const el = document.getElementById("v")!;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (el as any).__vue__ = {};
+    expect(collectEnrichedContext(["#v"])["#v"].framework.detected).toBe("Vue");
+  });
+
+  it("React detected but componentName falls back to null when fiber.type is not a function", () => {
+    document.body.innerHTML = `<div id="rn"></div>`;
+    const el = document.getElementById("rn")!;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (el as any).__reactFiber$x = { type: "div" }; // non-function = string component
+    expect(collectEnrichedContext(["#rn"])["#rn"].framework.componentName).toBeNull();
+  });
+});
+
+describe("collectEnrichedContext — DOM context fallbacks", () => {
+  it("nearestHeading is empty when closest container has no heading", () => {
+    document.body.innerHTML = `<div id="bare"><span>x</span></div>`;
+    expect(collectEnrichedContext(["#bare"])["#bare"].dom.nearestHeading).toBe("");
+  });
+
+  it("ng- attribute (with hyphen) detects Angular", () => {
+    document.body.innerHTML = `<div id="ng" ng-controller="x"></div>`;
+    expect(collectEnrichedContext(["#ng"])["#ng"].framework.detected).toBe("Angular");
+  });
 });
