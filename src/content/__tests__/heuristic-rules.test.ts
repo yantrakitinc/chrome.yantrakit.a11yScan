@@ -213,6 +213,46 @@ describe("runHeuristicRules — breadcrumb validation (rule 24)", () => {
   });
 });
 
+describe("runHeuristicRules — suspicious alt text (rule 33)", () => {
+  it("flags alt text that looks like a filename with extension", () => {
+    document.body.innerHTML = `<img src="/x.jpg" alt="hero.jpg" />`;
+    const v = find(runHeuristicRules(false), "suspicious-alt");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("flags 'image of' / 'photo of' / 'picture of' / 'graphic of' redundant prefix", () => {
+    document.body.innerHTML = `
+      <img src="/a.jpg" alt="image of a cat" />
+      <img src="/b.jpg" alt="photo of a dog" />
+      <img src="/c.jpg" alt="picture of a fish" />
+      <img src="/d.jpg" alt="graphic of a logo" />
+    `;
+    const v = find(runHeuristicRules(false), "suspicious-alt")!;
+    expect(v.nodes.length).toBe(4);
+  });
+
+  it("flags alt text matching the src filename (without extension)", () => {
+    document.body.innerHTML = `<img src="/img/hero.jpg" alt="hero" />`;
+    const v = find(runHeuristicRules(false), "suspicious-alt");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT flag descriptive alt text", () => {
+    document.body.innerHTML = `<img src="/img/x.jpg" alt="A golden retriever puppy playing in autumn leaves" />`;
+    expect(find(runHeuristicRules(false), "suspicious-alt")).toBeUndefined();
+  });
+
+  it("does NOT flag empty alt (decorative image)", () => {
+    document.body.innerHTML = `<img src="/decoration.png" alt="" />`;
+    expect(find(runHeuristicRules(false), "suspicious-alt")).toBeUndefined();
+  });
+
+  it("does NOT flag missing alt (a different rule's job)", () => {
+    document.body.innerHTML = `<img src="/x.jpg" />`;
+    expect(find(runHeuristicRules(false), "suspicious-alt")).toBeUndefined();
+  });
+});
+
 describe("runHeuristicRules — show-password toggle (rule 23)", () => {
   it("flags a password input with no nearby toggle", () => {
     document.body.innerHTML = `<form><input type="password" /></form>`;
@@ -223,6 +263,48 @@ describe("runHeuristicRules — show-password toggle (rule 23)", () => {
   it("does NOT flag when a 'Show' toggle button is in the same container", () => {
     document.body.innerHTML = `<form><input type="password" /><button>Show password</button></form>`;
     expect(find(runHeuristicRules(false), "show-password-toggle")).toBeUndefined();
+  });
+});
+
+describe("runHeuristicRules — decorative symbols (rule 1)", () => {
+  it("flags an arrow symbol exposed to screen readers", () => {
+    document.body.innerHTML = `<span>→</span>`;
+    const v = find(runHeuristicRules(false), "decorative-symbols");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT flag the symbol when aria-hidden=true is set", () => {
+    document.body.innerHTML = `<span aria-hidden="true">→</span>`;
+    expect(find(runHeuristicRules(false), "decorative-symbols")).toBeUndefined();
+  });
+
+  it("does NOT flag long text (only short symbol-only content)", () => {
+    document.body.innerHTML = `<span>This is a long sentence, not a symbol.</span>`;
+    expect(find(runHeuristicRules(false), "decorative-symbols")).toBeUndefined();
+  });
+});
+
+describe("runHeuristicRules — carousel (rule 26)", () => {
+  it("flags a carousel-classed region with no controls", () => {
+    document.body.innerHTML = `<div role="region" aria-label="Hero carousel" class="carousel"></div>`;
+    const v = find(runHeuristicRules(false), "carousel-accessibility");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("flags a carousel with prev/next but no labeled pagination", () => {
+    document.body.innerHTML = `<div role="region" aria-label="Hero carousel" class="carousel">
+      <button>Prev</button><button>Next</button>
+    </div>`;
+    const v = find(runHeuristicRules(false), "carousel-accessibility");
+    expect(v?.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT flag a complete carousel (controls + tablist pagination)", () => {
+    document.body.innerHTML = `<div role="region" aria-label="Hero carousel" class="carousel">
+      <button>Prev</button><button>Next</button>
+      <div role="tablist"><button role="tab">1</button></div>
+    </div>`;
+    expect(find(runHeuristicRules(false), "carousel-accessibility")).toBeUndefined();
   });
 });
 
