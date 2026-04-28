@@ -11,7 +11,7 @@ import {
   renderCrawlConfigHtml, renderUrlListPanelHtml,
   buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls, addViewport, removeViewport,
   buildStartCrawlPayload, mergeMvResultToScan, buildObserverEntry, resetScanStateSlice,
-  mergeNewUrlsIntoList, parseTextFileUrls,
+  mergeNewUrlsIntoList, parseTextFileUrls, clearScanResultsSlice,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -863,6 +863,61 @@ describe("parseTextFileUrls", () => {
   });
   it("does NOT dedupe (caller deduplicates via mergeNewUrlsIntoList)", () => {
     expect(parseTextFileUrls("a\na\nb")).toEqual(["a", "a", "b"]);
+  });
+});
+
+describe("clearScanResultsSlice", () => {
+  function full() {
+    return {
+      scanPhase: "results" as const,
+      crawlPhase: "complete" as const,
+      lastScanResult: { url: "x" } as never,
+      lastMvResult: { viewports: [], perViewport: {}, shared: [], viewportSpecific: [] } as never,
+      mvViewportFilter: 768 as number | null,
+      mvProgress: { current: 1, total: 3 } as { current: number; total: number } | null,
+      crawlResults: { "x": {} as never } as Record<string, never>,
+      crawlFailed: { "y": "z" } as Record<string, string>,
+      crawlWaitInfo: { url: "x", waitType: "login", description: "x" } as { url: string; waitType: string; description: string } | null,
+      accordionExpanded: false,
+      scanSubTab: "manual" as const,
+      ariaWidgets: [{ role: "x" } as never],
+      manualReview: { "1.4.3": "pass" as const },
+      violationsOverlayOn: true,
+      tabOrderOverlayOn: true,
+      focusGapsOverlayOn: true,
+    };
+  }
+
+  it("clears all scan + crawl + MV cached results", () => {
+    const out = clearScanResultsSlice(full());
+    expect(out.scanPhase).toBe("idle");
+    expect(out.crawlPhase).toBe("idle");
+    expect(out.lastScanResult).toBeNull();
+    expect(out.lastMvResult).toBeNull();
+    expect(out.mvViewportFilter).toBeNull();
+    expect(out.mvProgress).toBeNull();
+    expect(out.crawlResults).toBeNull();
+    expect(out.crawlFailed).toBeNull();
+    expect(out.crawlWaitInfo).toBeNull();
+  });
+
+  it("re-expands the accordion + resets sub-tab to 'results'", () => {
+    const out = clearScanResultsSlice(full());
+    expect(out.accordionExpanded).toBe(true);
+    expect(out.scanSubTab).toBe("results");
+  });
+
+  it("clears ARIA widgets + manual review marks", () => {
+    const out = clearScanResultsSlice(full());
+    expect(out.ariaWidgets).toEqual([]);
+    expect(out.manualReview).toEqual({});
+  });
+
+  it("turns every overlay flag off", () => {
+    const out = clearScanResultsSlice(full());
+    expect(out.violationsOverlayOn).toBe(false);
+    expect(out.tabOrderOverlayOn).toBe(false);
+    expect(out.focusGapsOverlayOn).toBe(false);
   });
 });
 

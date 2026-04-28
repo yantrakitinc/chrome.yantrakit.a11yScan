@@ -1281,6 +1281,55 @@ export function parseTextFileUrls(text: string): string[] {
 }
 
 /**
+ * Reset state slice on the Clear button. Wipes scan + crawl + MV cached
+ * results, manual-review marks, ARIA widgets, and toggles overlays off.
+ * Does NOT reset mode toggles or WCAG settings (that's Reset's job).
+ *
+ * Pure; exported for tests. Caller still owns the chrome message side
+ * effects (HIDE_*_OVERLAY / CLEAR_HIGHLIGHTS / DEACTIVATE_MOCKS).
+ *
+ * Source of truth: F22 Clear All — clears every result-bearing slice.
+ */
+export function clearScanResultsSlice(prev: {
+  scanPhase: import("./sidepanel").iScanPhase;
+  crawlPhase: import("./sidepanel").iCrawlPhase;
+  lastScanResult: iScanResult | null;
+  lastMvResult: import("@shared/types").iMultiViewportResult | null;
+  mvViewportFilter: number | null;
+  mvProgress: { current: number; total: number } | null;
+  crawlResults: Record<string, iScanResult> | null;
+  crawlFailed: Record<string, string> | null;
+  crawlWaitInfo: { url: string; waitType: string; description: string } | null;
+  accordionExpanded: boolean;
+  scanSubTab: "results" | "manual" | "aria" | "observe";
+  ariaWidgets: iAriaWidget[];
+  manualReview: Record<string, "pass" | "fail" | "na" | null>;
+  violationsOverlayOn: boolean;
+  tabOrderOverlayOn: boolean;
+  focusGapsOverlayOn: boolean;
+}): typeof prev {
+  return {
+    ...prev,
+    scanPhase: "idle",
+    crawlPhase: "idle",
+    lastScanResult: null,
+    lastMvResult: null,
+    mvViewportFilter: null,
+    mvProgress: null,
+    crawlResults: null,
+    crawlFailed: null,
+    crawlWaitInfo: null,
+    accordionExpanded: true,
+    scanSubTab: "results",
+    ariaWidgets: [],
+    manualReview: {},
+    violationsOverlayOn: false,
+    tabOrderOverlayOn: false,
+    focusGapsOverlayOn: false,
+  };
+}
+
+/**
  * Reset state slice on the Reset button. Restores all toggle modes to off,
  * default viewports [375, 768, 1280], default WCAG 2.2 AA, and clears
  * testConfig. Pure; exported for tests. Caller must also handle the
@@ -1686,23 +1735,7 @@ function attachScanTabListeners(): void {
 
   // Clear
   document.getElementById("clear-btn")?.addEventListener("click", () => {
-    state.scanPhase = "idle";
-    state.crawlPhase = "idle";
-    state.lastScanResult = null;
-    state.lastMvResult = null;
-    state.mvViewportFilter = null;
-    state.mvProgress = null;
-    // Clear crawl results too — Clear is a full reset of result state.
-    state.crawlResults = null;
-    state.crawlFailed = null;
-    state.crawlWaitInfo = null;
-    state.accordionExpanded = true;
-    state.scanSubTab = "results";
-    state.ariaWidgets = [];
-    state.manualReview = {};
-    state.violationsOverlayOn = false;
-    state.tabOrderOverlayOn = false;
-    state.focusGapsOverlayOn = false;
+    Object.assign(state, clearScanResultsSlice(state));
     updateTabDisabledStates();
     renderScanTab();
     // Remove all overlays and highlights
