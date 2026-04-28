@@ -1253,6 +1253,33 @@ export function severityOrder(impact: string): number {
 }
 
 /**
+ * Reset state slice on the Reset button. Restores all toggle modes to off,
+ * default viewports [375, 768, 1280], default WCAG 2.2 AA, and clears
+ * testConfig. Pure; exported for tests. Caller must also handle the
+ * chrome.storage.local.remove side effect.
+ *
+ * Source of truth: R-MV "Reset restores defaults" + F13-AC7 "Reset also
+ * clears test config".
+ */
+export function resetScanStateSlice(prev: {
+  crawl: boolean; observer: boolean; movie: boolean; mv: boolean;
+  viewports: number[]; wcagVersion: string; wcagLevel: string;
+  testConfig: import("@shared/types").iTestConfig | null;
+}): typeof prev {
+  return {
+    ...prev,
+    crawl: false,
+    observer: false,
+    movie: false,
+    mv: false,
+    viewports: [375, 768, 1280],
+    wcagVersion: "2.2",
+    wcagLevel: "AA",
+    testConfig: null,
+  };
+}
+
+/**
  * Build an observer history entry from a manual scan result + the active
  * tab + viewport breakpoints. Pure-ish — depends on `id` and `timestamp`
  * being passed in so tests can pin the values; production passes
@@ -1672,16 +1699,7 @@ function attachScanTabListeners(): void {
   // Reset
   document.getElementById("reset-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
-    state.crawl = false;
-    state.observer = false;
-    state.movie = false;
-    state.mv = false;
-    // Restore viewports to defaults (R-MV: Reset 'restores defaults [375, 768, 1280]').
-    state.viewports = [375, 768, 1280];
-    state.wcagVersion = "2.2";
-    state.wcagLevel = "AA";
-    // Also clear test config on Reset (F13-AC7)
-    state.testConfig = null;
+    Object.assign(state, resetScanStateSlice(state));
     chrome.storage.local.remove([TEST_CONFIG_STORAGE_KEY, TEST_CONFIG_TIMESTAMP_KEY]);
     configPanelOpen = false;
     renderScanTab();

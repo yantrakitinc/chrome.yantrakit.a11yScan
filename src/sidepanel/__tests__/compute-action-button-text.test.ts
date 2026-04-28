@@ -10,7 +10,7 @@ import {
   renderExpandedToggleHtml, renderMvCheckboxHtml,
   renderCrawlConfigHtml, renderUrlListPanelHtml,
   buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls, addViewport, removeViewport,
-  buildStartCrawlPayload, mergeMvResultToScan, buildObserverEntry,
+  buildStartCrawlPayload, mergeMvResultToScan, buildObserverEntry, resetScanStateSlice,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -817,6 +817,47 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("resetScanStateSlice", () => {
+  it("turns every mode toggle off", () => {
+    const out = resetScanStateSlice({
+      crawl: true, observer: true, movie: true, mv: true,
+      viewports: [320, 480], wcagVersion: "2.0", wcagLevel: "AAA",
+      testConfig: { wcag: { version: "2.0" } },
+    });
+    expect(out.crawl).toBe(false);
+    expect(out.observer).toBe(false);
+    expect(out.movie).toBe(false);
+    expect(out.mv).toBe(false);
+  });
+
+  it("restores default viewports [375, 768, 1280] (R-MV)", () => {
+    expect(resetScanStateSlice({
+      crawl: false, observer: false, movie: false, mv: false,
+      viewports: [320], wcagVersion: "2.2", wcagLevel: "AA",
+      testConfig: null,
+    }).viewports).toEqual([375, 768, 1280]);
+  });
+
+  it("restores WCAG 2.2 AA defaults", () => {
+    const out = resetScanStateSlice({
+      crawl: false, observer: false, movie: false, mv: false,
+      viewports: [375], wcagVersion: "2.0", wcagLevel: "AAA",
+      testConfig: null,
+    });
+    expect(out.wcagVersion).toBe("2.2");
+    expect(out.wcagLevel).toBe("AA");
+  });
+
+  it("clears testConfig (F13-AC7)", () => {
+    const out = resetScanStateSlice({
+      crawl: false, observer: false, movie: false, mv: false,
+      viewports: [375], wcagVersion: "2.2", wcagLevel: "AA",
+      testConfig: { wcag: { version: "2.0" } },
+    });
+    expect(out.testConfig).toBeNull();
   });
 });
 
