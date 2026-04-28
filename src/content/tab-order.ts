@@ -51,8 +51,6 @@ export function getFocusGaps(): iFocusGap[] {
     if (el.hasAttribute("disabled")) reason = "Element is disabled";
     else if (el.getAttribute("aria-hidden") === "true") reason = "aria-hidden=\"true\" on element or ancestor";
     else if (el.tabIndex === -1) reason = "tabindex=\"-1\" removes from tab order";
-    else if (!el.hasAttribute("tabindex") && el.tagName === "DIV") reason = "div with onclick handler but no role=\"button\" and no tabindex";
-    else if (!el.hasAttribute("tabindex") && el.tagName === "SPAN") reason = "Click handler on span with no keyboard equivalent";
 
     gaps.push({
       selector: getSelector(el),
