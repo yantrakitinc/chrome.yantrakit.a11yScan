@@ -6,7 +6,17 @@ import puppeteer, { type Browser, type Page } from "puppeteer";
 import path from "path";
 
 const EXTENSION_PATH = path.resolve(__dirname, "../dist");
-const DEMO_BASE = "https://a11yscan.yantrakit.com/demo";
+
+/**
+ * Demo base URL for E2E navigation. Defaults to the local dev server
+ * (a11yscan.local:31469 — the user's `cd web && pnpm dev`). Override via
+ * env var only when explicitly testing against a deployed build:
+ *   A11Y_E2E_BASE=https://a11yscan.yantrakit.com/demo pnpm test:e2e
+ *
+ * NEVER bake the prod URL in as the default — it skews real analytics,
+ * costs prod bandwidth, and tests stale CDN-cached fixtures.
+ */
+const DEMO_BASE = process.env.A11Y_E2E_BASE || "http://a11yScan.local:51471/demo";
 
 export { DEMO_BASE };
 

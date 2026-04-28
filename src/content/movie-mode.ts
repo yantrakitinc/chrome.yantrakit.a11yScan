@@ -3,6 +3,8 @@
  * Steps through each focusable element, scrolls to it, highlights it.
  */
 
+import { logDebug } from "@shared/log";
+
 type iMovieState = "idle" | "playing" | "paused" | "complete";
 
 const MOVIE_HOST_ID = "a11y-movie-overlay-host";
@@ -78,12 +80,19 @@ function scheduleNext(): void {
       removeHighlight();
       // Notify side panel so it can drop out of "playing" state.
       // Without this, kb-tab's controls stay stuck on Pause/Stop forever.
-      try { chrome.runtime.sendMessage({ type: "MOVIE_COMPLETE" }); } catch { /* sidepanel may be closed */ }
+      try { chrome.runtime.sendMessage({ type: "MOVIE_COMPLETE" }); }
+      catch (err) {
+        // Sidepanel closed — broadcast not delivered. Movie still completes
+        // visually on the page; the kb-tab counter will be stale until a
+        // user re-opens the panel and clicks Analyze again.
+        logDebug("movie-mode.complete", "MOVIE_COMPLETE broadcast failed (sidepanel closed)", err);
+      }
       return;
     }
     highlightCurrent();
     // Notify side panel of progress so the "Playing X of Y" status counts up.
-    try { chrome.runtime.sendMessage({ type: "MOVIE_TICK", payload: { currentIndex, total: elements.length } }); } catch { /* sidepanel may be closed */ }
+    try { chrome.runtime.sendMessage({ type: "MOVIE_TICK", payload: { currentIndex, total: elements.length } }); }
+    catch (err) { logDebug("movie-mode.tick", "MOVIE_TICK broadcast failed (sidepanel closed)", err); }
     scheduleNext();
   }, speed);
 }

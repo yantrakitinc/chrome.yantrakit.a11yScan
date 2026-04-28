@@ -65,7 +65,29 @@ async function scanViaBackground(sp: Page, testConfig?: Record<string, unknown>)
 
 // ─── Tests ─────────────────────────────────────────────────────────────────
 
+async function probeDevServer(): Promise<void> {
+  // Fail-fast: confirm the local dev server is reachable before sinking
+  // 30s+ into Puppeteer setup only to hit ECONNRESET on the first navigateTo.
+  // Memory file feedback_e2e_local_dev_only.md mandates this check.
+  const probeUrl = DEMO_BASE.replace(/\/demo$/, "/");
+  try {
+    const ctrl = new AbortController();
+    // Next dev cold-start can take 5–10s on a fresh process — give it 15s.
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch(probeUrl, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    console.error(`\n❌ Local dev server is not reachable at ${probeUrl}`);
+    console.error(`   ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`   Start it with: cd web && pnpm dev`);
+    console.error(`   Or override the base: A11Y_E2E_BASE=https://... pnpm test:e2e\n`);
+    process.exit(1);
+  }
+}
+
 async function runTests() {
+  await probeDevServer();
   console.log("\n🚀 Launching Chrome with extension...\n");
   ({ browser, sidepanel } = await launchWithExtension());
 

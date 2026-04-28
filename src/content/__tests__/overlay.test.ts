@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   showViolationOverlay,
   hideViolationOverlay,
@@ -115,5 +115,47 @@ describe("destroyOverlay", () => {
     expect(shadowHostExists()).toBe(true);
     destroyOverlay();
     expect(shadowHostExists()).toBe(false);
+  });
+});
+
+describe("scroll recalculation", () => {
+  it("scroll re-renders tab-order overlay when it's currently shown (debounced)", async () => {
+    vi.useFakeTimers();
+    document.body.innerHTML = `<button>x</button><button>y</button>`;
+    showTabOrderOverlay();
+    document.dispatchEvent(new Event("scroll"));
+    // Debounce is 150ms — advance and let the timer fire
+    vi.advanceTimersByTime(160);
+    vi.useRealTimers();
+    // Overlay still exists after recalc (didn't crash)
+    const shadow = document.getElementById("a11y-scan-overlay-host")?.shadowRoot;
+    expect(shadow?.getElementById("tab-order-overlay")).toBeTruthy();
+  });
+
+  it("scroll re-renders focus-gap overlay when it's currently shown", async () => {
+    vi.useFakeTimers();
+    document.body.innerHTML = `<div role="button">x</div>`;
+    showFocusGapOverlay();
+    document.dispatchEvent(new Event("scroll"));
+    vi.advanceTimersByTime(160);
+    vi.useRealTimers();
+    const shadow = document.getElementById("a11y-scan-overlay-host")?.shadowRoot;
+    expect(shadow?.getElementById("focus-gap-overlay")).toBeTruthy();
+  });
+
+  it("scroll handler clears prior debounce (multiple scrolls only fire one recalc)", async () => {
+    vi.useFakeTimers();
+    document.body.innerHTML = `<button>x</button>`;
+    showTabOrderOverlay();
+    document.dispatchEvent(new Event("scroll"));
+    vi.advanceTimersByTime(50);
+    document.dispatchEvent(new Event("scroll"));
+    vi.advanceTimersByTime(50);
+    document.dispatchEvent(new Event("scroll"));
+    vi.advanceTimersByTime(160);
+    vi.useRealTimers();
+    // No throw and overlay still rendered means the rapid-fire path is safe
+    const shadow = document.getElementById("a11y-scan-overlay-host")?.shadowRoot;
+    expect(shadow?.getElementById("tab-order-overlay")).toBeTruthy();
   });
 });

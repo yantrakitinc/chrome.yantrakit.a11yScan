@@ -7,6 +7,7 @@ import type { iCrawlOptions, iCrawlState, iCrawlAuth, iScanResult, iTestConfig }
 import { getConfig } from "@shared/config";
 import { isScannableUrl } from "@shared/utils";
 import { setCrawlActive } from "./observer";
+import { logError, logWarn, logDebug } from "@shared/log";
 
 const CRAWL_STORAGE_KEY = "crawlState";
 
@@ -123,6 +124,7 @@ async function startCrawl(options: iCrawlOptions): Promise<void> {
     try {
       await performAuth(options.auth, tab.id!);
     } catch (err) {
+      logError("crawl.startCrawl", `auth failed at ${options.auth.loginUrl}`, err);
       crawlState.status = "complete";
       crawlState.failed["auth"] = `Login failed: ${String(err)}`;
       setCrawlActive(false);
@@ -174,7 +176,14 @@ export function isUrlGated(url: string, gatedUrls?: { mode: string; patterns: st
     case "list": return gatedUrls.patterns.some((p) => url === p);
     case "prefix": return gatedUrls.patterns.some((p) => url.startsWith(p));
     case "regex": return gatedUrls.patterns.some((p) => {
-      try { return new RegExp(p).test(url); } catch { return false; }
+      try { return new RegExp(p).test(url); }
+      catch (err) {
+        // Invalid regex from user-provided gatedUrls config — log a warning
+        // so the user can fix the testConfig instead of silently treating
+        // the URL as un-gated.
+        logWarn("crawl.isUrlGated", `invalid regex pattern in gatedUrls: ${p}`, err);
+        return false;
+      }
     });
     default: return false;
   }
@@ -192,6 +201,85 @@ export function stripFragment(url: string): string {
   } catch {
     return url;
   }
+}
+
+/**
+ * Find the page rule (if any) that matches a URL. Each rule's `pattern` is
+ * tried as a regex first; if compilation fails, falls back to substring
+ * match. Returns the first matching rule or null.
+ *
+ * Pure; exported for tests. Used by the crawl engine to decide when to
+ * pause and wait for user action (login, interaction, deferred-content).
+ */
+export function matchPageRule(
+  url: string,
+  pageRules: { pattern: string; waitType: string; description: string }[] | undefined,
+): { pattern: string; waitType: string; description: string } | null {
+  if (!pageRules || pageRules.length === 0) return null;
+  for (const rule of pageRules) {
+    let matched = false;
+    try {
+      matched = new RegExp(rule.pattern).test(url) || url.includes(rule.pattern);
+    } catch (err) {
+      // Invalid regex — fall back to substring match so the rule still works
+      // for the common case of "just type the path" patterns. Warn so the
+      // user can fix the regex if they intended one.
+      logWarn("crawl.matchPageRule", `invalid regex pattern '${rule.pattern}' — falling back to substring match`, err);
+      matched = url.includes(rule.pattern);
+    }
+    if (matched) return rule;
+  }
+  return null;
+}
+
+/**
+ * Push newly-collected links into the crawl queue, skipping any URL that's
+ * already visited or already enqueued. Returns a new queue array (does
+ * not mutate the input). The reversal preserves depth-first order: the
+ * first link on the page should pop first, but the queue is a LIFO stack.
+ *
+ * Pure; exported for tests.
+ */
+export function pushLinksToQueue(
+  queue: string[],
+  visited: string[],
+  links: string[],
+): string[] {
+  const out = [...queue];
+  for (const link of [...links].reverse()) {
+    if (!visited.includes(link) && !out.includes(link)) {
+      out.push(link);
+    }
+  }
+  return out;
+}
+
+/**
+ * Apply testConfig wcag + rules overrides on top of a base remote config.
+ * Pure; exported for tests. Mutates a shallow clone of `config.rules` —
+ * the input is not modified.
+ *
+ * Source of truth: R-CONFIG. include and exclude are mutually exclusive
+ * by validator-time enforcement; this function applies whichever is set.
+ */
+export function applyTestConfigOverrides(
+  config: { wcagVersion?: string; wcagLevel?: string; rules?: Record<string, { enabled: boolean }> },
+  testConfig: iTestConfig | null,
+): { wcagVersion?: string; wcagLevel?: string; rules?: Record<string, { enabled: boolean }> } {
+  const out = { ...config, rules: { ...(config.rules || {}) } };
+  if (testConfig?.wcag?.version) out.wcagVersion = testConfig.wcag.version;
+  if (testConfig?.wcag?.level) out.wcagLevel = testConfig.wcag.level;
+  if (testConfig?.rules?.include) {
+    const overrideRules: Record<string, { enabled: boolean }> = {};
+    for (const id of Object.keys(out.rules)) overrideRules[id] = { enabled: false };
+    for (const id of testConfig.rules.include) overrideRules[id] = { enabled: true };
+    out.rules = overrideRules;
+  } else if (testConfig?.rules?.exclude) {
+    const overrideRules = { ...out.rules };
+    for (const id of testConfig.rules.exclude) overrideRules[id] = { enabled: false };
+    out.rules = overrideRules;
+  }
+  return out;
 }
 
 async function processCrawlQueue(): Promise<void> {
@@ -212,26 +300,17 @@ async function processCrawlQueue(): Promise<void> {
     const isGated = isUrlGated(url, crawlOptions?.auth?.gatedUrls);
 
     // Check page rules
-    if (crawlOptions?.pageRules) {
-      const matchedRule = crawlOptions.pageRules.find((rule) => {
-        try {
-          return new RegExp(rule.pattern).test(url) || url.includes(rule.pattern);
-        } catch {
-          return url.includes(rule.pattern);
-        }
+    const matchedRule = matchPageRule(url, crawlOptions?.pageRules);
+    if (matchedRule) {
+      crawlState.currentUrl = url;
+      crawlState.status = "wait";
+      broadcastState();
+      chrome.runtime.sendMessage({
+        type: "CRAWL_WAITING_FOR_USER",
+        payload: { url, waitType: matchedRule.waitType, description: matchedRule.description },
       });
-
-      if (matchedRule) {
-        crawlState.currentUrl = url;
-        crawlState.status = "wait";
-        broadcastState();
-        chrome.runtime.sendMessage({
-          type: "CRAWL_WAITING_FOR_USER",
-          payload: { url, waitType: matchedRule.waitType, description: matchedRule.description },
-        });
-        shouldPause = true;
-        return; // wait for USER_CONTINUE
-      }
+      shouldPause = true;
+      return; // wait for USER_CONTINUE
     }
 
     // Navigate and scan
@@ -248,27 +327,20 @@ async function processCrawlQueue(): Promise<void> {
 
       // Inject and scan
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
-      const config = await getConfig();
-
-      // Apply testConfig overrides (wcag, rules) so crawl scans respect the loaded config
-      if (crawlTestConfig?.wcag?.version) config.wcagVersion = crawlTestConfig.wcag.version;
-      if (crawlTestConfig?.wcag?.level) config.wcagLevel = crawlTestConfig.wcag.level;
-      if (crawlTestConfig?.rules?.include) {
-        const overrideRules: Record<string, { enabled: boolean }> = {};
-        for (const [id] of Object.entries(config.rules || {})) overrideRules[id] = { enabled: false };
-        for (const id of crawlTestConfig.rules.include) overrideRules[id] = { enabled: true };
-        config.rules = overrideRules;
-      } else if (crawlTestConfig?.rules?.exclude) {
-        const overrideRules: Record<string, { enabled: boolean }> = { ...config.rules };
-        for (const id of crawlTestConfig.rules.exclude) overrideRules[id] = { enabled: false };
-        config.rules = overrideRules;
-      }
+      const baseConfig = await getConfig();
+      const config = applyTestConfigOverrides(baseConfig, crawlTestConfig) as typeof baseConfig;
 
       // Activate mocks before scanning if testConfig has mocks
       if (crawlTestConfig?.mocks && crawlTestConfig.mocks.length > 0) {
         try {
           await chrome.tabs.sendMessage(tab.id, { type: "ACTIVATE_MOCKS", payload: { mocks: crawlTestConfig.mocks } });
-        } catch { /* content script not ready */ }
+        } catch (err) {
+          // Content script not ready yet (race after page navigation). The
+          // RUN_SCAN call below will inject + retry; mocks may not be applied
+          // for this single page if they were defined. Warn so the user
+          // knows their testConfig.mocks didn't take effect on `url`.
+          logWarn("crawl.processCrawlQueue", `ACTIVATE_MOCKS failed before scan of ${url}`, err);
+        }
       }
 
       const result = await chrome.tabs.sendMessage(tab.id, { type: "RUN_SCAN", payload: { config, isCrawl: true } });
@@ -283,12 +355,7 @@ async function processCrawlQueue(): Promise<void> {
         // In Follow mode, collect links from the page
         if (crawlOptions?.mode === "follow") {
           const links = await collectLinks(tab.id, crawlOptions.scope || new URL(url).origin);
-          // Push in reverse so first links are popped first (depth-first natural order)
-          for (const link of links.reverse()) {
-            if (!crawlState.visited.includes(link) && !crawlState.queue.includes(link)) {
-              crawlState.queue.push(link);
-            }
-          }
+          crawlState.queue = pushLinksToQueue(crawlState.queue, crawlState.visited, links);
         }
       } else {
         crawlState.failed[url] = result?.payload?.message || "Scan failed";
@@ -312,6 +379,7 @@ async function processCrawlQueue(): Promise<void> {
         await sleep(crawlOptions.delay);
       }
     } catch (err) {
+      logError("crawl.processCrawlQueue", `page failed: ${url}`, err);
       crawlState.failed[url] = String(err);
       crawlState.visited.push(url);
       crawlState.pagesVisited++;
@@ -379,7 +447,11 @@ async function collectLinks(tabId: number, scope: string): Promise<string[]> {
       args: [scope],
     });
     return result?.result || [];
-  } catch {
+  } catch (err) {
+    // Most likely cause: page closed or navigated away mid-collection. The
+    // crawl recovers by treating the page as having no outgoing links, but
+    // log so a user reporting "Follow mode missed pages" can diagnose.
+    logWarn("crawl.collectLinks", `failed to collect links from tab ${tabId}`, err);
     return [];
   }
 }

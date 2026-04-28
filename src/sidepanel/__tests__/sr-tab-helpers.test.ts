@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { elementToSpeechText, roleClassFor, renderSrRowHtml, srStatusLabelHtml } from "../sr-tab";
+import { elementToSpeechText, roleClassFor, renderSrRowHtml, srStatusLabelHtml, composeContainerSpeechText } from "../sr-tab";
 import type { iScreenReaderElement } from "@shared/types";
 
 function el(overrides: Partial<iScreenReaderElement> = {}): iScreenReaderElement {
@@ -118,5 +118,44 @@ describe("srStatusLabelHtml", () => {
   });
   it("paused with singleSpeakIndex set: 'Paused element X'", () => {
     expect(srStatusLabelHtml(s({ playState: "paused", singleSpeakIndex: 4 }))).toMatch(/Paused element 5/);
+  });
+});
+
+describe("composeContainerSpeechText", () => {
+  function mkEl(overrides: Partial<iScreenReaderElement> = {}): iScreenReaderElement {
+    return { index: 1, selector: "#x", role: "list", accessibleName: "", nameSource: "contents", states: [], ...overrides };
+  }
+
+  it("returns the container's own speech when scoped contains only the container", () => {
+    const c = mkEl({ selector: "#tabs", role: "tablist", accessibleName: "Tabs" });
+    expect(composeContainerSpeechText(c, [c])).toBe("tablist, Tabs");
+  });
+
+  it("returns container's own speech when scoped is empty", () => {
+    const c = mkEl({ role: "tablist", accessibleName: "Tabs" });
+    expect(composeContainerSpeechText(c, [])).toBe("tablist, Tabs");
+  });
+
+  it("appends each child's speech, '.'-separated, with leading '. ' after container", () => {
+    const c = mkEl({ selector: "#nav", role: "navigation", accessibleName: "Main" });
+    const children = [
+      mkEl({ selector: "#nav-home", role: "link", accessibleName: "Home" }),
+      mkEl({ selector: "#nav-about", role: "link", accessibleName: "About" }),
+    ];
+    expect(composeContainerSpeechText(c, [c, ...children]))
+      .toBe("navigation, Main. link, Home. link, About.");
+  });
+
+  it("filters out the container by matching selector — order of scoped doesn't matter", () => {
+    const c = mkEl({ selector: "#nav", role: "navigation", accessibleName: "Main" });
+    const child = mkEl({ selector: "#nav-home", role: "link", accessibleName: "Home" });
+    // container is in the middle of scoped — still gets filtered
+    expect(composeContainerSpeechText(c, [child, c])).toBe("navigation, Main. link, Home.");
+  });
+
+  it("includes states in child speech (round-trip with elementToSpeechText)", () => {
+    const c = mkEl({ selector: "#tabs", role: "tablist", accessibleName: "" });
+    const child = mkEl({ selector: "#tab1", role: "tab", accessibleName: "Home", states: ["selected"] });
+    expect(composeContainerSpeechText(c, [c, child])).toMatch(/tab, Home, selected/);
   });
 });

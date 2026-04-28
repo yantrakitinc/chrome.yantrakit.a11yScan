@@ -9,6 +9,7 @@ import { isScannableUrl } from "@shared/utils";
 import { handleObserverMessage, onTabUpdated as observerOnTabUpdated } from "./observer";
 import { handleCrawlMessage } from "./crawl";
 import { multiViewportScan } from "./multi-viewport";
+import { logError, logDebug } from "@shared/log";
 
 /* ═══════════════════════════════════════════════════════════════════
    Extension Lifecycle
@@ -107,13 +108,21 @@ async function handleMessage(
         // Inject content script if needed
         try {
           await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
-        } catch { /* already injected */ }
+        } catch (err) {
+          // Most failures here mean the script is already injected on this
+          // page — chrome silently rejects re-injection. That's expected and
+          // benign. We log at debug level so a real injection block (CSP,
+          // chrome:// URL slipping past the URL filter) is still visible.
+          logDebug("background.SCAN_REQUEST", "content-script inject skipped (already injected or page blocks injection)", err);
+        }
 
         // F14-AC1: Activate mocks before scan if testConfig has mocks
         if (testConfig?.mocks && testConfig.mocks.length > 0) {
           try {
             await chrome.tabs.sendMessage(tab.id, { type: "ACTIVATE_MOCKS", payload: { mocks: testConfig.mocks } });
-          } catch { /* content script not ready */ }
+          } catch (err) {
+            logError("background.SCAN_REQUEST", "ACTIVATE_MOCKS failed before scan", err);
+          }
         }
 
         const result = await chrome.tabs.sendMessage(tab.id, {
@@ -186,11 +195,15 @@ async function handleMessage(
         // Ensure content script is injected before forwarding
         try {
           await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
-        } catch { /* already injected */ }
+        } catch (err) {
+          // Same expected/benign case as in SCAN_REQUEST above.
+          logDebug("background.forward", "content-script inject skipped", err);
+        }
         try {
           const result = await chrome.tabs.sendMessage(tab.id, msg);
           sendResponse(result);
         } catch (err) {
+          logError("background.forward", `forwarding ${msg.type} to content script failed`, err);
           sendResponse({ type: "SCAN_ERROR", payload: { message: String(err) } });
         }
         break;
@@ -218,6 +231,7 @@ async function handleMessage(
         sendResponse({ type: "SCAN_ERROR", payload: { message: `Unknown message type: ${(msg as { type: string }).type}` } });
     }
   } catch (err) {
+    logError("background.handleMessage", `unhandled error processing ${(msg as { type?: string })?.type ?? "<unknown>"}`, err);
     sendResponse({ type: "SCAN_ERROR", payload: { message: String(err) } });
   }
 }

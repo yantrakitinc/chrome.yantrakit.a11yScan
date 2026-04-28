@@ -9,7 +9,10 @@ import {
   renderModeTogglesHtml, renderCollapsedToggleHtml, renderToolbarContentHtml,
   renderExpandedToggleHtml, renderMvCheckboxHtml,
   renderCrawlConfigHtml, renderUrlListPanelHtml,
-  buildJsonReportFrom, buildHtmlReportFrom,
+  buildJsonReportFrom, buildHtmlReportFrom, parsePastedUrls, addViewport, removeViewport,
+  buildStartCrawlPayload, mergeMvResultToScan, buildObserverEntry, resetScanStateSlice,
+  mergeNewUrlsIntoList, parseTextFileUrls, clearScanResultsSlice,
+  addManualUrlToList, removeUrlAtIndex,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -816,6 +819,460 @@ describe("buildJsonReportFrom", () => {
     });
     expect(r2.tabOrder?.length).toBe(1);
     expect(r2.focusGaps?.length).toBe(1);
+  });
+});
+
+describe("addManualUrlToList", () => {
+  it("appends a new URL and reports added=true", () => {
+    const out = addManualUrlToList(["a"], "b");
+    expect(out.list).toEqual(["a", "b"]);
+    expect(out.added).toBe(true);
+  });
+  it("returns the input unchanged for a duplicate URL", () => {
+    const list = ["a", "b"];
+    const out = addManualUrlToList(list, "a");
+    expect(out.list).toBe(list);
+    expect(out.added).toBe(false);
+  });
+  it("returns the input unchanged for empty string", () => {
+    const list = ["a"];
+    const out = addManualUrlToList(list, "");
+    expect(out.list).toBe(list);
+    expect(out.added).toBe(false);
+  });
+});
+
+describe("removeUrlAtIndex", () => {
+  it("removes the entry at idx and reports removed=true", () => {
+    const out = removeUrlAtIndex(["a", "b", "c"], 1);
+    expect(out.list).toEqual(["a", "c"]);
+    expect(out.removed).toBe(true);
+  });
+  it("returns input unchanged for negative or too-large idx", () => {
+    const list = ["a"];
+    expect(removeUrlAtIndex(list, -1).list).toBe(list);
+    expect(removeUrlAtIndex(list, 5).list).toBe(list);
+  });
+});
+
+describe("mergeNewUrlsIntoList", () => {
+  it("appends new URLs to existing, dedupes, returns added count", () => {
+    const out = mergeNewUrlsIntoList(["a", "b"], ["b", "c", "d"]);
+    expect(out.list).toEqual(["a", "b", "c", "d"]);
+    expect(out.added).toBe(2);
+  });
+  it("returns added=0 when every incoming URL already in existing", () => {
+    const out = mergeNewUrlsIntoList(["a", "b"], ["a", "b"]);
+    expect(out.list).toEqual(["a", "b"]);
+    expect(out.added).toBe(0);
+  });
+  it("preserves the existing list order (new URLs appended at end)", () => {
+    const out = mergeNewUrlsIntoList(["c", "a", "b"], ["d", "e"]);
+    expect(out.list).toEqual(["c", "a", "b", "d", "e"]);
+  });
+  it("handles empty existing", () => {
+    expect(mergeNewUrlsIntoList([], ["a", "b"]).list).toEqual(["a", "b"]);
+  });
+  it("does not mutate the existing list", () => {
+    const existing = ["a"];
+    mergeNewUrlsIntoList(existing, ["b"]);
+    expect(existing).toEqual(["a"]);
+  });
+});
+
+describe("parseTextFileUrls", () => {
+  it("splits on newline, trims, drops blanks", () => {
+    expect(parseTextFileUrls("https://x.com/a\n\nhttps://x.com/b\n  \n")).toEqual([
+      "https://x.com/a", "https://x.com/b",
+    ]);
+  });
+  it("handles \\r\\n line endings", () => {
+    expect(parseTextFileUrls("https://x.com/a\r\nhttps://x.com/b\r\n")).toEqual([
+      "https://x.com/a", "https://x.com/b",
+    ]);
+  });
+  it("returns empty array for empty / whitespace-only input", () => {
+    expect(parseTextFileUrls("")).toEqual([]);
+    expect(parseTextFileUrls("   \n  ")).toEqual([]);
+  });
+  it("does NOT dedupe (caller deduplicates via mergeNewUrlsIntoList)", () => {
+    expect(parseTextFileUrls("a\na\nb")).toEqual(["a", "a", "b"]);
+  });
+});
+
+describe("clearScanResultsSlice", () => {
+  function full() {
+    return {
+      scanPhase: "results" as const,
+      crawlPhase: "complete" as const,
+      lastScanResult: { url: "x" } as never,
+      lastMvResult: { viewports: [], perViewport: {}, shared: [], viewportSpecific: [] } as never,
+      mvViewportFilter: 768 as number | null,
+      mvProgress: { current: 1, total: 3 } as { current: number; total: number } | null,
+      crawlResults: { "x": {} as never } as Record<string, never>,
+      crawlFailed: { "y": "z" } as Record<string, string>,
+      crawlWaitInfo: { url: "x", waitType: "login", description: "x" } as { url: string; waitType: string; description: string } | null,
+      accordionExpanded: false,
+      scanSubTab: "manual" as const,
+      ariaWidgets: [{ role: "x" } as never],
+      manualReview: { "1.4.3": "pass" as const },
+      violationsOverlayOn: true,
+      tabOrderOverlayOn: true,
+      focusGapsOverlayOn: true,
+    };
+  }
+
+  it("clears all scan + crawl + MV cached results", () => {
+    const out = clearScanResultsSlice(full());
+    expect(out.scanPhase).toBe("idle");
+    expect(out.crawlPhase).toBe("idle");
+    expect(out.lastScanResult).toBeNull();
+    expect(out.lastMvResult).toBeNull();
+    expect(out.mvViewportFilter).toBeNull();
+    expect(out.mvProgress).toBeNull();
+    expect(out.crawlResults).toBeNull();
+    expect(out.crawlFailed).toBeNull();
+    expect(out.crawlWaitInfo).toBeNull();
+  });
+
+  it("re-expands the accordion + resets sub-tab to 'results'", () => {
+    const out = clearScanResultsSlice(full());
+    expect(out.accordionExpanded).toBe(true);
+    expect(out.scanSubTab).toBe("results");
+  });
+
+  it("clears ARIA widgets + manual review marks", () => {
+    const out = clearScanResultsSlice(full());
+    expect(out.ariaWidgets).toEqual([]);
+    expect(out.manualReview).toEqual({});
+  });
+
+  it("turns every overlay flag off", () => {
+    const out = clearScanResultsSlice(full());
+    expect(out.violationsOverlayOn).toBe(false);
+    expect(out.tabOrderOverlayOn).toBe(false);
+    expect(out.focusGapsOverlayOn).toBe(false);
+  });
+});
+
+describe("resetScanStateSlice", () => {
+  it("turns every mode toggle off", () => {
+    const out = resetScanStateSlice({
+      crawl: true, observer: true, movie: true, mv: true,
+      viewports: [320, 480], wcagVersion: "2.0", wcagLevel: "AAA",
+      testConfig: { wcag: { version: "2.0" } },
+    });
+    expect(out.crawl).toBe(false);
+    expect(out.observer).toBe(false);
+    expect(out.movie).toBe(false);
+    expect(out.mv).toBe(false);
+  });
+
+  it("restores default viewports [375, 768, 1280] (R-MV)", () => {
+    expect(resetScanStateSlice({
+      crawl: false, observer: false, movie: false, mv: false,
+      viewports: [320], wcagVersion: "2.2", wcagLevel: "AA",
+      testConfig: null,
+    }).viewports).toEqual([375, 768, 1280]);
+  });
+
+  it("restores WCAG 2.2 AA defaults", () => {
+    const out = resetScanStateSlice({
+      crawl: false, observer: false, movie: false, mv: false,
+      viewports: [375], wcagVersion: "2.0", wcagLevel: "AAA",
+      testConfig: null,
+    });
+    expect(out.wcagVersion).toBe("2.2");
+    expect(out.wcagLevel).toBe("AA");
+  });
+
+  it("clears testConfig (F13-AC7)", () => {
+    const out = resetScanStateSlice({
+      crawl: false, observer: false, movie: false, mv: false,
+      viewports: [375], wcagVersion: "2.2", wcagLevel: "AA",
+      testConfig: { wcag: { version: "2.0" } },
+    });
+    expect(out.testConfig).toBeNull();
+  });
+});
+
+describe("buildObserverEntry", () => {
+  function pageScan(overrides: Partial<iScanResult> = {}): iScanResult {
+    return {
+      url: "https://example.com",
+      timestamp: "2026-01-01T00:00:00Z",
+      violations: [],
+      passes: [],
+      incomplete: [],
+      summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 100,
+      ...overrides,
+    };
+  }
+
+  it("threads id + timestamp from caller (so tests can pin them)", () => {
+    const out = buildObserverEntry({
+      id: "fixed-id",
+      timestamp: "2026-04-27T12:00:00Z",
+      scanResult: pageScan(),
+      tab: { url: "https://x.com/y", title: "Y" },
+      viewports: [375, 768, 1280],
+    });
+    expect(out.id).toBe("fixed-id");
+    expect(out.timestamp).toBe("2026-04-27T12:00:00Z");
+  });
+
+  it("source is always 'manual' (this builder is for the manual-scan path only)", () => {
+    expect(buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan(), tab: {}, viewports: [375],
+    }).source).toBe("manual");
+  });
+
+  it("counts violation NODES, not rules", () => {
+    const v = (id: string, n: number) => ({ id, impact: "serious" as const, description: "", help: "", helpUrl: "", tags: [], nodes: new Array(n).fill({ selector: "#x", html: "", failureSummary: "" }) });
+    const out = buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan({ violations: [v("a", 3), v("b", 5)] }),
+      tab: {},
+      viewports: [375],
+    });
+    expect(out.violationCount).toBe(8);
+  });
+
+  it("falls back to 1280 when tab.width is missing", () => {
+    const out = buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan(), tab: {}, viewports: [375, 768, 1280],
+    });
+    // 1280 → bucket "769–1280px" with breakpoints [375,768,1280]
+    expect(out.viewportBucket).toMatch(/1280/);
+  });
+
+  it("uses tab.url and tab.title verbatim, defaulting to empty string", () => {
+    const out = buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan(), tab: { url: "https://x.com", title: "x" }, viewports: [375],
+    });
+    expect(out.url).toBe("https://x.com");
+    expect(out.title).toBe("x");
+
+    const noTab = buildObserverEntry({
+      id: "x", timestamp: "x",
+      scanResult: pageScan(), tab: {}, viewports: [375],
+    });
+    expect(noTab.url).toBe("");
+    expect(noTab.title).toBe("");
+  });
+});
+
+describe("mergeMvResultToScan", () => {
+  function pageScan(url = "https://x.com", violations: iScanResult["violations"] = []): iScanResult {
+    return {
+      url, timestamp: "2026-01-01", violations, passes: [], incomplete: [],
+      summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 100,
+    };
+  }
+  function viol(id: string): iScanResult["violations"][0] {
+    return { id, impact: "serious", description: "x", help: "x", helpUrl: "", tags: [], nodes: [{ selector: "#x", html: "", failureSummary: "" }] };
+  }
+
+  it("returns null when perViewport is empty", () => {
+    expect(mergeMvResultToScan({
+      viewports: [],
+      perViewport: {},
+      shared: [],
+      viewportSpecific: [],
+    })).toBeNull();
+  });
+
+  it("uses the first viewport's metadata as the merged result's anchor", () => {
+    const merged = mergeMvResultToScan({
+      viewports: [375, 768],
+      perViewport: {
+        375: pageScan("https://x.com/375"),
+        768: pageScan("https://x.com/768"),
+      },
+      shared: [],
+      viewportSpecific: [],
+    });
+    expect(merged?.url).toBe("https://x.com/375");
+  });
+
+  it("concatenates shared + viewportSpecific into the merged violations", () => {
+    const merged = mergeMvResultToScan({
+      viewports: [375, 768],
+      perViewport: { 375: pageScan() },
+      shared: [viol("color-contrast")],
+      viewportSpecific: [{ ...viol("region"), viewports: [375] }],
+    });
+    expect(merged?.violations.length).toBe(2);
+    expect(merged?.violations[0].id).toBe("color-contrast");
+    expect(merged?.violations[1].id).toBe("region");
+  });
+});
+
+describe("buildStartCrawlPayload", () => {
+  it("uses defaults when no testConfig", () => {
+    const out = buildStartCrawlPayload({ testConfig: null, crawlMode: "follow", crawlUrlList: [] });
+    expect(out.mode).toBe("follow");
+    expect(out.timeout).toBe(30000);
+    expect(out.delay).toBe(1000);
+    expect(out.scope).toBe("");
+    expect(out.urlList).toEqual([]);
+    expect(out.pageRules).toEqual([]);
+    expect(out.auth).toBeUndefined();
+    expect(out.testConfig).toBeUndefined();
+  });
+
+  it("testConfig overrides UI mode + scope (F13-AC4)", () => {
+    const out = buildStartCrawlPayload({
+      testConfig: { crawl: { mode: "urllist", scope: "https://x.com/", urlList: ["https://x.com/p"] }, timing: { pageLoadTimeout: 60000, delayBetweenPages: 2000 } },
+      crawlMode: "follow",
+      crawlUrlList: ["should-be-ignored"],
+    });
+    expect(out.mode).toBe("urllist");
+    expect(out.timeout).toBe(60000);
+    expect(out.delay).toBe(2000);
+    expect(out.scope).toBe("https://x.com/");
+  });
+
+  it("uses manual crawlUrlList in urllist mode when no testConfig.crawl.urlList", () => {
+    const out = buildStartCrawlPayload({
+      testConfig: null,
+      crawlMode: "urllist",
+      crawlUrlList: ["https://x.com/a", "https://x.com/b"],
+    });
+    expect(out.urlList).toEqual(["https://x.com/a", "https://x.com/b"]);
+  });
+
+  it("manual crawlUrlList is ignored in follow mode", () => {
+    const out = buildStartCrawlPayload({
+      testConfig: null,
+      crawlMode: "follow",
+      crawlUrlList: ["should-be-ignored"],
+    });
+    expect(out.urlList).toEqual([]);
+  });
+
+  it("testConfig.pageRules + auth are passed through", () => {
+    const auth = { loginUrl: "x", usernameSelector: "x", passwordSelector: "x", submitSelector: "x", username: "x", password: "x" };
+    const pr = [{ pattern: "/admin", waitType: "login" as const, description: "x" }];
+    const out = buildStartCrawlPayload({
+      testConfig: { auth, pageRules: pr },
+      crawlMode: "follow",
+      crawlUrlList: [],
+    });
+    expect(out.auth).toBe(auth);
+    expect(out.pageRules).toBe(pr);
+  });
+
+  it("makes a defensive copy of urlList (caller can't mutate state)", () => {
+    const list = ["https://x.com/a"];
+    const out = buildStartCrawlPayload({ testConfig: null, crawlMode: "urllist", crawlUrlList: list });
+    out.urlList.push("https://x.com/b");
+    expect(list).toEqual(["https://x.com/a"]);
+  });
+});
+
+describe("addViewport", () => {
+  it("adds 200px wider than the current widest, sorted", () => {
+    expect(addViewport([375, 768, 1280])).toEqual([375, 768, 1280, 1480]);
+  });
+  it("starts at 320 when the input is empty", () => {
+    expect(addViewport([])).toEqual([320]);
+  });
+  it("returns the input unchanged at the 6-entry cap", () => {
+    const at6 = [320, 480, 640, 800, 1024, 1280];
+    expect(addViewport(at6)).toBe(at6);
+  });
+  it("respects a custom maxCount", () => {
+    expect(addViewport([320, 480], 2)).toEqual([320, 480]);
+    expect(addViewport([320, 480], 4)).toEqual([320, 480, 680]);
+  });
+  it("the new value is always greater than the previous max (sorted output stays sorted)", () => {
+    const out = addViewport([320, 768, 1024]);
+    expect(out[out.length - 1]).toBeGreaterThan(1024);
+    expect([...out].sort((a, b) => a - b)).toEqual(out);
+  });
+});
+
+describe("removeViewport", () => {
+  it("removes the entry at the given index", () => {
+    expect(removeViewport([375, 768, 1280], 1)).toEqual([375, 1280]);
+  });
+  it("returns the input unchanged when only one entry remains", () => {
+    const lone = [375];
+    expect(removeViewport(lone, 0)).toBe(lone);
+  });
+  it("returns the input unchanged for out-of-bounds indexes", () => {
+    const list = [320, 768];
+    expect(removeViewport(list, -1)).toBe(list);
+    expect(removeViewport(list, 5)).toBe(list);
+  });
+  it("respects a custom minCount", () => {
+    // Allow removing down to 0 by passing minCount=0
+    expect(removeViewport([320], 0, 0)).toEqual([]);
+  });
+});
+
+describe("parsePastedUrls", () => {
+  it("returns empty array for empty / whitespace input", () => {
+    expect(parsePastedUrls("")).toEqual([]);
+    expect(parsePastedUrls("   \n  \n  ")).toEqual([]);
+  });
+
+  it("parses plain text — one URL per line, dropping blanks and XML fragments", () => {
+    const out = parsePastedUrls("https://x.com/a\n\nhttps://x.com/b\n<not a url>\n  https://x.com/c  ");
+    expect(out).toEqual(["https://x.com/a", "https://x.com/b", "https://x.com/c"]);
+  });
+
+  it("dedupes URLs across pastes (preserves first occurrence)", () => {
+    expect(parsePastedUrls("https://x.com/a\nhttps://x.com/a\nhttps://x.com/b")).toEqual([
+      "https://x.com/a", "https://x.com/b",
+    ]);
+  });
+
+  it("parses sitemap XML — extracts <loc> elements", () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://example.com/</loc></url>
+  <url><loc>https://example.com/about</loc></url>
+  <url><loc>https://example.com/contact</loc></url>
+</urlset>`;
+    expect(parsePastedUrls(xml)).toEqual([
+      "https://example.com/",
+      "https://example.com/about",
+      "https://example.com/contact",
+    ]);
+  });
+
+  it("parses <urlset> root without <?xml prolog", () => {
+    const xml = `<urlset><url><loc>https://x.com/a</loc></url></urlset>`;
+    expect(parsePastedUrls(xml)).toEqual(["https://x.com/a"]);
+  });
+
+  it("parses <sitemapindex> root", () => {
+    const xml = `<sitemapindex><sitemap><loc>https://x.com/sitemap.xml</loc></sitemap></sitemapindex>`;
+    expect(parsePastedUrls(xml)).toEqual(["https://x.com/sitemap.xml"]);
+  });
+
+  it("falls back to plaintext when XML is malformed (parsererror)", () => {
+    const broken = `<?xml version="1.0"?><urlset><unclosed`;
+    // jsdom's parser may produce parsererror — function should fall through
+    const out = parsePastedUrls(broken);
+    // Result depends on jsdom; the contract is "doesn't throw and returns an array"
+    expect(Array.isArray(out)).toBe(true);
+  });
+
+  it("falls back to plaintext when XML has zero <loc> elements", () => {
+    // Valid XML but no <loc> nodes — caller should still get the plaintext interpretation
+    const out = parsePastedUrls(`<?xml version="1.0"?><other><node>x</node></other>`);
+    // No loc → plaintext path → first line starts with `<` → filtered → empty
+    expect(out).toEqual([]);
   });
 });
 

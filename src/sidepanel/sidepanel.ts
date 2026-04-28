@@ -11,10 +11,121 @@ import { renderScanTab, invalidateObserverCache } from "./scan-tab";
 import { renderScreenReaderTab, setScopeFromInspect } from "./sr-tab";
 import { renderKeyboardTab, onMovieTick, onMovieComplete } from "./kb-tab";
 import { renderAiChatTab, openAiHistoryPanel } from "./ai-tab";
+import { logDebug } from "@shared/log";
 
 /* ═══════════════════════════════════════════════════════════════════
    CVD Matrices (F08) — verified from codebase
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   Pure helpers — exported for testing
+   ═══════════════════════════════════════════════════════════════════ */
+
+/**
+ * Pick the violation-detail element to scroll to / open after a badge
+ * click in the page overlay (F05-AC4). Returns the targeted index out
+ * of [0..count) — clamped to 0 if out of range. Pure; exported for tests.
+ */
+export function pickViolationScrollTarget(payload: { index?: number } | undefined, totalDetails: number): number {
+  if (totalDetails === 0) return -1;
+  const i = payload?.index;
+  if (i === undefined || i < 0 || i >= totalDetails) return 0;
+  return i;
+}
+
+/**
+ * Build the "Element not found on page" toast that shows when a HIGHLIGHT
+ * message comes back with found=false. Returns the styled HTMLElement so
+ * callers can prepend it into the active tab panel and remove after 3s.
+ *
+ * Pure (depends only on document.createElement which is universally
+ * available); exported for tests.
+ */
+export function buildElementNotFoundToast(message = "Element not found on page"): HTMLElement {
+  const toast = document.createElement("div");
+  toast.setAttribute("role", "alert");
+  toast.setAttribute("aria-live", "assertive");
+  toast.textContent = message;
+  toast.style.cssText = "position:sticky;top:0;z-index:100;padding:8px 12px;background:var(--ds-red-50);border-bottom:1px solid var(--ds-red-300);color:var(--ds-red-700);font-size:11px;font-weight:700;text-align:center";
+  return toast;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Pure state reducers — exported for testing
+   ═══════════════════════════════════════════════════════════════════ */
+
+interface iCrawlProgressPayload {
+  status: string;
+  pagesVisited?: number;
+  pagesTotal?: number;
+  currentUrl?: string;
+  results?: unknown;
+  failed?: unknown;
+}
+
+interface iCrawlSlice {
+  crawlPhase: iCrawlPhase;
+  crawlProgress: { pagesVisited: number; pagesTotal: number; currentUrl: string };
+  crawlResults: Record<string, iScanResult> | null;
+  crawlFailed: Record<string, string> | null;
+  crawlWaitInfo: { url: string; waitType: string; description: string } | null;
+}
+
+/**
+ * Apply a CRAWL_PROGRESS message to the crawl-related state slice.
+ * Pure; exported for tests. Captures `results` and `failed` only when
+ * crawl finishes (status complete | paused) per F12-AC1; clears
+ * `crawlWaitInfo` whenever we leave the wait phase.
+ */
+export function reduceCrawlProgress(prev: iCrawlSlice, payload: iCrawlProgressPayload): iCrawlSlice {
+  const next: iCrawlSlice = {
+    ...prev,
+    crawlPhase: payload.status as iCrawlPhase,
+    crawlProgress: {
+      pagesVisited: payload.pagesVisited ?? 0,
+      pagesTotal: payload.pagesTotal ?? 0,
+      currentUrl: payload.currentUrl ?? "",
+    },
+  };
+  if (payload.status === "complete" || payload.status === "paused") {
+    next.crawlResults = (payload.results as Record<string, iScanResult>) ?? null;
+    next.crawlFailed = (payload.failed as Record<string, string>) ?? null;
+  }
+  if (payload.status !== "wait") {
+    next.crawlWaitInfo = null;
+  }
+  return next;
+}
+
+/**
+ * Reset state slice on STATE_CLEARED message. Pure; exported for tests.
+ * Clears scan/crawl phase + cached scan/crawl results + MV state +
+ * re-expands the accordion (R-PANEL).
+ */
+export function reduceStateCleared(prev: {
+  scanPhase: iScanPhase;
+  crawlPhase: iCrawlPhase;
+  lastScanResult: iScanResult | null;
+  lastMvResult: iMultiViewportResult | null;
+  mvViewportFilter: number | null;
+  mvProgress: { current: number; total: number } | null;
+  crawlResults: Record<string, iScanResult> | null;
+  crawlFailed: Record<string, string> | null;
+  accordionExpanded: boolean;
+}): typeof prev {
+  return {
+    ...prev,
+    scanPhase: "idle",
+    crawlPhase: "idle",
+    lastScanResult: null,
+    lastMvResult: null,
+    mvViewportFilter: null,
+    mvProgress: null,
+    crawlResults: null,
+    crawlFailed: null,
+    accordionExpanded: true,
+  };
+}
 
 export const CVD_MATRICES: Record<string, number[]> = {
   protanopia:     [0.567, 0.433, 0,     0.558, 0.442, 0,     0,     0.242, 0.758],
@@ -165,7 +276,8 @@ export function switchTab(tabId: iTopTab): void {
   if (targetButton?.disabled) return;
   state.topTab = tabId;
   // Persist so reopening the side panel returns to this tab.
-  try { chrome.storage.session.set({ [TOP_TAB_STORAGE_KEY]: tabId }); } catch { /* session storage may not be available in tests */ }
+  try { chrome.storage.session.set({ [TOP_TAB_STORAGE_KEY]: tabId }); }
+  catch (err) { logDebug("sidepanel.switchTab", "session.set failed (likely a test env without chrome.storage.session)", err); }
 
   // Update tab buttons
   document.querySelectorAll<HTMLButtonElement>("#top-tabs .tab").forEach((tab) => {
@@ -220,24 +332,38 @@ export function updateTabDisabledStates(): void {
 function initCvd(): void {
   const select = document.getElementById("cvd-select") as HTMLSelectElement;
   select.addEventListener("change", () => {
-    const type = select.value;
-    const matrix = type ? CVD_MATRICES[type] || null : null;
-    sendMessage({ type: "APPLY_CVD_FILTER", payload: { matrix } });
+    sendMessage({ type: "APPLY_CVD_FILTER", payload: { matrix: cvdMatrixForType(select.value) } });
   });
+}
+
+/**
+ * Look up the 9-element CVD simulation matrix for a given preset name.
+ * Empty/unknown values return null so the caller can apply 'normal vision'.
+ * Pure; exported for tests.
+ */
+export function cvdMatrixForType(type: string): number[] | null {
+  if (!type) return null;
+  return CVD_MATRICES[type] || null;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
    Confirm Clear All Bar (F22)
    ═══════════════════════════════════════════════════════════════════ */
 
-function initConfirmClearBar(): void {
+/**
+ * Wire up the inline confirm-clear-bar (F22). Yes button hides the bar
+ * and broadcasts CLEAR_ALL_CONFIRMED. Cancel just hides. Escape also
+ * hides when the bar is visible. Exported for tests so the wiring can
+ * be exercised in jsdom.
+ */
+export function initConfirmClearBar(): void {
   const bar = document.getElementById("confirm-clear-bar");
   const yesBtn = document.getElementById("confirm-clear-yes");
   const cancelBtn = document.getElementById("confirm-clear-cancel");
 
   yesBtn?.addEventListener("click", () => {
     if (bar) bar.hidden = true;
-  // Sync the visible state with the source the user just confirmed.
+    // Sync the visible state with the source the user just confirmed.
     sendMessage({ type: "CLEAR_ALL_CONFIRMED" });
   });
 
@@ -258,7 +384,7 @@ function initConfirmClearBar(): void {
    Message Listener
    ═══════════════════════════════════════════════════════════════════ */
 
-function initMessageListener(): void {
+export function initMessageListener(): void {
   chrome.runtime.onMessage.addListener((msg: iMessage) => {
     switch (msg.type) {
       case "NAVIGATE":
@@ -288,43 +414,25 @@ function initMessageListener(): void {
         break;
       }
 
-      case "STATE_CLEARED":
-        state.scanPhase = "idle";
-        state.crawlPhase = "idle";
-        state.lastScanResult = null;
-        state.lastMvResult = null;
-        state.mvViewportFilter = null;
-        state.mvProgress = null;
-        state.crawlResults = null;
-        state.crawlFailed = null;
-        state.accordionExpanded = true;
+      case "STATE_CLEARED": {
+        const next = reduceStateCleared(state);
+        Object.assign(state, next);
         renderScanTab();
         break;
+      }
 
       case "MULTI_VIEWPORT_PROGRESS":
         state.mvProgress = { current: msg.payload.currentViewport, total: msg.payload.totalViewports };
         renderScanTab();
         break;
 
-      case "CRAWL_PROGRESS":
-        state.crawlPhase = msg.payload.status as iCrawlPhase;
-        state.crawlProgress = {
-          pagesVisited: msg.payload.pagesVisited ?? 0,
-          pagesTotal: msg.payload.pagesTotal ?? 0,
-          currentUrl: msg.payload.currentUrl ?? "",
-        };
-        // F12-AC1: capture crawl results when crawl finishes for JSON export
-        if (msg.payload.status === "complete" || msg.payload.status === "paused") {
-          state.crawlResults = (msg.payload.results as Record<string, iScanResult>) ?? null;
-          state.crawlFailed = (msg.payload.failed as Record<string, string>) ?? null;
-        }
-        // Clear page-rule wait info whenever we leave the "wait" phase.
-        if (msg.payload.status !== "wait") {
-          state.crawlWaitInfo = null;
-        }
+      case "CRAWL_PROGRESS": {
+        const next = reduceCrawlProgress(state, msg.payload);
+        Object.assign(state, next);
         updateTabDisabledStates();
         renderScanTab();
         break;
+      }
 
       case "CRAWL_WAITING_FOR_USER":
         state.crawlPhase = "wait";
@@ -357,11 +465,7 @@ function initMessageListener(): void {
         if (!(msg.payload as { found: boolean }).found) {
           const activePanel = document.querySelector<HTMLElement>(".tab-panel:not([hidden])");
           if (activePanel) {
-            const toast = document.createElement("div");
-            toast.setAttribute("role", "alert");
-            toast.setAttribute("aria-live", "assertive");
-            toast.textContent = "Element not found on page";
-            toast.style.cssText = "position:sticky;top:0;z-index:100;padding:8px 12px;background:var(--ds-red-50);border-bottom:1px solid var(--ds-red-300);color:var(--ds-red-700);font-size:11px;font-weight:700;text-align:center";
+            const toast = buildElementNotFoundToast();
             activePanel.prepend(toast);
             setTimeout(() => toast.remove(), 3000);
           }
@@ -374,11 +478,11 @@ function initMessageListener(): void {
         state.scanSubTab = "results";
         renderScanTab();
         requestAnimationFrame(() => {
-          const index = (msg.payload as { index?: number } | undefined)?.index;
           const details = document.querySelectorAll<HTMLDetailsElement>(
             "#scan-content details.severity-critical, #scan-content details.severity-serious, #scan-content details.severity-moderate, #scan-content details.severity-minor"
           );
-          const target = (index !== undefined && index >= 0 && index < details.length) ? details[index] : details[0];
+          const targetIdx = pickViolationScrollTarget(msg.payload as { index?: number } | undefined, details.length);
+          const target = targetIdx >= 0 ? details[targetIdx] : null;
           if (target) {
             target.open = true;
             target.scrollIntoView({ behavior: "smooth", block: "start" });

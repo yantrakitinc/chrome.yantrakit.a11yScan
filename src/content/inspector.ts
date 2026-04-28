@@ -6,6 +6,7 @@
 import type { iInspectorData } from "@shared/types";
 import { escHtml, buildElementSelector } from "@shared/utils";
 import { lastScanViolations } from "./scan-state";
+import { logDebug } from "@shared/log";
 
 let active = false;
 let tooltip: HTMLElement | null = null;
@@ -84,7 +85,12 @@ function onClick(e: MouseEvent): void {
     try {
       const data = collectInspectorData(el);
       chrome.runtime.sendMessage({ type: "INSPECT_ELEMENT", payload: data });
-    } catch { /* sidepanel may be closed; harmless */ }
+    } catch (err) {
+      // Sidepanel was closed when the inspect-pick fired. The page-side
+      // pick already happened; the SR tab just won't know about it until
+      // re-opened. Harmless but worth a breadcrumb.
+      logDebug("inspector.click", "INSPECT_ELEMENT broadcast failed (sidepanel closed)", err);
+    }
   }
 }
 

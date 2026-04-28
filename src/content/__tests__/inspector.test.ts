@@ -31,6 +31,44 @@ describe("inspectorAccessibleName", () => {
   });
 });
 
+describe("inspector — mouse-move/click integration via simulated events", () => {
+  // Polyfill what jsdom doesn't ship: elementFromPoint, getBoundingClientRect that returns finite rect.
+  function setupDomPolyfills(target: Element) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (document as any).elementFromPoint = () => target;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (Element.prototype as any).getBoundingClientRect = function () {
+      return { top: 10, left: 10, right: 100, bottom: 30, width: 90, height: 20, x: 10, y: 10, toJSON() { return {}; } };
+    };
+  }
+
+  it("after enterInspectMode, a mousemove + Escape sequence does not throw", async () => {
+    const { enterInspectMode } = await import("../inspector");
+    document.body.innerHTML = `<button id="b">x</button>`;
+    setupDomPolyfills(document.getElementById("b")!);
+    enterInspectMode();
+    expect(() => {
+      document.dispatchEvent(new MouseEvent("mousemove", { clientX: 10, clientY: 10, bubbles: true }));
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    }).not.toThrow();
+  });
+
+  it("clicking within inspect mode broadcasts INSPECT_ELEMENT", async () => {
+    const sentMessages: { type: string }[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome = { runtime: { sendMessage: (m: { type: string }) => { sentMessages.push(m); } } };
+    const { enterInspectMode, exitInspectMode } = await import("../inspector");
+    document.body.innerHTML = `<button id="b">x</button>`;
+    setupDomPolyfills(document.getElementById("b")!);
+    enterInspectMode();
+    document.dispatchEvent(new MouseEvent("click", { clientX: 50, clientY: 20, bubbles: true }));
+    expect(sentMessages.some((m) => m.type === "INSPECT_ELEMENT")).toBe(true);
+    exitInspectMode();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (globalThis as any).chrome;
+  });
+});
+
 describe("inspectorIsFocusable", () => {
   it("returns true for native focusable tags (a/button/input/select/textarea)", () => {
     expect(inspectorIsFocusable(elFromHtml('<a href="#">x</a>'))).toBe(true);

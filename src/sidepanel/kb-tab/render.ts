@@ -1,0 +1,140 @@
+/**
+ * innerHTML template for the kb-tab. Reads kbState + sidepanel.state but
+ * does no DOM mutation — orchestrator runs `panel.innerHTML = buildKbTabHtml()`
+ * with the result.
+ */
+
+import { state } from "../sidepanel";
+import { escHtml } from "@shared/utils";
+import { kbState } from "./state";
+import { renderKbRowHtml } from "./pure";
+
+export function buildKbTabHtml(): string {
+  const {
+    tabOrder, focusGaps, focusIndicators, keyboardTraps, skipLinks,
+    kbAnalyzed, moviePlayState, movieIndex, selectedKbIndex,
+  } = kbState;
+  const failedIndicators = focusIndicators.filter((fi) => !fi.hasIndicator);
+
+  return `
+    <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;gap:8px;background:var(--ds-zinc-50)">
+      <button id="kb-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Analyze</button>
+      ${kbAnalyzed ? '<button id="kb-clear" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;background:none">Clear</button>' : ""}
+    </div>
+    ${!kbAnalyzed ? '<div class="f-1" style="padding:16px;text-align:center;font-size:12px;color:var(--ds-zinc-500)">Click Analyze to scan keyboard navigation.</div>' : ""}
+    ${kbAnalyzed ? `<div id="kb-scroll-container" class="f-1" style="overflow-y:auto;min-height:0">
+      <details open>
+        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-zinc-900);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-zinc-50);display:flex;align-items:center;gap:8px">
+          <span class="f-1">Tab Order — ${tabOrder.length} elements</span>
+          ${tabOrder.length > 0 && (moviePlayState === "idle" || moviePlayState === "complete") ? `
+            <button id="movie-play-all" aria-label="Play all - animate through tab order" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
+              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 1l7 4-7 4z"/></svg>
+            </button>
+            ${moviePlayState === "complete" ? `<span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:var(--ds-green-700);font-weight:600">Complete</span>` : ""}
+          ` : ""}
+          ${moviePlayState === "playing" ? `
+            <button id="movie-pause" aria-label="Pause movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
+              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>
+            </button>
+            <button id="movie-stop" aria-label="Stop movie" title="Stop movie (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
+              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
+            </button>
+            <span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:var(--ds-amber-800);font-weight:600">Playing ${movieIndex + 1} of ${tabOrder.length}</span>
+          ` : ""}
+          ${moviePlayState === "paused" ? `
+            <button id="movie-resume" aria-label="Resume movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
+              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 1l7 4-7 4z"/></svg>
+            </button>
+            <button id="movie-stop" aria-label="Stop movie" title="Stop movie (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
+              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
+            </button>
+            <span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:var(--ds-amber-800);font-weight:600">Paused at ${movieIndex + 1} of ${tabOrder.length}</span>
+          ` : ""}
+        </summary>
+        <div>
+          ${tabOrder.length === 0
+            ? '<div class="ds-empty" style="padding:12px">Click Analyze to scan keyboard navigation.</div>'
+            : tabOrder.map((el, i) => {
+              const isActive = (moviePlayState !== "idle" && i === movieIndex) || (selectedKbIndex === i);
+              return renderKbRowHtml(el, i, isActive);
+            }).join("")
+          }
+        </div>
+      </details>
+      <details${focusGaps.length > 0 ? " open" : ""}>
+        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-red-700);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-red-50)">Focus Gaps — ${focusGaps.length} elements</summary>
+        <div style="padding:${focusGaps.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
+          ${focusGaps.length === 0
+            ? '<div class="ds-empty" style="padding:12px">No focus gaps detected.</div>'
+            : focusGaps.map((g) => `
+              <div class="kb-gap cur-pointer" role="button" tabindex="0" aria-label="Highlight focus gap: ${escHtml(g.selector)}" data-selector="${escHtml(g.selector)}" style="font-size:11px;padding:8px;border:1px solid var(--ds-red-200);background:var(--ds-red-50);border-radius:4px">
+                <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(g.selector)}</div>
+                <div style="color:var(--ds-red-700);margin-top:2px">${escHtml(g.reason)}</div>
+              </div>
+            `).join("")}
+        </div>
+      </details>
+      <details${failedIndicators.length > 0 ? " open" : ""}>
+        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-amber-600);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-amber-50)">Focus Indicators — ${failedIndicators.length} missing</summary>
+        <div style="padding:${failedIndicators.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
+          ${focusIndicators.length === 0
+            ? '<div class="ds-empty" style="padding:12px">Run Analyze to check focus indicators.</div>'
+            : failedIndicators.length === 0
+              ? '<div style="padding:12px;font-size:11px;color:var(--ds-green-700);text-align:center">All focusable elements have visible focus indicators.</div>'
+              : failedIndicators.map((fi) => `
+                <div class="kb-fi cur-pointer" role="button" tabindex="0" aria-label="Highlight missing focus indicator: ${escHtml(fi.selector)}" data-selector="${escHtml(fi.selector)}" style="font-size:11px;padding:8px;border:1px solid var(--ds-amber-200);background:var(--ds-amber-50);border-radius:4px">
+                  <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(fi.selector)}</div>
+                  <div style="color:var(--ds-amber-600);margin-top:2px">No visible focus indicator detected</div>
+                </div>
+              `).join("")}
+        </div>
+      </details>
+      <details${keyboardTraps.length > 0 ? " open" : ""}>
+        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-red-600);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-red-50)">Keyboard Traps — ${keyboardTraps.length}</summary>
+        <div style="padding:${keyboardTraps.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
+          ${tabOrder.length === 0
+            ? '<div class="ds-empty" style="padding:12px">Run Analyze to detect keyboard traps.</div>'
+            : keyboardTraps.length === 0
+              ? '<div style="padding:12px;font-size:11px;color:var(--ds-green-700);text-align:center">No keyboard traps detected.</div>'
+              : keyboardTraps.map((t) => `
+                <div class="kb-trap cur-pointer" role="button" tabindex="0" aria-label="Highlight keyboard trap: ${escHtml(t.selector)}" data-selector="${escHtml(t.selector)}" style="font-size:11px;padding:8px;border:1px solid var(--ds-red-200);background:var(--ds-red-50);border-radius:4px">
+                  <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(t.selector)}</div>
+                  <div style="color:var(--ds-red-600);margin-top:2px">${escHtml(t.description)}</div>
+                </div>
+              `).join("")}
+        </div>
+      </details>
+      <details>
+        <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-sky-700);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-blue-50)">Skip Links — ${skipLinks.length}</summary>
+        <div style="padding:${skipLinks.length > 0 ? "12px" : "0"};display:flex;flex-direction:column;gap:6px">
+          ${tabOrder.length === 0
+            ? '<div class="ds-empty" style="padding:12px">Run Analyze to detect skip links.</div>'
+            : skipLinks.length === 0
+              ? '<div style="padding:12px;font-size:11px;color:var(--ds-amber-600);text-align:center">No skip links found. Consider adding a "Skip to main content" link.</div>'
+              : skipLinks.map((sl) => `
+                <div style="font-size:11px;padding:8px;border:1px solid ${sl.targetExists ? "var(--ds-sky-200)" : "var(--ds-red-200)"};background:${sl.targetExists ? "var(--ds-blue-50)" : "var(--ds-red-50)"};border-radius:4px">
+                  <div class="font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(sl.selector)}</div>
+                  <div style="margin-top:2px;color:${sl.targetExists ? "var(--ds-sky-700)" : "var(--ds-red-600)"}">
+                    Target: ${escHtml(sl.target)} ${sl.targetExists ? "✓ exists" : "✗ target not found"}
+                  </div>
+                </div>
+              `).join("")}
+        </div>
+      </details>
+    </div>` : ""}
+    ${kbAnalyzed ? `<!-- Overlay toggles — Tab order + Focus gaps live here, not in Scan tab -->
+    <div class="fs-0" style="border-top:2px solid var(--ds-zinc-300);background:var(--ds-zinc-100)">
+      <div role="group" aria-labelledby="kb-highlight-label" style="display:flex;align-items:center;gap:6px;padding:6px 12px">
+        <span id="kb-highlight-label" style="font-size:11px;font-weight:800;color:var(--ds-zinc-600)">Highlight</span>
+        <label class="cur-pointer min-h-24" style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--ds-zinc-700);padding:4px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff">
+          <input type="checkbox" id="toggle-tab-order" ${state.tabOrderOverlayOn ? "checked" : ""} style="margin:0">
+          Tab order
+        </label>
+        <label class="cur-pointer min-h-24" style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--ds-zinc-700);padding:4px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff">
+          <input type="checkbox" id="toggle-focus-gaps" ${state.focusGapsOverlayOn ? "checked" : ""} style="margin:0">
+          Focus gaps
+        </label>
+      </div>
+    </div>` : ""}
+  `;
+}

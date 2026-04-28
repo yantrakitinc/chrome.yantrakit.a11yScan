@@ -5,6 +5,7 @@
 
 import type { iScanResult, iMultiViewportResult, iViolation, iViewportViolation } from "@shared/types";
 import { getConfig } from "@shared/config";
+import { logError } from "@shared/log";
 
 /** Run multi-viewport scan at specified widths */
 export async function multiViewportScan(
@@ -46,8 +47,9 @@ export async function multiViewportScan(
         perViewport[width] = result.payload as iScanResult;
       }
     } catch (err) {
-      // Log error but continue
-      console.error(`MV scan failed at ${width}px:`, err);
+      // Per-viewport failure isolated — record nothing for this width but
+      // keep going so the user gets results for the viewports that did work.
+      logError("multiViewportScan", `MV scan failed at ${width}px`, err);
     }
   }
 

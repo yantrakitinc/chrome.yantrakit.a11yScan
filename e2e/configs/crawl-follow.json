@@ -2,6 +2,6 @@
   "wcag": { "version": "2.2", "level": "AA" },
   "crawl": {
     "mode": "follow",
-    "scope": "https://a11yscan.yantrakit.com/demo/tutorials/site-crawl/"
+    "scope": "http://a11yScan.local:51471/demo/tutorials/site-crawl/"
   }
 }
