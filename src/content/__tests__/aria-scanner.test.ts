@@ -70,4 +70,34 @@ describe("scanAriaPatterns", () => {
     const tree = scanAriaPatterns().find((x) => x.role === "tree")!;
     expect(tree.selector).toBe('ul[role="tree"]');
   });
+
+  it("getLabel ignores aria-labelledby pointing at a non-existent id (falls through to text)", () => {
+    document.body.innerHTML = `<div role="menu" aria-labelledby="nope"><div role="menuitem">item-x</div></div>`;
+    const menu = scanAriaPatterns().find((x) => x.role === "menu")!;
+    // labelledby ref doesn't exist → fall through to textContent
+    expect(menu.label).toBe("item-x");
+  });
+
+  it("getLabel returns empty string when label sources are all empty", () => {
+    document.body.innerHTML = `<div role="menu"></div>`;
+    const menu = scanAriaPatterns().find((x) => x.role === "menu")!;
+    expect(menu.label).toBe("");
+  });
+
+  it("getSelector returns plain tag when element has no id, no parseable role, no usable classes", () => {
+    // Force a class that gets filtered out by the [\[\]:@!] regex (special chars)
+    document.body.innerHTML = `<div role="dialog" class="modal[1]" aria-label="x"><button>OK</button></div>`;
+    const dlg = scanAriaPatterns().find((x) => x.role === "dialog")!;
+    // role 'dialog' is valid, so role-form selector wins
+    expect(dlg.selector).toBe('div[role="dialog"]');
+  });
+
+  it("getLabel handles aria-labelledby ref with no text content", () => {
+    document.body.innerHTML = `
+      <span id="empty-lbl"></span>
+      <div role="menu" aria-labelledby="empty-lbl"><div role="menuitem">x</div></div>
+    `;
+    const menu = scanAriaPatterns().find((x) => x.role === "menu")!;
+    expect(menu.label).toBe(""); // referenced span has empty textContent
+  });
 });
