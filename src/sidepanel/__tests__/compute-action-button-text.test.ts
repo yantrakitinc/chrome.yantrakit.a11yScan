@@ -7,6 +7,7 @@ import {
   renderCrawlResultsHtml, renderObserverListInnerHtml,
   renderScanProgressHtml, renderCrawlProgressHtml, renderPageRuleWaitHtml,
   renderModeTogglesHtml, renderCollapsedToggleHtml, renderToolbarContentHtml,
+  renderExpandedToggleHtml, renderMvCheckboxHtml,
 } from "../scan-tab";
 import type { iScanResult, iAriaWidget, iPageElements, iObserverEntry } from "@shared/types";
 
@@ -371,6 +372,82 @@ describe("renderResults — single-page render shape", () => {
     }));
     // 3 violation nodes
     expect(out).toMatch(/>3<\/div>[\s\S]*?Violations/);
+  });
+});
+
+describe("renderExpandedToggleHtml", () => {
+  function s(overrides: Partial<Parameters<typeof renderExpandedToggleHtml>[0]> = {}) {
+    return { wcagVersion: "2.2", wcagLevel: "AA", hasTestConfig: false, configPanelOpen: false, busy: false, ...overrides };
+  }
+
+  it("selects the active WCAG version + level option", () => {
+    const out = renderExpandedToggleHtml(s({ wcagVersion: "2.1", wcagLevel: "AAA" }));
+    expect(out).toMatch(/<option selected[^>]*>2\.1</);
+    expect(out).toMatch(/<option selected[^>]*>AAA</);
+  });
+
+  it("sets settings-btn aria-expanded reflecting configPanelOpen", () => {
+    expect(renderExpandedToggleHtml(s({ configPanelOpen: true }))).toMatch(/id="settings-btn"[^>]*aria-expanded="true"/);
+    expect(renderExpandedToggleHtml(s({ configPanelOpen: false }))).toMatch(/id="settings-btn"[^>]*aria-expanded="false"/);
+  });
+
+  it("shows the 'Config loaded' badge when hasTestConfig is true", () => {
+    expect(renderExpandedToggleHtml(s({ hasTestConfig: true }))).toMatch(/Config loaded/);
+    expect(renderExpandedToggleHtml(s({ hasTestConfig: false }))).not.toMatch(/Config loaded/);
+  });
+
+  it("disables every control when busy=true", () => {
+    const out = renderExpandedToggleHtml(s({ busy: true }));
+    expect(out).toMatch(/id="wcag-version"[^>]*disabled/);
+    expect(out).toMatch(/id="wcag-level"[^>]*disabled/);
+    expect(out).toMatch(/id="settings-btn"[^>]*disabled/);
+    expect(out).toMatch(/id="reset-btn"[^>]*disabled/);
+  });
+});
+
+describe("renderMvCheckboxHtml", () => {
+  function s(overrides: Partial<Parameters<typeof renderMvCheckboxHtml>[0]> = {}) {
+    return { mv: false, viewports: [375, 768, 1280], viewportEditing: false, busy: false, ...overrides };
+  }
+
+  it("renders just the checkbox when mv=false", () => {
+    const out = renderMvCheckboxHtml(s({ mv: false }));
+    expect(out).toMatch(/id="mv-check"/);
+    expect(out).not.toMatch(/id="mv-check"[^>]*checked/);
+    expect(out).not.toMatch(/vp-edit/);
+  });
+
+  it("checks the checkbox and renders chip row when mv=true viewportEditing=false", () => {
+    const out = renderMvCheckboxHtml(s({ mv: true }));
+    expect(out).toMatch(/id="mv-check"[^>]*checked/);
+    expect(out).toMatch(/375/);
+    expect(out).toMatch(/768/);
+    expect(out).toMatch(/1280/);
+    expect(out).toMatch(/id="vp-edit"/);
+  });
+
+  it("renders the inline editor when viewportEditing=true", () => {
+    const out = renderMvCheckboxHtml(s({ mv: true, viewportEditing: true }));
+    expect(out).toMatch(/class="vp-input/);
+    expect(out).toMatch(/class="vp-remove/);
+    expect(out).toMatch(/id="vp-add"/);
+    expect(out).toMatch(/id="vp-done"/);
+  });
+
+  it("disables vp-remove when there's only one viewport (cannot remove last)", () => {
+    const out = renderMvCheckboxHtml(s({ mv: true, viewportEditing: true, viewports: [375] }));
+    expect(out).toMatch(/class="vp-remove[^"]*"[^>]*disabled/);
+  });
+
+  it("disables +add when there are already 6 viewports", () => {
+    const out = renderMvCheckboxHtml(s({ mv: true, viewportEditing: true, viewports: [320, 375, 768, 1024, 1280, 1440] }));
+    expect(out).toMatch(/id="vp-add"[^>]*disabled/);
+  });
+
+  it("disables the checkbox + adds opacity styling when busy=true", () => {
+    const out = renderMvCheckboxHtml(s({ busy: true }));
+    expect(out).toMatch(/id="mv-check"[^>]*disabled/);
+    expect(out).toMatch(/opacity:0\.4/);
   });
 });
 

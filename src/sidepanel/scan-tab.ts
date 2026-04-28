@@ -202,24 +202,42 @@ export function renderScanTab(): void {
 }
 
 function renderExpandedToggle(busy: boolean): string {
+  return renderExpandedToggleHtml({
+    wcagVersion: state.wcagVersion,
+    wcagLevel: state.wcagLevel,
+    hasTestConfig: !!state.testConfig,
+    configPanelOpen,
+    busy,
+  });
+}
+
+/**
+ * Render the expanded settings toolbar: WCAG version + level dropdowns,
+ * settings cog with config-loaded badge, Reset, Collapse. Pure; exported
+ * for tests.
+ */
+export function renderExpandedToggleHtml(s: {
+  wcagVersion: string; wcagLevel: string;
+  hasTestConfig: boolean; configPanelOpen: boolean; busy: boolean;
+}): string {
   return `
-    <select id="wcag-version" aria-label="WCAG version" ${busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
-      <option ${state.wcagVersion === "2.2" ? "selected" : ""}>2.2</option>
-      <option ${state.wcagVersion === "2.1" ? "selected" : ""}>2.1</option>
-      <option ${state.wcagVersion === "2.0" ? "selected" : ""}>2.0</option>
+    <select id="wcag-version" aria-label="WCAG version" ${s.busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
+      <option ${s.wcagVersion === "2.2" ? "selected" : ""}>2.2</option>
+      <option ${s.wcagVersion === "2.1" ? "selected" : ""}>2.1</option>
+      <option ${s.wcagVersion === "2.0" ? "selected" : ""}>2.0</option>
     </select>
-    <select id="wcag-level" aria-label="Conformance level" ${busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
-      <option ${state.wcagLevel === "AA" ? "selected" : ""}>AA</option>
-      <option ${state.wcagLevel === "A" ? "selected" : ""}>A</option>
-      <option ${state.wcagLevel === "AAA" ? "selected" : ""}>AAA</option>
+    <select id="wcag-level" aria-label="Conformance level" ${s.busy ? "disabled" : ""} style="font-size:12px;padding:4px 6px;border:1px solid var(--ds-zinc-300);border-radius:4px;font-weight:600">
+      <option ${s.wcagLevel === "AA" ? "selected" : ""}>AA</option>
+      <option ${s.wcagLevel === "A" ? "selected" : ""}>A</option>
+      <option ${s.wcagLevel === "AAA" ? "selected" : ""}>AAA</option>
     </select>
     <div style="display:flex;align-items:center;gap:2px">
-      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${configPanelOpen}" ${busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${state.testConfig ? "var(--ds-amber-600)" : "var(--ds-zinc-500)"}">
+      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${s.configPanelOpen}" ${s.busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${s.configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${s.hasTestConfig ? "var(--ds-amber-600)" : "var(--ds-zinc-500)"}">
         <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
       </button>
-      ${state.testConfig ? '<span style="font-size:10px;font-weight:700;color:var(--ds-amber-600);background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
+      ${s.hasTestConfig ? '<span style="font-size:10px;font-weight:700;color:var(--ds-amber-600);background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:4px;padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
     </div>
-    <button id="reset-btn" aria-label="Reset all settings" ${busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px">Reset</button>
+    <button id="reset-btn" aria-label="Reset all settings" ${s.busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px">Reset</button>
     <button id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:4px;color:var(--ds-zinc-500);margin-left:auto">
       <svg aria-hidden="true" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l4-4 4 4"/></svg>
     </button>
@@ -296,36 +314,56 @@ export function renderModeTogglesHtml(s: { crawl: boolean; movie: boolean; busy:
 }
 
 function renderMvCheckbox(busy: boolean): string {
-  const chipsRow = state.mv
-    ? state.mv && viewportEditing
+  return renderMvCheckboxHtml({
+    mv: state.mv,
+    viewports: state.viewports,
+    viewportEditing,
+    busy,
+  });
+}
+
+/**
+ * Render the Multi-Viewport checkbox + viewport chips/editor row.
+ * When mv=false, just the checkbox. When mv=true, chip row showing each
+ * viewport width; in editing mode, an inline editor with +add and done.
+ * Pure; exported for tests.
+ */
+export function renderMvCheckboxHtml(s: {
+  mv: boolean;
+  viewports: number[];
+  viewportEditing: boolean;
+  busy: boolean;
+}): string {
+  const chipsRow = s.mv
+    ? s.mv && s.viewportEditing
       ? `<div style="padding-left:24px;margin-top:4px">
           <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:4px">
-            ${state.viewports.map((v, i) => `
+            ${s.viewports.map((v, i) => `
               <input type="number" min="320" value="${v}" data-index="${i}" class="vp-input font-mono min-h-24" aria-label="Viewport ${i + 1} width in pixels"
                 style="width:60px;font-size:11px;font-weight:600;padding:2px 4px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800);box-sizing:border-box">
               <button type="button" class="vp-remove cur-pointer min-h-24" data-index="${i}" aria-label="Remove ${v}px viewport"
                 style="font-size:12px;font-weight:700;line-height:1;padding:2px 5px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-600)"
-                ${state.viewports.length <= 1 ? "disabled" : ""}>×</button>
+                ${s.viewports.length <= 1 ? "disabled" : ""}>×</button>
             `).join("")}
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             <button type="button" id="vp-add"
               class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;background:#fff;color:var(--ds-zinc-800)"
-              ${state.viewports.length >= 6 ? "disabled" : ""}>+ add</button>
+              ${s.viewports.length >= 6 ? "disabled" : ""}>+ add</button>
             <button type="button" id="vp-done"
               class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:2px 8px;border:1px solid var(--ds-amber-600);border-radius:4px;background:var(--ds-amber-100);color:var(--ds-amber-800)">done</button>
           </div>
         </div>`
       : `<div style="display:flex;align-items:center;gap:4px;padding-left:24px;flex-wrap:wrap">
-          ${state.viewports.map((v) => `<span class="font-mono" style="font-size:11px;font-weight:600;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px;padding:2px 6px">${v}</span>`).join("")}
+          ${s.viewports.map((v) => `<span class="font-mono" style="font-size:11px;font-weight:600;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:4px;padding:2px 6px">${v}</span>`).join("")}
           <button type="button" id="vp-edit"
             class="cur-pointer min-h-24" style="font-size:11px;font-weight:700;padding:1px 6px;border:none;background:none;color:var(--ds-indigo-700);text-decoration:underline">edit</button>
         </div>`
     : "";
 
   return `
-    <label class="cur-pointer" style="display:flex;align-items:center;gap:6px;${busy ? "opacity:0.4;pointer-events:none" : ""}">
-      <input type="checkbox" id="mv-check" ${state.mv ? "checked" : ""} ${busy ? "disabled" : ""} class="cur-pointer" style="width:16px;height:16px;accent-color:var(--ds-amber-600)">
+    <label class="cur-pointer" style="display:flex;align-items:center;gap:6px;${s.busy ? "opacity:0.4;pointer-events:none" : ""}">
+      <input type="checkbox" id="mv-check" ${s.mv ? "checked" : ""} ${s.busy ? "disabled" : ""} class="cur-pointer" style="width:16px;height:16px;accent-color:var(--ds-amber-600)">
       <span style="font-size:12px;font-weight:600;color:var(--ds-zinc-800)">Multi-Viewport</span>
     </label>
     ${chipsRow}
