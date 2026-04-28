@@ -253,14 +253,6 @@ export interface iSkipLink {
   targetExists: boolean;
 }
 
-export interface iKeyboardAnalysis {
-  tabOrder: iTabOrderElement[];
-  focusGaps: iFocusGap[];
-  focusIndicators: iFocusIndicator[];
-  keyboardTraps: iKeyboardTrap[];
-  skipLinks: iSkipLink[];
-}
-
 /* ═══════════════════════════════════════════════════════════════════
    Accessibility Inspector (F20)
    ═══════════════════════════════════════════════════════════════════ */
@@ -406,11 +398,6 @@ export interface iChatConversation {
    ═══════════════════════════════════════════════════════════════════ */
 
 export type iManualReviewStatus = "pass" | "fail" | "na" | null;
-
-export interface iManualReviewState {
-  /** WCAG criterion ID → status */
-  criteria: Record<string, iManualReviewStatus>;
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    Report Export (F12)

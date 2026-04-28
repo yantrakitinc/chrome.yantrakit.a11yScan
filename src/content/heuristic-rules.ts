@@ -519,7 +519,9 @@ function rule17_focusOutlineNone(): iHeuristicResult[] {
     const style = getComputedStyle(el);
     const noOutline = style.outlineStyle === "none" || style.outlineWidth === "0px";
     const noBoxShadow = style.boxShadow === "none";
-    const noBorderChange = true; // border comparison requires before/after; skip here to keep concise
+    // Border-change comparison would require capturing before/after focus
+    // styles which is too expensive to do per-element; fall back to outline
+    // + box-shadow as the visible-focus signal.
     (el as HTMLElement).blur();
     if (noOutline && noBoxShadow) {
       nodes.push(node(el, "Focused element has outline:none/0 with no box-shadow or other visible focus replacement."));

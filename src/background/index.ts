@@ -74,7 +74,7 @@ chrome.runtime.onMessage.addListener(
 
 async function handleMessage(
   msg: iMessage,
-  sender: chrome.runtime.MessageSender,
+  _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void
 ): Promise<void> {
   try {

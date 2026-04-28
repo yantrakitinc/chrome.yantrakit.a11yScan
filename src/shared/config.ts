@@ -10,8 +10,6 @@ const CACHE_KEY = "a11yscan_config";
 const CACHE_TIMESTAMP_KEY = "a11yscan_config_timestamp";
 const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export const SITE_URL = "https://a11yscan.yantrakit.com";
-
 const GIST_URL =
   "https://gist.githubusercontent.com/yantrakitinc/1cde179b72bdedc56daf217bdb32017b/raw/a11yscan-config.json";
 
