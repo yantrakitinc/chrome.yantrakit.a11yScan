@@ -164,6 +164,49 @@ describe("scan-tab — mode toggle clicks and message dispatch", () => {
   });
 });
 
+describe("scan-tab — sub-tab keyboard navigation", () => {
+  function pageScanWithSubtabs() {
+    return {
+      url: "https://x.com",
+      timestamp: "2026-01-01",
+      violations: [{
+        id: "color-contrast", impact: "serious" as const, description: "x", help: "x", helpUrl: "", tags: [],
+        nodes: [{ selector: "#a", html: "", failureSummary: "" }], wcagCriteria: ["1.4.3"],
+      }],
+      passes: [], incomplete: [],
+      summary: { critical: 0, serious: 1, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 100,
+    };
+  }
+
+  it("ArrowRight on a sub-tab focuses the next sub-tab", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScanWithSubtabs();
+    state.scanSubTab = "results";
+    renderScanTab();
+    const resultsTab = document.getElementById("subtab-results") as HTMLButtonElement;
+    resultsTab.focus();
+    resultsTab.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    expect(state.scanSubTab).not.toBe("results");
+  });
+
+  it("Home on a sub-tab jumps focus to the first sub-tab", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScanWithSubtabs();
+    state.scanSubTab = "manual";
+    renderScanTab();
+    const manualTab = document.getElementById("subtab-manual") as HTMLButtonElement;
+    manualTab.focus();
+    manualTab.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+    expect(state.scanSubTab).toBe("results");
+  });
+});
+
 describe("scan-tab — Export buttons", () => {
   function pageScan() {
     return {
