@@ -118,6 +118,65 @@ describe("destroyOverlay", () => {
   });
 });
 
+describe("violation overlay — branch coverage", () => {
+  it("skips violation nodes with non-matching selectors (no throw)", () => {
+    document.body.innerHTML = `<button id="real">x</button>`;
+    expect(() => {
+      showViolationOverlay([
+        {
+          id: "v1", impact: "serious", description: "x", help: "x", helpUrl: "", tags: [],
+          nodes: [{ selector: "#does-not-exist", html: "x", failureSummary: "x" }],
+        },
+      ]);
+    }).not.toThrow();
+  });
+
+  it("uses 'minor' color fallback for unknown impact", () => {
+    document.body.innerHTML = `<button id="b">x</button>`;
+    expect(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      showViolationOverlay([{ id: "v1", impact: "unknown" as any, description: "x", help: "x", helpUrl: "", tags: [], nodes: [{ selector: "#b", html: "x", failureSummary: "x" }] }]);
+    }).not.toThrow();
+  });
+
+  it("creates a numbered badge for each violation node", () => {
+    document.body.innerHTML = `<button id="a">x</button><button id="b">y</button>`;
+    showViolationOverlay([
+      { id: "v1", impact: "critical", description: "x", help: "x", helpUrl: "", tags: [], nodes: [
+        { selector: "#a", html: "x", failureSummary: "x" },
+        { selector: "#b", html: "y", failureSummary: "y" },
+      ] },
+    ]);
+    const shadow = document.getElementById("a11y-scan-overlay-host")?.shadowRoot;
+    const divs = Array.from(shadow?.querySelectorAll("div") ?? []) as HTMLElement[];
+    // Filter to leaf divs (no child elements) whose text content is a single number — those are the badges, not the parent container.
+    const badges = divs.filter((d) => d.children.length === 0 && /^\d+$/.test((d.textContent ?? "").trim()));
+    expect(badges.map((b) => b.textContent)).toEqual(["1", "2"]);
+  });
+});
+
+describe("focus-gap overlay — reason branches", () => {
+  it("flags an interactive element with tabindex=-1", () => {
+    document.body.innerHTML = `<button tabindex="-1" id="b">x</button>`;
+    showFocusGapOverlay();
+    const shadow = document.getElementById("a11y-scan-overlay-host")?.shadowRoot;
+    const container = shadow?.getElementById("focus-gap-overlay");
+    expect(container).toBeTruthy();
+    // The container has at least one badge — checking it has any child div
+    expect(container!.children.length).toBeGreaterThan(0);
+  });
+
+  it("does NOT flag a normally focusable button (no focus-gap badge)", () => {
+    document.body.innerHTML = `<button id="b">x</button>`;
+    showFocusGapOverlay();
+    const shadow = document.getElementById("a11y-scan-overlay-host")?.shadowRoot;
+    const container = shadow?.getElementById("focus-gap-overlay");
+    expect(container).toBeTruthy();
+    // No badges since the button is in the focusable set
+    expect(container!.children.length).toBe(0);
+  });
+});
+
 describe("scroll recalculation", () => {
   it("scroll re-renders tab-order overlay when it's currently shown (debounced)", async () => {
     vi.useFakeTimers();

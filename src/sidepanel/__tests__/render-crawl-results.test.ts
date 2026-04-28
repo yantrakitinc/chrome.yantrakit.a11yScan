@@ -145,7 +145,12 @@ describe("renderResults — Multi-Viewport state branches", () => {
     const mvResult = {
       viewports: [375, 768],
       shared: [],
-      viewportSpecific: [{ id: "vp-only", viewports: [768] }],
+      viewportSpecific: [{
+        id: "vp-only", impact: "serious" as const, description: "x", help: "x", helpUrl: "", tags: [],
+        nodes: [{ selector: "#vp-only", html: "", failureSummary: "" }],
+        wcagCriteria: ["1.4.3"],
+        viewports: [768],
+      }],
       perViewport: { 375: scan, 768: scan },
     };
     const html = renderResults(scan, mvResult, null);
