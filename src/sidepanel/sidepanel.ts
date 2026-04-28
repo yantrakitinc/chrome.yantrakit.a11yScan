@@ -16,6 +16,83 @@ import { renderAiChatTab, openAiHistoryPanel } from "./ai-tab";
    CVD Matrices (F08) — verified from codebase
    ═══════════════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════════════
+   Pure state reducers — exported for testing
+   ═══════════════════════════════════════════════════════════════════ */
+
+interface iCrawlProgressPayload {
+  status: string;
+  pagesVisited?: number;
+  pagesTotal?: number;
+  currentUrl?: string;
+  results?: unknown;
+  failed?: unknown;
+}
+
+interface iCrawlSlice {
+  crawlPhase: iCrawlPhase;
+  crawlProgress: { pagesVisited: number; pagesTotal: number; currentUrl: string };
+  crawlResults: Record<string, iScanResult> | null;
+  crawlFailed: Record<string, string> | null;
+  crawlWaitInfo: { url: string; waitType: string; description: string } | null;
+}
+
+/**
+ * Apply a CRAWL_PROGRESS message to the crawl-related state slice.
+ * Pure; exported for tests. Captures `results` and `failed` only when
+ * crawl finishes (status complete | paused) per F12-AC1; clears
+ * `crawlWaitInfo` whenever we leave the wait phase.
+ */
+export function reduceCrawlProgress(prev: iCrawlSlice, payload: iCrawlProgressPayload): iCrawlSlice {
+  const next: iCrawlSlice = {
+    ...prev,
+    crawlPhase: payload.status as iCrawlPhase,
+    crawlProgress: {
+      pagesVisited: payload.pagesVisited ?? 0,
+      pagesTotal: payload.pagesTotal ?? 0,
+      currentUrl: payload.currentUrl ?? "",
+    },
+  };
+  if (payload.status === "complete" || payload.status === "paused") {
+    next.crawlResults = (payload.results as Record<string, iScanResult>) ?? null;
+    next.crawlFailed = (payload.failed as Record<string, string>) ?? null;
+  }
+  if (payload.status !== "wait") {
+    next.crawlWaitInfo = null;
+  }
+  return next;
+}
+
+/**
+ * Reset state slice on STATE_CLEARED message. Pure; exported for tests.
+ * Clears scan/crawl phase + cached scan/crawl results + MV state +
+ * re-expands the accordion (R-PANEL).
+ */
+export function reduceStateCleared(prev: {
+  scanPhase: iScanPhase;
+  crawlPhase: iCrawlPhase;
+  lastScanResult: iScanResult | null;
+  lastMvResult: iMultiViewportResult | null;
+  mvViewportFilter: number | null;
+  mvProgress: { current: number; total: number } | null;
+  crawlResults: Record<string, iScanResult> | null;
+  crawlFailed: Record<string, string> | null;
+  accordionExpanded: boolean;
+}): typeof prev {
+  return {
+    ...prev,
+    scanPhase: "idle",
+    crawlPhase: "idle",
+    lastScanResult: null,
+    lastMvResult: null,
+    mvViewportFilter: null,
+    mvProgress: null,
+    crawlResults: null,
+    crawlFailed: null,
+    accordionExpanded: true,
+  };
+}
+
 export const CVD_MATRICES: Record<string, number[]> = {
   protanopia:     [0.567, 0.433, 0,     0.558, 0.442, 0,     0,     0.242, 0.758],
   deuteranopia:   [0.625, 0.375, 0,     0.7,   0.3,   0,     0,     0.3,   0.7  ],
@@ -288,43 +365,25 @@ function initMessageListener(): void {
         break;
       }
 
-      case "STATE_CLEARED":
-        state.scanPhase = "idle";
-        state.crawlPhase = "idle";
-        state.lastScanResult = null;
-        state.lastMvResult = null;
-        state.mvViewportFilter = null;
-        state.mvProgress = null;
-        state.crawlResults = null;
-        state.crawlFailed = null;
-        state.accordionExpanded = true;
+      case "STATE_CLEARED": {
+        const next = reduceStateCleared(state);
+        Object.assign(state, next);
         renderScanTab();
         break;
+      }
 
       case "MULTI_VIEWPORT_PROGRESS":
         state.mvProgress = { current: msg.payload.currentViewport, total: msg.payload.totalViewports };
         renderScanTab();
         break;
 
-      case "CRAWL_PROGRESS":
-        state.crawlPhase = msg.payload.status as iCrawlPhase;
-        state.crawlProgress = {
-          pagesVisited: msg.payload.pagesVisited ?? 0,
-          pagesTotal: msg.payload.pagesTotal ?? 0,
-          currentUrl: msg.payload.currentUrl ?? "",
-        };
-        // F12-AC1: capture crawl results when crawl finishes for JSON export
-        if (msg.payload.status === "complete" || msg.payload.status === "paused") {
-          state.crawlResults = (msg.payload.results as Record<string, iScanResult>) ?? null;
-          state.crawlFailed = (msg.payload.failed as Record<string, string>) ?? null;
-        }
-        // Clear page-rule wait info whenever we leave the "wait" phase.
-        if (msg.payload.status !== "wait") {
-          state.crawlWaitInfo = null;
-        }
+      case "CRAWL_PROGRESS": {
+        const next = reduceCrawlProgress(state, msg.payload);
+        Object.assign(state, next);
         updateTabDisabledStates();
         renderScanTab();
         break;
+      }
 
       case "CRAWL_WAITING_FOR_USER":
         state.crawlPhase = "wait";
