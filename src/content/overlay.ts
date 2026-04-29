@@ -83,6 +83,7 @@ export function showViolationOverlay(violations: iViolation[]): void {
   }
 }
 
+/** Remove the violation badges from the shadow host (host stays for other overlays). */
 export function hideViolationOverlay(): void {
   removeContainer("violation-overlay");
 }
@@ -112,6 +113,7 @@ export function showTabOrderOverlay(): void {
 
 }
 
+/** Remove the tab-order badges from the shadow host. */
 export function hideTabOrderOverlay(): void {
   removeContainer("tab-order-overlay");
 }
@@ -154,6 +156,7 @@ export function showFocusGapOverlay(): void {
   }
 }
 
+/** Remove the focus-gap markers from the shadow host. */
 export function hideFocusGapOverlay(): void {
   removeContainer("focus-gap-overlay");
 }

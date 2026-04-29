@@ -30,6 +30,7 @@ function getMovieShadowRoot(): ShadowRoot {
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Begin Movie Mode — collect focusable elements, set state to 'playing', highlight the first, schedule the next tick. */
 export function startMovie(): void {
   elements = Array.from(document.querySelectorAll(FOCUSABLE)).filter((el) => {
     const s = getComputedStyle(el);
@@ -44,18 +45,21 @@ export function startMovie(): void {
   scheduleNext();
 }
 
+/** Pause Movie Mode mid-playback — stops scheduling without dropping the current highlight. */
 export function pauseMovie(): void {
   if (state !== "playing") return;
   state = "paused";
   if (timer) clearTimeout(timer);
 }
 
+/** Resume Movie Mode from paused — re-schedule the next tick at the current index. */
 export function resumeMovie(): void {
   if (state !== "paused") return;
   state = "playing";
   scheduleNext();
 }
 
+/** Halt Movie Mode — clear timer, remove highlight, reset to idle. */
 export function stopMovie(): void {
   state = "idle";
   currentIndex = 0;
@@ -63,6 +67,7 @@ export function stopMovie(): void {
   removeHighlight();
 }
 
+/** Set the playback speed multiplier (1× = 1000ms/element). 0 / negative / NaN / Infinity are silently ignored. */
 export function setSpeed(multiplier: number): void {
   // Guard against invalid input (0, negative, NaN) so we don't divide-by-zero
   // and end up with Infinity/NaN as the timer interval — which schedules an
