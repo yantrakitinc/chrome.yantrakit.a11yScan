@@ -12,6 +12,7 @@ import { kbState } from "./state";
 import { flashKbItem } from "./movie";
 import { rerender } from "./callbacks";
 
+/** Wire the Keyboard tab — Analyze, Clear, row clicks, gap/indicator/trap activation, movie controls, overlay toggles, and Escape-to-stop. */
 export function attachKbTabListeners(): void {
   // Analyze — fetch all keyboard data in parallel
   document.getElementById("kb-analyze")?.addEventListener("click", async () => {

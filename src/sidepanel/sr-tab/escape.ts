@@ -13,6 +13,7 @@ import { rerender } from "./callbacks";
 
 let attached = false;
 
+/** Attach a global Escape handler ONCE — exits inspect mode if active, else stops playback. */
 export function ensureSrEscapeHandler(): void {
   if (attached) return;
   attached = true;

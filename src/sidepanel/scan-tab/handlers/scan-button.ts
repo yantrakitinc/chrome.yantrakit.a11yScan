@@ -18,6 +18,7 @@ import { rerender, loadManualReviewFor } from "./callbacks";
 import { showError } from "./dom-utils";
 import { logError } from "@shared/log";
 
+/** Wire the central scan button (with mode-aware dispatch between START_CRAWL, SCAN_REQUEST, MULTI_VIEWPORT_SCAN) and the related Clear / Reset / Settings buttons. */
 export function attachScanButtonListeners(): void {
   // Scan button — branches between START_CRAWL (when Crawl mode + idle) and
   // SCAN_REQUEST / MULTI_VIEWPORT_SCAN otherwise.

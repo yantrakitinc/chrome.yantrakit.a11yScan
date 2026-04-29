@@ -15,6 +15,7 @@ const throttleMap = new Map<string, number>();
 
 /** Is a crawl currently running? Set by crawl module. */
 let crawlActive = false;
+/** Maintain a global flag that gates observer auto-scans during a running crawl (crawl owns navigation, observer must yield). */
 export function setCrawlActive(active: boolean): void { crawlActive = active; }
 
 /* ═══════════════════════════════════════════════════════════════════

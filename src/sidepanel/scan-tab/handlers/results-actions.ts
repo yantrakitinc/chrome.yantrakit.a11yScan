@@ -11,6 +11,7 @@ import type { iAriaWidget, iManualReviewStatus } from "@shared/types";
 import { rerender, saveManualReviewFor } from "./callbacks";
 import { flashActiveItem } from "./dom-utils";
 
+/** Wire click handlers for the Results sub-tab — Highlight buttons, Explain Further (jumps to AI tab), violations-overlay toggle, manual-review pass/fail/N-A, ARIA scan + ARIA highlight buttons. */
 export function attachResultsActionListeners(): void {
   // Highlight buttons inside violation rows
   document.querySelectorAll<HTMLButtonElement>(".highlight-btn").forEach((btn) => {

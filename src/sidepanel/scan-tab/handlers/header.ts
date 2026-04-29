@@ -10,6 +10,7 @@ import { scanTabState } from "../state";
 import { addViewport, removeViewport } from "../viewports";
 import { rerender } from "./callbacks";
 
+/** Wire the accordion toggle, mode toggles (Crawl/Observer/Movie), MV checkbox + viewport editor, WCAG dropdowns, sub-tab nav, and MV viewport-filter chips. */
 export function attachHeaderListeners(): void {
   // Accordion toggle
   document.getElementById("accordion-toggle")?.addEventListener("click", () => {

@@ -10,6 +10,7 @@ import { renderObserverListInnerHtml } from "../render-observer";
 import { rerender } from "./callbacks";
 import { downloadBlob, getDateStamp } from "./dom-utils";
 
+/** Wire the Observer sub-tab — export, clear, domain-filter input. Filter uses targeted DOM update so it doesn't steal focus mid-keystroke. */
 export function attachObserverListeners(): void {
   document.getElementById("export-observer")?.addEventListener("click", async () => {
     const result = await sendMessage({ type: "OBSERVER_EXPORT_HISTORY" });

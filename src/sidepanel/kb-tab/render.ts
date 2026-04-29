@@ -9,6 +9,7 @@ import { escHtml } from "@shared/utils";
 import { kbState } from "./state";
 import { renderKbRowHtml } from "./pure";
 
+/** Build the HTML string for the keyboard tab (analyzed or empty state, depending on kbState). */
 export function buildKbTabHtml(): string {
   const {
     tabOrder, focusGaps, focusIndicators, keyboardTraps, skipLinks,

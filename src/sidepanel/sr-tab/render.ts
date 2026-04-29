@@ -8,6 +8,7 @@ import { escHtml } from "@shared/utils";
 import { srState } from "./state";
 import { renderSrRowHtml } from "./pure";
 
+/** Build the HTML string for the SR tab (analyzed or empty state, depending on srState). */
 export function buildSrTabHtml(): string {
   const { elements, scopeSelector, inspectActive, srAnalyzed, playState, playIndex, singleSpeakIndex, selectedRowIndex } = srState;
   const countLabel = scopeSelector

@@ -6,6 +6,7 @@
 
 let _rerender: () => void = () => {};
 
+/** Late-binding for sr-tab cross-module callbacks (rerender) so handlers don't import sr-tab.ts. */
 export function bindSrTabCallbacks(opts: { rerender: () => void }): void {
   _rerender = opts.rerender;
 }
