@@ -211,4 +211,140 @@ describe("crawl handlers — page-rule wait controls", () => {
     expect(sentMessages.some((m) => m.type === "CANCEL_CRAWL")).toBe(true);
     expect(state.crawlWaitInfo).toBeNull();
   });
+
+  it("scan-then-continue with SCAN_RESULT response populates state.lastScanResult and switches subtab to results", async () => {
+    const fakeScan = {
+      url: "https://x.com/login",
+      timestamp: "2026-01-01",
+      violations: [],
+      passes: [], incomplete: [],
+      summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 100,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome.runtime.sendMessage = vi.fn(async (m: { type: string; payload?: unknown }) => {
+      sentMessages.push(m);
+      if (m.type === "SCAN_REQUEST") return { type: "SCAN_RESULT", payload: fakeScan };
+      return undefined;
+    });
+    await setupWait();
+    document.getElementById("scan-then-continue")?.click();
+    await new Promise((r) => setTimeout(r, 30));
+    const { state } = await import("../sidepanel");
+    expect(state.lastScanResult?.url).toBe("https://x.com/login");
+    expect(state.scanSubTab).toBe("results");
+  });
+
+  it("continue-crawl clears wait info and posts USER_CONTINUE", async () => {
+    await setupWait();
+    const { state } = await import("../sidepanel");
+    sentMessages.length = 0;
+    document.getElementById("continue-crawl")?.click();
+    await new Promise((r) => setTimeout(r, 5));
+    expect(sentMessages.some((m) => m.type === "USER_CONTINUE")).toBe(true);
+    expect(state.crawlWaitInfo).toBeNull();
+  });
+});
+
+describe("crawl handlers — crawl run controls", () => {
+  async function setupRunning() {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.crawl = true;
+    state.crawlPhase = "crawling";
+    state.scanPhase = "idle";
+    state.crawlProgress = { pagesVisited: 1, pagesTotal: 5, currentUrl: "https://x.com/p1" };
+    renderScanTab();
+  }
+
+  it("pause-crawl posts PAUSE_CRAWL", async () => {
+    await setupRunning();
+    sentMessages.length = 0;
+    document.getElementById("pause-crawl")?.click();
+    expect(sentMessages.some((m) => m.type === "PAUSE_CRAWL")).toBe(true);
+  });
+
+  it("resume-crawl posts RESUME_CRAWL when paused", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.crawl = true;
+    state.crawlPhase = "paused";
+    state.crawlProgress = { pagesVisited: 1, pagesTotal: 5, currentUrl: "https://x.com/p1" };
+    renderScanTab();
+    sentMessages.length = 0;
+    document.getElementById("resume-crawl")?.click();
+    expect(sentMessages.some((m) => m.type === "RESUME_CRAWL")).toBe(true);
+  });
+
+  it("cancel-crawl resets state.crawlPhase to idle and posts CANCEL_CRAWL", async () => {
+    await setupRunning();
+    sentMessages.length = 0;
+    document.getElementById("cancel-crawl")?.click();
+    const { state } = await import("../sidepanel");
+    expect(sentMessages.some((m) => m.type === "CANCEL_CRAWL")).toBe(true);
+    expect(state.crawlPhase).toBe("idle");
+  });
+});
+
+describe("crawl handlers — file upload", () => {
+  it("uploading a .txt file populates the URL list via FileReader", async () => {
+    const orig = globalThis.FileReader;
+    class FakeFileReader {
+      onload: (() => void) | null = null;
+      result: string | ArrayBuffer | null = null;
+      readAsText = (): void => {
+        this.result = "https://x.com/a\nhttps://x.com/b\n";
+        Promise.resolve().then(() => this.onload?.());
+      };
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).FileReader = FakeFileReader;
+
+    try {
+      await setupCrawlMode();
+      const sel = document.getElementById("crawl-mode") as HTMLSelectElement;
+      sel.value = "urllist";
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      document.getElementById("url-list-open")?.click();
+
+      const input = document.getElementById("url-file-input") as HTMLInputElement;
+      const fakeFile = new Blob(["https://x.com/a"], { type: "text/plain" });
+      Object.defineProperty(input, "files", { configurable: true, value: [fakeFile] });
+      input.dispatchEvent(new Event("change"));
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 10));
+
+      const { scanTabState } = await import("../scan-tab/state");
+      expect(scanTabState.crawlUrlList.length).toBeGreaterThanOrEqual(1);
+    } finally {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (globalThis as any).FileReader = orig;
+    }
+  });
+
+  it("file change with no file selected is a no-op", async () => {
+    await setupCrawlMode();
+    const sel = document.getElementById("crawl-mode") as HTMLSelectElement;
+    sel.value = "urllist";
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    document.getElementById("url-list-open")?.click();
+
+    const input = document.getElementById("url-file-input") as HTMLInputElement;
+    Object.defineProperty(input, "files", { configurable: true, value: [] });
+    expect(() => input.dispatchEvent(new Event("change"))).not.toThrow();
+  });
+});
+
+describe("crawl handlers — cancel-scan during crawl", () => {
+  it("cancel-scan resets scanPhase to idle", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.crawl = true;
+    state.scanPhase = "scanning";
+    state.crawlPhase = "crawling";
+    renderScanTab();
+    document.getElementById("cancel-scan")?.click();
+    expect(state.scanPhase).toBe("idle");
+  });
 });
