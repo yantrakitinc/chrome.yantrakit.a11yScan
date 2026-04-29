@@ -167,7 +167,7 @@ function getFocusableElements(): HTMLElement[] {
   const all = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
   return all.filter((el) => {
     // Exclude elements explicitly opted out of the tab order. A native
-    // focusable element with tabindex="-1" (e.g. `<button tabindex="-1">`)
+    // focusable element with tabindex="-1" (e.g. `<button type="button" tabindex="-1">`)
     // is matched by the selector above (since the button selector doesn't
     // filter by tabindex) but the user CANNOT keyboard-tab to it. Without
     // this filter the focus-gap detector treats those buttons as reachable

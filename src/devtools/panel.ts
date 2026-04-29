@@ -68,7 +68,7 @@ function render(data: iPanelData): void {
     <div class="section-label">Violations (${data.violations.length})</div>
     ${violationRows}
 
-    <button id="btn-refresh">Refresh</button>
+    <button type="button" id="btn-refresh">Refresh</button>
   `;
 
   document.getElementById("btn-refresh")?.addEventListener("click", loadData);

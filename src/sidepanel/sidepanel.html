@@ -36,27 +36,27 @@
   <div id="confirm-clear-bar" role="alertdialog" aria-labelledby="confirm-clear-text" aria-modal="true" hidden>
     <p id="confirm-clear-text">This will clear all scan results, observer history, crawl data, chat history, and saved configuration. This action cannot be undone.</p>
     <div class="confirm-clear-actions">
-      <button id="confirm-clear-yes" class="ds-btn ds-btn--sm ds-btn--danger-fill">Yes, clear all</button>
-      <button id="confirm-clear-cancel" class="ds-btn ds-btn--sm ds-btn--secondary">Cancel</button>
+      <button type="button" id="confirm-clear-yes" class="ds-btn ds-btn--sm ds-btn--danger-fill">Yes, clear all</button>
+      <button type="button" id="confirm-clear-cancel" class="ds-btn ds-btn--sm ds-btn--secondary">Cancel</button>
     </div>
   </div>
 
   <!-- Top Tabs -->
   <div id="top-tabs" role="tablist" aria-label="A11y Scan sections">
-    <button id="tab-scan" role="tab" aria-selected="true" aria-controls="panel-scan" tabindex="0" data-tab="scan" class="tab active">
+    <button type="button" id="tab-scan" role="tab" aria-selected="true" aria-controls="panel-scan" tabindex="0" data-tab="scan" class="tab active">
       <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
       <span>Scan</span>
     </button>
-    <button id="tab-sr" role="tab" aria-selected="false" aria-controls="panel-sr" tabindex="-1" data-tab="sr" class="tab">
+    <button type="button" id="tab-sr" role="tab" aria-selected="false" aria-controls="panel-sr" tabindex="-1" data-tab="sr" class="tab">
       <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h3l4-3v10L5 10H2V6z"/><path d="M11.5 5c1.2 1 1.8 2.3 1.8 3s-.6 2-1.8 3"/></svg>
       <span>Screen Reader</span>
     </button>
-    <button id="tab-kb" role="tab" aria-selected="false" aria-controls="panel-kb" tabindex="-1" data-tab="kb" class="tab">
+    <button type="button" id="tab-kb" role="tab" aria-selected="false" aria-controls="panel-kb" tabindex="-1" data-tab="kb" class="tab">
       <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="4" width="14" height="8" rx="1.5"/><path d="M4.5 10h7"/><circle cx="4.5" cy="7" r=".6" fill="currentColor" stroke="none"/><circle cx="8" cy="7" r=".6" fill="currentColor" stroke="none"/><circle cx="11.5" cy="7" r=".6" fill="currentColor" stroke="none"/></svg>
       <span>Keyboard</span>
     </button>
     <!-- AI Chat tab — coming soon -->
-    <button id="tab-ai" role="tab" aria-selected="false" aria-controls="panel-ai" tabindex="-1" data-tab="ai" class="tab" disabled aria-disabled="true" style="opacity:0.4;cursor:not-allowed;position:relative" aria-describedby="ai-soon-desc">
+    <button type="button" id="tab-ai" role="tab" aria-selected="false" aria-controls="panel-ai" tabindex="-1" data-tab="ai" class="tab" disabled aria-disabled="true" style="opacity:0.4;cursor:not-allowed;position:relative" aria-describedby="ai-soon-desc">
       <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1h10a1 1 0 011 1v7z"/><path d="M5 6h6M5 8.5h3"/></svg>
       <span>AI Chat</span>
       <span aria-hidden="true" style="font-size:7px;font-weight:800;color:var(--ds-amber-700);position:absolute;top:2px;right:2px;background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:3px;padding:0 2px;line-height:1.4">SOON</span>

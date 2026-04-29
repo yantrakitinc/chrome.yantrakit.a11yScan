@@ -160,8 +160,8 @@ export function renderScanTab(): void {
         </div>
       </div>
       <div class="action-area">
-        <button id="scan-btn" ${busy ? "disabled" : ""}>${btnText}</button>
-        ${showClear ? '<button id="clear-btn">Clear</button>' : ""}
+        <button type="button" id="scan-btn" ${busy ? "disabled" : ""}>${btnText}</button>
+        ${showClear ? '<button type="button" id="clear-btn">Clear</button>' : ""}
       </div>
     </div>
 
@@ -330,8 +330,8 @@ function renderObserveHistory(): string {
     <div class="scan-pane">
       <div style="display:flex;gap:6px;margin-bottom:8px">
         <input id="observer-domain-filter" type="search" placeholder="Filter by domain…" aria-label="Filter by domain" value="${scanTabState.observerFilter}" class="f-1" style="font-size:11px;padding:6px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;min-width:0">
-        <button id="clear-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px;background:none">Clear</button>
-        <button id="export-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);border:1px solid var(--ds-amber-300);border-radius:4px;padding:4px 10px;background:none">Export</button>
+        <button type="button" id="clear-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px;background:none">Clear</button>
+        <button type="button" id="export-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);border:1px solid var(--ds-amber-300);border-radius:4px;padding:4px 10px;background:none">Export</button>
       </div>
       <div id="observer-list-content">${renderObserverListInnerHtml(scanTabState.observerEntries, scanTabState.observerFilter)}</div>
     </div>

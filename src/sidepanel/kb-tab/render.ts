@@ -18,8 +18,8 @@ export function buildKbTabHtml(): string {
 
   return `
     <div class="fs-0" style="padding:8px 12px;border-bottom:1px solid var(--ds-zinc-200);display:flex;gap:8px;background:var(--ds-zinc-50)">
-      <button id="kb-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Analyze</button>
-      ${kbAnalyzed ? '<button id="kb-clear" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;background:none">Clear</button>' : ""}
+      <button type="button" id="kb-analyze" class="f-1 cur-pointer min-h-24" style="padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Analyze</button>
+      ${kbAnalyzed ? '<button type="button" id="kb-clear" class="cur-pointer min-h-24" style="padding:4px 10px;font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;background:none">Clear</button>' : ""}
     </div>
     ${!kbAnalyzed ? '<div class="f-1" style="padding:16px;text-align:center;font-size:12px;color:var(--ds-zinc-500)">Click Analyze to scan keyboard navigation.</div>' : ""}
     ${kbAnalyzed ? `<div id="kb-scroll-container" class="f-1" style="overflow-y:auto;min-height:0">
@@ -27,25 +27,25 @@ export function buildKbTabHtml(): string {
         <summary class="cur-pointer" style="padding:8px 12px;font-size:12px;font-weight:800;color:var(--ds-zinc-900);border-bottom:1px solid var(--ds-zinc-200);background:var(--ds-zinc-50);display:flex;align-items:center;gap:8px">
           <span class="f-1">Tab Order — ${tabOrder.length} elements</span>
           ${tabOrder.length > 0 && (moviePlayState === "idle" || moviePlayState === "complete") ? `
-            <button id="movie-play-all" aria-label="Play all - animate through tab order" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
+            <button type="button" id="movie-play-all" aria-label="Play all - animate through tab order" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 1l7 4-7 4z"/></svg>
             </button>
             ${moviePlayState === "complete" ? `<span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:var(--ds-green-700);font-weight:600">Complete</span>` : ""}
           ` : ""}
           ${moviePlayState === "playing" ? `
-            <button id="movie-pause" aria-label="Pause movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
+            <button type="button" id="movie-pause" aria-label="Pause movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="2" y="1" width="2" height="8"/><rect x="6" y="1" width="2" height="8"/></svg>
             </button>
-            <button id="movie-stop" aria-label="Stop movie" title="Stop movie (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
+            <button type="button" id="movie-stop" aria-label="Stop movie" title="Stop movie (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
             </button>
             <span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:var(--ds-amber-800);font-weight:600">Playing ${movieIndex + 1} of ${tabOrder.length}</span>
           ` : ""}
           ${moviePlayState === "paused" ? `
-            <button id="movie-resume" aria-label="Resume movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
+            <button type="button" id="movie-resume" aria-label="Resume movie" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-amber-300);border-radius:4px;background:none;color:var(--ds-amber-700)">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 1l7 4-7 4z"/></svg>
             </button>
-            <button id="movie-stop" aria-label="Stop movie" title="Stop movie (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
+            <button type="button" id="movie-stop" aria-label="Stop movie" title="Stop movie (Esc)" class="cur-pointer" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:4px;background:none;color:var(--ds-red-600)">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8"/></svg>
             </button>
             <span role="status" aria-live="polite" class="font-mono" style="font-size:11px;color:var(--ds-amber-800);font-weight:600">Paused at ${movieIndex + 1} of ${tabOrder.length}</span>
