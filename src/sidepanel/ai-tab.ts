@@ -145,8 +145,8 @@ export function renderAiChatTab(): void {
 
   panel.innerHTML = `
     <div style="padding:var(--ds-space-4) var(--ds-space-6);border-bottom:1px solid var(--ds-zinc-200);display:flex;gap:var(--ds-space-4);background:var(--ds-zinc-50);flex-shrink:0">
-      <button id="new-chat" style="flex:1;padding:var(--ds-space-3);font-size:var(--ds-text-md);font-weight:700;color:var(--ds-amber-700);border:1px solid var(--ds-amber-300);border-radius:var(--ds-radius-3);background:none;cursor:pointer;min-height:24px">+ New chat</button>
-      <button id="chat-history-btn" aria-label="Chat history" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-zinc-300);border-radius:var(--ds-radius-3);background:none;cursor:pointer;color:var(--ds-zinc-500)">
+      <button type="button" id="new-chat" style="flex:1;padding:var(--ds-space-3);font-size:var(--ds-text-md);font-weight:700;color:var(--ds-amber-700);border:1px solid var(--ds-amber-300);border-radius:var(--ds-radius-3);background:none;cursor:pointer;min-height:24px">+ New chat</button>
+      <button type="button" id="chat-history-btn" aria-label="Chat history" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-zinc-300);border-radius:var(--ds-radius-3);background:none;cursor:pointer;color:var(--ds-zinc-500)">
         <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3h10M2 7h10M2 11h10"/></svg>
       </button>
     </div>
@@ -165,7 +165,7 @@ export function renderAiChatTab(): void {
     <div id="chat-input-area" style="padding:var(--ds-space-4) var(--ds-space-6);border-top:1px solid var(--ds-zinc-200);background:#fff;flex-shrink:0">
       <div style="display:flex;gap:var(--ds-space-3)">
         <input id="chat-input" type="text" aria-label="Ask about accessibility" placeholder="Ask about accessibility\u2026" style="flex:1;font-size:var(--ds-text-md);padding:var(--ds-space-4) var(--ds-space-6);border:1px solid var(--ds-zinc-300);border-radius:var(--ds-radius-3);min-width:0">
-        <button id="chat-send" aria-label="Send message" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--ds-amber-500);color:var(--ds-amber-cta-fg);border:none;border-radius:var(--ds-radius-3);cursor:pointer">
+        <button type="button" id="chat-send" aria-label="Send message" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--ds-amber-500);color:var(--ds-amber-cta-fg);border:none;border-radius:var(--ds-radius-3);cursor:pointer">
           <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 7h9M7.5 3.5L11 7l-3.5 3.5"/></svg>
         </button>
       </div>
@@ -260,7 +260,7 @@ async function renderHistoryPanel(): Promise<void> {
     panel.innerHTML = `
       <div style="padding:var(--ds-space-6);border-bottom:1px solid var(--ds-zinc-200);display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:var(--ds-text-md);font-weight:700;color:var(--ds-zinc-800)">Chat History</span>
-        <button id="close-history" aria-label="Close history" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--ds-zinc-500)">
+        <button type="button" id="close-history" aria-label="Close history" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--ds-zinc-500)">
           <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
         </button>
       </div>
@@ -273,7 +273,7 @@ async function renderHistoryPanel(): Promise<void> {
           <div style="font-size:var(--ds-text-md);font-weight:600;color:var(--ds-zinc-800);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(conv.title)}</div>
           <div style="font-size:var(--ds-text-sm);color:var(--ds-zinc-500);margin-top:var(--ds-space-1)">${new Date(conv.createdAt).toLocaleString()}</div>
         </div>
-        <button class="history-delete" data-id="${conv.id}" aria-label="Delete conversation" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:var(--ds-radius-3);background:none;cursor:pointer;color:var(--ds-red-600);flex-shrink:0">
+        <button type="button" class="history-delete" data-id="${conv.id}" aria-label="Delete conversation" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ds-red-200);border-radius:var(--ds-radius-3);background:none;cursor:pointer;color:var(--ds-red-600);flex-shrink:0">
           <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
         </button>
       </div>
@@ -282,7 +282,7 @@ async function renderHistoryPanel(): Promise<void> {
     panel.innerHTML = `
       <div style="padding:var(--ds-space-5) var(--ds-space-6);border-bottom:1px solid var(--ds-zinc-200);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
         <span style="font-size:var(--ds-text-md);font-weight:700;color:var(--ds-zinc-800)">Chat History</span>
-        <button id="close-history" aria-label="Close history" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--ds-zinc-500)">
+        <button type="button" id="close-history" aria-label="Close history" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--ds-zinc-500)">
           <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
         </button>
       </div>
