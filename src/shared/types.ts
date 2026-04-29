@@ -13,6 +13,7 @@ export interface iViolationNode {
   failureSummary: string;
 }
 
+/** Single axe-core / heuristic violation with one or more affected DOM nodes. */
 export interface iViolation {
   id: string;
   impact: "critical" | "serious" | "moderate" | "minor";
@@ -25,6 +26,7 @@ export interface iViolation {
   wcagCriteria?: string[];
 }
 
+/** Single axe-core rule that passed (no violations) on one or more nodes. */
 export interface iPass {
   id: string;
   description: string;
@@ -33,6 +35,7 @@ export interface iPass {
   wcagCriteria?: string[];
 }
 
+/** Single axe-core rule that needs manual verification (axe couldn't determine pass/fail). */
 export interface iIncomplete {
   id: string;
   description: string;
@@ -41,6 +44,7 @@ export interface iIncomplete {
   wcagCriteria?: string[];
 }
 
+/** Per-impact violation counts + pass/incomplete totals for a single scan. */
 export interface iScanSummary {
   critical: number;
   serious: number;
@@ -50,6 +54,7 @@ export interface iScanSummary {
   incomplete: number;
 }
 
+/** What semantic content the page contains (informs which manual-review items to show). */
 export interface iPageElements {
   hasVideo: boolean;
   hasAudio: boolean;
@@ -65,6 +70,7 @@ export interface iPageElements {
   hasTimeLimited: boolean;
 }
 
+/** Output of a single-page scan — violations, passes, incompletes, summary, page metadata. */
 export interface iScanResult {
   url: string;
   timestamp: string;
@@ -84,6 +90,7 @@ export interface iViewportViolation extends iViolation {
   viewports: number[];
 }
 
+/** Output of a multi-viewport scan — per-viewport scans + shared/viewport-specific violation classification. */
 export interface iMultiViewportResult {
   viewports: number[];
   perViewport: Record<number, iScanResult>;
@@ -101,11 +108,13 @@ export interface iPageRule {
   description: string;
 }
 
+/** Auth-gated URL pattern matcher config (mode + patterns). */
 export interface iGatedUrls {
   mode: "none" | "list" | "prefix" | "regex";
   patterns: string[];
 }
 
+/** Auth credentials + selectors for logging in before/during a crawl. */
 export interface iCrawlAuth {
   loginUrl: string;
   usernameSelector: string;
@@ -116,6 +125,7 @@ export interface iCrawlAuth {
   gatedUrls?: iGatedUrls;
 }
 
+/** Configuration for a crawl — mode, scope, page rules, optional auth. */
 export interface iCrawlOptions {
   mode: "follow" | "urllist";
   timeout: number;
@@ -126,8 +136,10 @@ export interface iCrawlOptions {
   auth?: iCrawlAuth;
 }
 
+/** Crawl runtime state. */
 export type iCrawlStatus = "idle" | "crawling" | "paused" | "wait" | "complete";
 
+/** Mutable crawl state — visited URLs, queue, results, current page, status. */
 export interface iCrawlState {
   status: iCrawlStatus;
   startedAt: string;
@@ -151,11 +163,13 @@ export interface iObserverSettings {
   maxHistoryEntries: number;
 }
 
+/** Whether observer mode is enabled + its settings. */
 export interface iObserverState {
   enabled: boolean;
   settings: iObserverSettings;
 }
 
+/** One scan logged in observer history (auto or manual, with violation counts). */
 export interface iObserverEntry {
   id: string;
   url: string;
@@ -190,6 +204,7 @@ export interface iAriaCheck {
   message: string;
 }
 
+/** An ARIA widget pattern instance with its label, html, and per-check pass/fail. */
 export interface iAriaWidget {
   role: string;
   selector: string;
@@ -206,6 +221,7 @@ export interface iAriaWidget {
 
 export type iNameSource = "aria-label" | "aria-labelledby" | "alt" | "label" | "title" | "contents" | "sr-only";
 
+/** One element in screen-reader reading order (selector, role, name, states). */
 export interface iScreenReaderElement {
   index: number;
   selector: string;
@@ -230,23 +246,27 @@ export interface iTabOrderElement {
   hasFocusIndicator: boolean;
 }
 
+/** An interactive element NOT in the keyboard tab order, with the inferred reason. */
 export interface iFocusGap {
   selector: string;
   role: string;
   reason: string;
 }
 
+/** Per-element focus-indicator detection (whether a visible :focus style exists). */
 export interface iFocusIndicator {
   selector: string;
   hasIndicator: boolean;
   indicatorType?: string;
 }
 
+/** An element where keyboard Tab cannot move focus away. */
 export interface iKeyboardTrap {
   selector: string;
   description: string;
 }
 
+/** A skip-link anchor + whether its target id exists in the DOM. */
 export interface iSkipLink {
   selector: string;
   target: string;
@@ -279,6 +299,7 @@ export interface iDomContext {
   nearestHeading: string;
 }
 
+/** Computed style snapshot for an element. */
 export interface iCssContext {
   color: string;
   backgroundColor: string;
@@ -288,17 +309,20 @@ export interface iCssContext {
   position: string;
 }
 
+/** Detected JS framework + component name + test-id, if any. */
 export interface iFrameworkHints {
   detected: string | null;
   componentName: string | null;
   testId: string | null;
 }
 
+/** Inferred source-file path (e.g., from BEM class or data-component). */
 export interface iFilePathGuess {
   source: string;
   guess: string;
 }
 
+/** All enriched context for an element — DOM + CSS + framework + file-path guesses. */
 export interface iEnrichedContext {
   dom: iDomContext;
   css: iCssContext;
