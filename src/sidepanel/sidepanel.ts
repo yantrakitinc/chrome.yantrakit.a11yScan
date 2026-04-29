@@ -143,7 +143,9 @@ export const CVD_MATRICES: Record<string, number[]> = {
    ═══════════════════════════════════════════════════════════════════ */
 
 export type iTopTab = "scan" | "sr" | "kb" | "ai";
+/** Scan lifecycle state (idle | scanning | results). */
 export type iScanPhase = "idle" | "scanning" | "results";
+/** Crawl lifecycle state (idle | crawling | paused | wait | complete). */
 export type iCrawlPhase = "idle" | "crawling" | "paused" | "wait" | "complete";
 
 export const state = {

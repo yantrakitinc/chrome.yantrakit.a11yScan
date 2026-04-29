@@ -13,6 +13,7 @@ import { validateTestConfig } from "@shared/validate-test-config";
 let dialogReturnFocus: HTMLElement | null = null;
 let configDialogGlobalListenersAttached = false;
 
+/** Callbacks for the test-config dialog — onClose for state-flip, rerender to refresh after Apply/Clear. */
 export interface iConfigDialogOptions {
   /** Called from inside the dialog's `close` event. Allows the caller to
    *  flip its own `configPanelOpen` flag back to false and re-render. */
