@@ -25,7 +25,7 @@ export function render(data: iPanelData): void {
   if (!contentEl) return;
 
   if (data.error) {
-    contentEl.innerHTML = `<div id="status" style="color:#b91c1c">${data.error}</div>`;
+    contentEl.innerHTML = `<div id="status" style="color:var(--ds-red-700)">${data.error}</div>`;
     return;
   }
 
@@ -34,7 +34,7 @@ export function render(data: iPanelData): void {
     .join("");
 
   const violationRows = data.violations.length === 0
-    ? '<div style="font-size:11px;color:#047857;margin-top:4px">No violations found for this element.</div>'
+    ? '<div style="font-size:11px;color:var(--ds-green-700);margin-top:4px">No violations found for this element.</div>'
     : data.violations.map((v) => `
         <div class="violation-item">
           <div><span class="violation-rule">${v.ruleId}</span><span class="violation-impact">[${v.impact}]</span></div>
