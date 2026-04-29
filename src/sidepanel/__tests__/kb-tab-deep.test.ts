@@ -189,6 +189,34 @@ describe("kb-tab — onMovieTick / onMovieComplete from playing state", () => {
     // After 2 seconds the movie state goes back to idle, but we don't need to wait
     // — just verify it didn't throw and re-rendered into a complete state
   });
+
+  it("onMovieComplete called twice synchronously: second call's existing-timer-clear path runs (no throw)", async () => {
+    const { onMovieComplete } = await analyze();
+    document.getElementById("movie-play-all")?.click();
+    onMovieComplete();
+    // Second call exercises the `if (kbState.movieCompleteTimer) clearTimeout(...)` branch.
+    expect(() => onMovieComplete()).not.toThrow();
+  });
+});
+
+describe("kb-tab — flashKbItem", () => {
+  it("adds .ds-flash-active class synchronously when called", async () => {
+    const { flashKbItem } = await import("../kb-tab/movie");
+    const div = document.createElement("div");
+    document.body.appendChild(div);
+    flashKbItem(div);
+    expect(div.classList.contains("ds-flash-active")).toBe(true);
+  });
+
+  it("calling flashKbItem on the same element a second time exercises the clearTimeout branch", async () => {
+    const { flashKbItem } = await import("../kb-tab/movie");
+    const div = document.createElement("div");
+    document.body.appendChild(div);
+    flashKbItem(div);
+    // Second call has the existing-timer path — should be safe and re-flash
+    expect(() => flashKbItem(div)).not.toThrow();
+    expect(div.classList.contains("ds-flash-active")).toBe(true);
+  });
 });
 
 describe("kb-tab — overlay toggles", () => {
