@@ -3,11 +3,6 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Brand */
-  --ds-brand-bg: #080720;
-  --ds-brand-fg: #ffffff;
-  --ds-brand-fg-muted: rgba(255, 255, 255, 0.6);
-
   /* Amber */
   --ds-amber-50: #fffbeb;
   --ds-amber-100: #fef3c7;
@@ -22,11 +17,11 @@
 
   /* Red */
   --ds-red-50: #fef2f2;
-  --ds-red-100: #fee2e2;
   --ds-red-200: #fecaca;
   --ds-red-300: #fca5a5;
   --ds-red-600: #dc2626;
   --ds-red-700: #b91c1c;
+  --ds-red-800: #991b1b;       /* strongest red emphasis (severity:critical accent) */
   --ds-red-900: #7f1d1d;
 
   /* Green */
@@ -46,7 +41,6 @@
   --ds-sky-900: #0c4a6e;       /* Crawl mode badge text */
   --ds-indigo-700: #4338ca;
   --ds-indigo-900: #1e1b4b;
-  --ds-indigo-950: #080720;
 
   /* Violet — Movie mode badge */
   --ds-violet-100: #ede9fe;
@@ -56,10 +50,6 @@
   /* Emerald — alternate green accents */
   --ds-emerald-100: #d1fae5;   /* Observer mode badge bg */
   --ds-emerald-400: #34d399;
-  --ds-emerald-600: #059669;
-
-  /* Red-800 — strongest red emphasis (severity:critical accent) */
-  --ds-red-800: #991b1b;
 
   /* Yellow — page-rule wait border accent */
   --ds-yellow-400: #fbbf24;
@@ -69,18 +59,11 @@
   --ds-zinc-100: #f4f4f5;
   --ds-zinc-200: #e4e4e7;
   --ds-zinc-300: #d4d4d8;
-  --ds-zinc-400: #a1a1aa;
   --ds-zinc-500: #71717a;
   --ds-zinc-600: #52525b;
   --ds-zinc-700: #3f3f46;
   --ds-zinc-800: #27272a;
   --ds-zinc-900: #18181b;
-
-  /* Severity */
-  --ds-sev-critical: var(--ds-red-700);
-  --ds-sev-serious: #f97316;
-  --ds-sev-moderate: #eab308;
-  --ds-sev-minor: #3b82f6;
 
   /* Spacing */
   --ds-space-1: 2px;
@@ -90,40 +73,21 @@
   --ds-space-5: 10px;
   --ds-space-6: 12px;
   --ds-space-8: 16px;
-  --ds-space-10: 20px;
   --ds-space-12: 24px;
 
   /* Typography */
-  --ds-text-xs: 9px;
   --ds-text-sm: 10px;
   --ds-text-base: 11px;
   --ds-text-md: 12px;
-  --ds-text-lg: 13px;
 
   /* Radius */
-  --ds-radius-1: 2px;
   --ds-radius-2: 3px;
   --ds-radius-3: 4px;
-  --ds-radius-4: 8px;
   --ds-radius-pill: 999px;
-
-  /* Shadow */
-  --ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --ds-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --ds-shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.2);
-
-  /* Z-index */
-  --ds-z-base: 0;
-  --ds-z-sticky: 5;
-  --ds-z-toast: 100;
-  --ds-z-modal-backdrop: 1000;
-  --ds-z-modal: 1001;
-  --ds-z-overlay-page: 2147483646;
 
   /* Motion */
   --ds-motion-fast: 0.1s;
   --ds-motion-base: 0.15s;
-  --ds-motion-slow: 0.3s;
 }
 
 /* Reduced motion */
