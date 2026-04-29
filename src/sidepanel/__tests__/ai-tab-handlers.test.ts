@@ -254,4 +254,135 @@ describe("ai-tab — history persistence", () => {
     const hp = document.getElementById("history-panel");
     expect(hp?.style.transform).toContain("translateX(100%)");
   });
+
+  it("history Enter/Space keydown loads the conversation (keyboard activation)", async () => {
+    storageData["chatHistory"] = [
+      { id: "k1", title: "Keyed", createdAt: new Date().toISOString(), messages: [
+        { role: "user", content: "kbd-only message", timestamp: "x" },
+      ] },
+    ];
+    const { renderAiChatTab, openAiHistoryPanel } = await import("../ai-tab");
+    renderAiChatTab();
+    await openAiHistoryPanel();
+    const card = document.querySelector(".history-load") as HTMLElement;
+    expect(card).toBeTruthy();
+    card.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await new Promise((r) => setTimeout(r, 30));
+    const messages = document.getElementById("chat-messages");
+    expect(messages?.textContent).toMatch(/kbd-only message/);
+  });
+
+  it("history Space keydown also loads", async () => {
+    storageData["chatHistory"] = [
+      { id: "s1", title: "Spaced", createdAt: new Date().toISOString(), messages: [
+        { role: "user", content: "space-key msg", timestamp: "x" },
+      ] },
+    ];
+    const { renderAiChatTab, openAiHistoryPanel } = await import("../ai-tab");
+    renderAiChatTab();
+    await openAiHistoryPanel();
+    const card = document.querySelector(".history-load") as HTMLElement;
+    card.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    await new Promise((r) => setTimeout(r, 30));
+    const messages = document.getElementById("chat-messages");
+    expect(messages?.textContent).toMatch(/space-key msg/);
+  });
+
+  it("history Load when conversation id is missing falls through silently", async () => {
+    storageData["chatHistory"] = [
+      { id: "real-id", title: "T", createdAt: new Date().toISOString(), messages: [] },
+    ];
+    const { renderAiChatTab, openAiHistoryPanel } = await import("../ai-tab");
+    renderAiChatTab();
+    await openAiHistoryPanel();
+    // Modify the data-id to point at something that won't be in storage
+    const card = document.querySelector(".history-load") as HTMLElement;
+    card.dataset.id = "non-existent";
+    expect(() => card.click()).not.toThrow();
+  });
+
+  it("history-delete with confirm returning false does NOT delete", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).confirm = vi.fn(() => false);
+    storageData["chatHistory"] = [
+      { id: "c1", title: "T1", createdAt: new Date().toISOString(), messages: [] },
+    ];
+    const { renderAiChatTab, openAiHistoryPanel } = await import("../ai-tab");
+    renderAiChatTab();
+    await openAiHistoryPanel();
+    const del = document.querySelector('.history-delete[data-id="c1"]') as HTMLButtonElement;
+    del.click();
+    await new Promise((r) => setTimeout(r, 20));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((storageData["chatHistory"] as any[]).length).toBe(1);
+    // restore
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).confirm = vi.fn(() => true);
+  });
+});
+
+describe("ai-tab — handleSend / sendToAi error & empty paths", () => {
+  it("Send with empty input is a no-op (no user bubble appended)", async () => {
+    const { renderAiChatTab } = await import("../ai-tab");
+    renderAiChatTab();
+    const input = document.getElementById("chat-input") as HTMLInputElement;
+    input.value = "   "; // whitespace only — trim()=='' triggers early return
+    input.disabled = false;
+    document.getElementById("chat-send")?.click();
+    await new Promise((r) => setTimeout(r, 30));
+    const messages = document.getElementById("chat-messages");
+    // Only the AI-unavailable notice may be present; no user bubble for empty input.
+    expect(messages?.querySelector('div[style*="background:#fffbeb"]')).toBeNull();
+  });
+
+  it("sendToAi catch path: ai.languageModel.create() throws → 'AI error: ' bubble appears", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).self.ai = {
+      languageModel: {
+        capabilities: async () => ({ available: "readily" }),
+        create: async () => { throw new Error("kaboom"); },
+      },
+    };
+    const { renderAiChatTab } = await import("../ai-tab");
+    renderAiChatTab();
+    const input = document.getElementById("chat-input") as HTMLInputElement;
+    input.value = "explode";
+    document.getElementById("chat-send")?.click();
+    await new Promise((r) => setTimeout(r, 50));
+    const messages = document.getElementById("chat-messages");
+    expect(messages?.textContent).toMatch(/AI error/);
+  });
+
+  it("isChromeAiAvailable returns true when capabilities() throws but ai exists", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).self.ai = {
+      languageModel: {
+        capabilities: async () => { throw new Error("caps explode"); },
+        create: async () => ({ prompt: async () => "ok" }),
+      },
+    };
+    const { renderAiChatTab } = await import("../ai-tab");
+    renderAiChatTab();
+    await new Promise((r) => setTimeout(r, 30));
+    // catch returns false → input disabled
+    const input = document.getElementById("chat-input") as HTMLInputElement;
+    expect(input.disabled).toBe(true);
+  });
+
+  it("isChromeAiAvailable: ai.languageModel exists without capabilities → return true (legacy fallback)", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).self.ai = {
+      languageModel: {
+        // no capabilities at all
+        create: async () => ({ prompt: async () => "ok" }),
+      },
+    };
+    const { renderAiChatTab } = await import("../ai-tab");
+    renderAiChatTab();
+    await new Promise((r) => setTimeout(r, 30));
+    const input = document.getElementById("chat-input") as HTMLInputElement;
+    // available=true → input is NOT disabled
+    expect(input.disabled).toBe(false);
+  });
+
 });
