@@ -103,10 +103,15 @@ export function attachScanButtonListeners(): void {
           sendMessage({ type: "SET_MOVIE_SPEED", payload: { speed } });
           sendMessage({ type: "START_MOVIE_MODE" });
         }
-        // Background ARIA scan — best-effort, decoupled from primary scan
+        // Background ARIA scan — best-effort, decoupled from primary scan.
+        // Must rerender after assigning state.ariaWidgets so the ARIA sub-tab
+        // shows the new data instead of the stale "No ARIA widgets scanned yet"
+        // empty state. (Without rerender(), users had to switch tabs or click
+        // Scan ARIA Patterns to see the auto-scanned data.)
         sendMessage({ type: "RUN_ARIA_SCAN" }).then((ariaResult) => {
           if (ariaResult && (ariaResult as { type: string }).type === "ARIA_SCAN_RESULT") {
             state.ariaWidgets = (ariaResult as { payload: iAriaWidget[] }).payload;
+            rerender();
           }
         }).catch((err) => {
           // ARIA scan rejected — usually means the content script choked
