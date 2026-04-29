@@ -3,13 +3,13 @@
  * Evaluated in the devtools page context; reads data from the inspected window via eval.
  */
 
-interface iPanelViolation {
+export interface iPanelViolation {
   ruleId: string;
   impact: string;
   message: string;
 }
 
-interface iPanelData {
+export interface iPanelData {
   selector: string;
   role: string;
   accessibleName: string;
@@ -20,10 +20,8 @@ interface iPanelData {
   error?: string;
 }
 
-const contentEl = document.getElementById("content");
-const statusEl = document.getElementById("status");
-
-function render(data: iPanelData): void {
+export function render(data: iPanelData): void {
+  const contentEl = document.getElementById("content");
   if (!contentEl) return;
 
   if (data.error) {
@@ -74,7 +72,8 @@ function render(data: iPanelData): void {
   document.getElementById("btn-refresh")?.addEventListener("click", loadData);
 }
 
-function loadData(): void {
+export function loadData(): void {
+  const statusEl = document.getElementById("status");
   if (statusEl) statusEl.textContent = "Loading…";
 
   // Expression evaluated in the context of the inspected page.
@@ -145,13 +144,16 @@ function loadData(): void {
         render({ selector: "", role: "", accessibleName: "", ariaAttributes: {}, tabindex: null, isFocusable: false, violations: [], error: "Could not inspect element." });
         return;
       }
-      if (statusEl) statusEl.textContent = "";
+      const statusEl2 = document.getElementById("status");
+      if (statusEl2) statusEl2.textContent = "";
       render(result);
     }
   );
 }
 
-// Load on startup and whenever selection changes
-loadData();
-
-chrome.devtools.panels.elements.onSelectionChanged.addListener(loadData);
+// Load on startup and whenever selection changes — only when running inside
+// DevTools (the unit test harness imports this module without chrome.devtools).
+if (typeof chrome !== "undefined" && chrome.devtools?.panels?.elements) {
+  loadData();
+  chrome.devtools.panels.elements.onSelectionChanged.addListener(loadData);
+}
