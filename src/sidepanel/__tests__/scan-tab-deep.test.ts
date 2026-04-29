@@ -162,6 +162,84 @@ describe("scan-tab — mode toggle clicks and message dispatch", () => {
     expect(state.movie).toBe(true);
     expect(storageData["movie_enabled"]).toBe(true);
   });
+
+  it("clicking mode-btn[data-mode='crawl'] flips state.crawl", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.accordionExpanded = true;
+    state.crawl = false;
+    renderScanTab();
+    document.querySelector<HTMLButtonElement>(".mode-btn[data-mode='crawl']")?.click();
+    expect(state.crawl).toBe(true);
+  });
+});
+
+describe("scan-tab — accordion expand/collapse", () => {
+  it("clicking #accordion-toggle expands when collapsed", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.accordionExpanded = false;
+    renderScanTab();
+    document.getElementById("accordion-toggle")?.click();
+    expect(state.accordionExpanded).toBe(true);
+  });
+
+  it("clicking #collapse-btn collapses when expanded", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.accordionExpanded = true;
+    renderScanTab();
+    document.getElementById("collapse-btn")?.click();
+    expect(state.accordionExpanded).toBe(false);
+  });
+});
+
+describe("scan-tab — viewport editor (#vp-edit)", () => {
+  it("clicking #vp-edit puts the panel into viewport-edit mode (vp-done becomes visible)", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.accordionExpanded = true;
+    state.mv = true;
+    renderScanTab();
+    document.getElementById("vp-edit")?.click();
+    // Re-render swaps in vp-done in the toolbar
+    expect(document.getElementById("vp-done")).toBeTruthy();
+  });
+});
+
+describe("scan-tab — multi-viewport filter chips", () => {
+  it("clicking an MV filter chip sets state.mvViewportFilter to that viewport", async () => {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    const scan = {
+      url: "https://x.com",
+      timestamp: "2026-01-01",
+      violations: [],
+      passes: [],
+      incomplete: [],
+      summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 },
+      pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false },
+      scanDurationMs: 100,
+    };
+    state.scanPhase = "results";
+    state.lastScanResult = scan;
+    state.scanSubTab = "results";
+    state.lastMvResult = {
+      viewports: [375, 768, 1280],
+      shared: [],
+      viewportSpecific: [],
+      perViewport: { 375: scan, 768: scan, 1280: scan },
+    };
+    state.mvViewportFilter = null;
+    renderScanTab();
+
+    document.querySelector<HTMLButtonElement>(".mv-filter-chip[data-mvfilter='768']")?.click();
+    expect(state.mvViewportFilter).toBe(768);
+
+    // 'all' chip clears back to null
+    document.querySelector<HTMLButtonElement>(".mv-filter-chip[data-mvfilter='all']")?.click();
+    expect(state.mvViewportFilter).toBeNull();
+  });
 });
 
 describe("scan-tab — sub-tab keyboard navigation", () => {
