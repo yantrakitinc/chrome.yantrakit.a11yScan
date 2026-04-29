@@ -44,8 +44,8 @@ export function showError(message: string): void {
     content.innerHTML = `
       <div style="padding:16px">
         <div style="padding:12px;background:var(--ds-red-50);border:1px solid var(--ds-red-200);border-radius:8px">
-          <div style="font-size:12px;font-weight:700;color:var(--ds-red-800);margin-bottom:4px">Scan failed</div>
-          <div style="font-size:11px;color:var(--ds-red-900);word-break:break-all">${escHtml(message)}</div>
+          <div style="font-size:var(--ds-text-md);font-weight:700;color:var(--ds-red-800);margin-bottom:4px">Scan failed</div>
+          <div style="font-size:var(--ds-text-base);color:var(--ds-red-900);word-break:break-all">${escHtml(message)}</div>
         </div>
       </div>
     `;

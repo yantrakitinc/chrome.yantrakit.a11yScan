@@ -141,12 +141,12 @@ export function renderScanTab(): void {
     <div class="accordion-wrapper">
       ${state.accordionExpanded ? `
         <div class="accordion-toggle" role="group" aria-label="Scan settings">
-          <span style="font-size:11px;font-weight:700;color:var(--ds-amber-800)">WCAG</span>
+          <span style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-amber-800)">WCAG</span>
           ${renderExpandedToggle(busy)}
         </div>
       ` : `
         <button type="button" class="accordion-toggle" id="accordion-toggle" aria-expanded="false" aria-controls="accordion-body" aria-label="Expand scan settings">
-          <span style="font-size:11px;font-weight:700;color:var(--ds-amber-800)">WCAG</span>
+          <span style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-amber-800)">WCAG</span>
           ${renderCollapsedToggle()}
         </button>
       `}
@@ -267,7 +267,7 @@ function renderContent(): string {
   if (state.scanPhase === "scanning") {
     // Show partial results if available (F01-AC7: results render as soon as they arrive)
     if (state.lastScanResult) return renderResults(state.lastScanResult, state.lastMvResult, state.mvViewportFilter);
-    return '<div class="scan-pane"><div style="font-size:11px;color:var(--ds-zinc-500);font-weight:600;display:flex;align-items:center;gap:6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="var(--ds-zinc-300)" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="var(--ds-amber-500)" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page…</div></div>';
+    return '<div class="scan-pane"><div style="font-size:var(--ds-text-base);color:var(--ds-zinc-500);font-weight:600;display:flex;align-items:center;gap:6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" style="animation:spin 1s linear infinite"><circle cx="7" cy="7" r="5" stroke="var(--ds-zinc-300)" stroke-width="2"/><path d="M12 7a5 5 0 00-5-5" stroke="var(--ds-amber-500)" stroke-width="2" stroke-linecap="round"/></svg>Analyzing page…</div></div>';
   }
 
   // Sub-tab content routing
@@ -329,9 +329,9 @@ function renderObserveHistory(): string {
   return `
     <div class="scan-pane">
       <div style="display:flex;gap:6px;margin-bottom:8px">
-        <input id="observer-domain-filter" type="search" placeholder="Filter by domain…" aria-label="Filter by domain" value="${scanTabState.observerFilter}" class="f-1" style="font-size:11px;padding:6px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;min-width:0">
-        <button id="clear-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px;background:none">Clear</button>
-        <button id="export-observer" class="fs-0 cur-pointer min-h-24" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);border:1px solid var(--ds-amber-300);border-radius:4px;padding:4px 10px;background:none">Export</button>
+        <input id="observer-domain-filter" type="search" placeholder="Filter by domain…" aria-label="Filter by domain" value="${scanTabState.observerFilter}" class="f-1" style="font-size:var(--ds-text-base);padding:6px 8px;border:1px solid var(--ds-zinc-300);border-radius:4px;min-width:0">
+        <button id="clear-observer" class="fs-0 cur-pointer min-h-24" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-red-600);border:1px solid var(--ds-red-200);border-radius:4px;padding:4px 10px;background:none">Clear</button>
+        <button id="export-observer" class="fs-0 cur-pointer min-h-24" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-amber-700);border:1px solid var(--ds-amber-300);border-radius:4px;padding:4px 10px;background:none">Export</button>
       </div>
       <div id="observer-list-content">${renderObserverListInnerHtml(scanTabState.observerEntries, scanTabState.observerFilter)}</div>
     </div>

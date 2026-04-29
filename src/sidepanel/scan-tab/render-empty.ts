@@ -6,9 +6,9 @@ export function renderEmptyState(): string {
   return `
     <div style="padding:16px">
       <h2 style="font-size:14px;font-weight:800;color:var(--ds-zinc-900);margin-bottom:4px">Get started</h2>
-      <p style="font-size:12px;color:var(--ds-zinc-600);line-height:1.5">Click the button above to check this page for accessibility issues.</p>
+      <p style="font-size:var(--ds-text-md);color:var(--ds-zinc-600);line-height:1.5">Click the button above to check this page for accessibility issues.</p>
       <div style="margin-top:16px">
-        <h3 style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Scan modes</h3>
+        <h3 style="font-size:var(--ds-text-base);font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Scan modes</h3>
         <div style="padding-left:12px;border-left:2px solid var(--ds-sky-400);margin-bottom:8px">
           <div class="scan-section-title">Crawl</div>
           <div class="scan-body">Automatically visits every page on your website and checks each one for issues.</div>
