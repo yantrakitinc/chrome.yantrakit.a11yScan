@@ -165,6 +165,31 @@ describe("multiViewportScan — orchestration", () => {
     expect((responses[0] as { type: string }).type).toBe("SCAN_ERROR");
   });
 
+  it("falls back to 1280 when chrome.windows.get returns no width", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (chromeApi.windows as any).get = vi.fn(async () => ({}));
+    chromeApi.tabs.sendMessage = vi.fn(async () => ({ type: "SCAN_RESULT", payload: scan([]) }));
+    await multiViewportScan([375], () => undefined);
+    // The last update call restores to 1280 (the fallback)
+    expect(chromeApi._updateCalls[chromeApi._updateCalls.length - 1].props.width).toBe(1280);
+  });
+
+  it("returns an error response when active tab has no id", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (chromeApi.tabs as any).query = vi.fn(async () => [{ id: undefined, windowId: 1 }]);
+    const responses: unknown[] = [];
+    await multiViewportScan([375], (r) => responses.push(r));
+    expect((responses[0] as { type: string }).type).toBe("SCAN_ERROR");
+  });
+
+  it("returns an error response when active tab has no windowId", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (chromeApi.tabs as any).query = vi.fn(async () => [{ id: 99, windowId: undefined }]);
+    const responses: unknown[] = [];
+    await multiViewportScan([375], (r) => responses.push(r));
+    expect((responses[0] as { type: string }).type).toBe("SCAN_ERROR");
+  });
+
   it("continues when a single viewport scan throws — failure isolated to that viewport", async () => {
     let i = 0;
     chromeApi.tabs.sendMessage = vi.fn(async () => {
