@@ -15,7 +15,7 @@ export function renderAriaResultsHtml(widgets: iAriaWidget[]): string {
     return `
       <div style="padding:var(--ds-space-8);text-align:center">
         <div style="font-size:var(--ds-text-md);color:var(--ds-zinc-500)">No ARIA widgets scanned yet.</div>
-        <button id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:var(--ds-space-4);padding:var(--ds-space-4);font-size:var(--ds-text-md);font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:var(--ds-radius-3)">Scan ARIA Patterns</button>
+        <button type="button" id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:var(--ds-space-4);padding:var(--ds-space-4);font-size:var(--ds-text-md);font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:var(--ds-radius-3)">Scan ARIA Patterns</button>
       </div>
     `;
   }
@@ -57,7 +57,7 @@ export function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
         ${w.checks.filter((c) => c.pass).map((c) => `
           <div style="font-size:var(--ds-text-base);color:var(--ds-green-700);padding:var(--ds-space-1) 0 var(--ds-space-1) var(--ds-space-4);border-left:2px solid var(--ds-green-200)">${escHtml(c.message)}</div>
         `).join("")}
-        <button class="aria-highlight cur-pointer min-h-24" data-selector="${escHtml(w.selector)}" aria-label="Highlight ${escHtml(w.role)} ${escHtml(w.label)} on the page" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-amber-700);background:none;border:none;margin-top:var(--ds-space-2)">Highlight on page</button>
+        <button type="button" class="aria-highlight cur-pointer min-h-24" data-selector="${escHtml(w.selector)}" aria-label="Highlight ${escHtml(w.role)} ${escHtml(w.label)} on the page" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-amber-700);background:none;border:none;margin-top:var(--ds-space-2)">Highlight on page</button>
       </div>
     </details>
   `;

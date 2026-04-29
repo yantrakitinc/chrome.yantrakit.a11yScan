@@ -57,13 +57,13 @@ export function renderExpandedToggleHtml(s: {
       <option ${s.wcagLevel === "AAA" ? "selected" : ""}>AAA</option>
     </select>
     <div style="display:flex;align-items:center;gap:var(--ds-space-1)">
-      <button id="settings-btn" aria-label="Test configuration" aria-expanded="${s.configPanelOpen}" ${s.busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${s.configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${s.hasTestConfig ? "var(--ds-amber-600)" : "var(--ds-zinc-500)"}">
+      <button type="button" id="settings-btn" aria-label="Test configuration" aria-expanded="${s.configPanelOpen}" ${s.busy ? "disabled" : ""} class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:${s.configPanelOpen ? "var(--ds-amber-100)" : "none"};border-radius:4px;color:${s.hasTestConfig ? "var(--ds-amber-600)" : "var(--ds-zinc-500)"}">
         <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg>
       </button>
       ${s.hasTestConfig ? '<span style="font-size:var(--ds-text-sm);font-weight:700;color:var(--ds-amber-600);background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:var(--ds-radius-3);padding:1px 5px;white-space:nowrap">Config loaded</span>' : ""}
     </div>
-    <button id="reset-btn" aria-label="Reset all settings" ${s.busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:var(--ds-radius-3);padding:var(--ds-space-2) var(--ds-space-5)">Reset</button>
-    <button id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:var(--ds-radius-3);color:var(--ds-zinc-500);margin-left:auto">
+    <button type="button" id="reset-btn" aria-label="Reset all settings" ${s.busy ? "disabled" : ""} class="cur-pointer min-h-24" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:var(--ds-radius-3);padding:var(--ds-space-2) var(--ds-space-5)">Reset</button>
+    <button type="button" id="collapse-btn" aria-label="Collapse settings" class="cur-pointer" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;border-radius:var(--ds-radius-3);color:var(--ds-zinc-500);margin-left:auto">
       <svg aria-hidden="true" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5l4-4 4 4"/></svg>
     </button>
   `;
@@ -116,9 +116,9 @@ export function renderCollapsedToggleHtml(s: {
 export function renderModeTogglesHtml(s: { crawl: boolean; movie: boolean; busy: boolean }): string {
   return `
     <div class="mode-row" role="group" aria-label="Scan mode">
-      <button class="mode-btn mode-crawl" aria-pressed="${s.crawl}" ${s.busy ? "disabled" : ""} data-mode="crawl">Crawl</button>
-      <button class="mode-btn mode-observe" disabled aria-disabled="true" aria-label="Observe mode — coming soon" style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">Observe<span aria-hidden="true" style="font-size:8px;font-weight:800;color:var(--ds-amber-700);position:absolute;top:-var(--ds-space-1);right:-var(--ds-space-1);background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:var(--ds-radius-2);padding:0 3px;line-height:1.4">SOON</span></button>
-      <button class="mode-btn mode-movie" aria-pressed="${s.movie}" ${s.busy ? "disabled" : ""} data-mode="movie">Movie</button>
+      <button type="button" class="mode-btn mode-crawl" aria-pressed="${s.crawl}" ${s.busy ? "disabled" : ""} data-mode="crawl">Crawl</button>
+      <button type="button" class="mode-btn mode-observe" disabled aria-disabled="true" aria-label="Observe mode — coming soon" style="opacity:0.4;cursor:not-allowed;position:relative" title="Coming soon">Observe<span aria-hidden="true" style="font-size:8px;font-weight:800;color:var(--ds-amber-700);position:absolute;top:-var(--ds-space-1);right:-var(--ds-space-1);background:var(--ds-amber-100);border:1px solid var(--ds-amber-300);border-radius:var(--ds-radius-2);padding:0 3px;line-height:1.4">SOON</span></button>
+      <button type="button" class="mode-btn mode-movie" aria-pressed="${s.movie}" ${s.busy ? "disabled" : ""} data-mode="movie">Movie</button>
     </div>
   `;
 }
@@ -182,7 +182,7 @@ export function renderSubTabsHtml(s: { observer: boolean; activeSubTab: string }
       ${tabs.map((t) => {
         const label = t === "results" ? "Results" : t === "manual" ? "Manual" : t === "aria" ? "ARIA" : "Observe";
         const isActive = t === s.activeSubTab;
-        return `<button role="tab" id="subtab-${t}" aria-selected="${isActive}" aria-controls="scan-content" tabindex="${isActive ? "0" : "-1"}" class="sub-tab ${isActive ? "active" : ""}" data-subtab="${t}">${label}</button>`;
+        return `<button type="button" role="tab" id="subtab-${t}" aria-selected="${isActive}" aria-controls="scan-content" tabindex="${isActive ? "0" : "-1"}" class="sub-tab ${isActive ? "active" : ""}" data-subtab="${t}">${label}</button>`;
       }).join("")}
     </div>
   `;

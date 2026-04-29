@@ -15,7 +15,7 @@ export function renderScanProgressHtml(s: {
     <div class="progress-bar" role="status" aria-live="polite" aria-atomic="true">
       <div style="display:flex;justify-content:space-between;margin-bottom:var(--ds-space-3)">
         <span class="font-mono" style="font-size:var(--ds-text-base);color:var(--ds-zinc-600)">${s.mv ? `viewport ${s.mvProgress ? `${s.mvProgress.current}/${s.mvProgress.total}` : `1/${s.viewports.length}`}` : "analyzing page…"}</span>
-        <button id="cancel-scan" aria-label="Cancel scan" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
+        <button type="button" id="cancel-scan" aria-label="Cancel scan" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
           <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
         </button>
       </div>
@@ -45,10 +45,10 @@ export function renderCrawlProgressHtml(
         ${urlDisplay ? `<span class="truncate f-1 font-mono" style="font-size:var(--ds-text-sm);color:var(--ds-zinc-500);min-width:0" title="${escHtml(currentUrl)}">${escHtml(urlDisplay)}</span>` : ""}
         <div class="fs-0" style="display:flex;gap:var(--ds-space-2)">
           ${crawlPhase === "crawling"
-            ? '<button id="pause-crawl" aria-label="Pause crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
-            : '<button id="resume-crawl" aria-label="Resume crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><path d="M0 0l8 5-8 5z"/></svg></button>'
+            ? '<button type="button" id="pause-crawl" aria-label="Pause crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><rect width="3" height="10" rx=".5"/><rect x="5" width="3" height="10" rx=".5"/></svg></button>'
+            : '<button type="button" id="resume-crawl" aria-label="Resume crawl" class="scan-progress-icon-btn"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><path d="M0 0l8 5-8 5z"/></svg></button>'
           }
-          <button id="cancel-crawl" aria-label="Cancel crawl" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
+          <button type="button" id="cancel-crawl" aria-label="Cancel crawl" class="scan-progress-icon-btn scan-progress-icon-btn--danger">
             <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6M7 1L1 7"/></svg>
           </button>
         </div>
@@ -66,9 +66,9 @@ export function renderPageRuleWaitHtml(info: { url: string; description: string;
       ${info?.description ? `<div style="font-size:var(--ds-text-base);color:var(--ds-zinc-800);margin-bottom:var(--ds-space-2)">${escHtml(info.description)}</div>` : ""}
       ${info?.url ? `<div class="truncate font-mono" style="font-size:var(--ds-text-sm);color:var(--ds-zinc-500);margin-bottom:var(--ds-space-3)" title="${escHtml(info.url)}">${escHtml(info.url)}</div>` : ""}
       <div style="display:flex;gap:var(--ds-space-3);flex-wrap:wrap">
-        <button id="continue-crawl" class="cur-pointer min-h-24" style="padding:var(--ds-space-2) var(--ds-space-5);font-size:var(--ds-text-base);font-weight:700;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:var(--ds-radius-3)">Continue</button>
-        <button id="scan-then-continue" class="cur-pointer min-h-24" style="padding:var(--ds-space-2) var(--ds-space-5);font-size:var(--ds-text-base);font-weight:700;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:var(--ds-radius-3)">Scan page, then continue</button>
-        <button id="cancel-wait" class="cur-pointer min-h-24" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:var(--ds-radius-3);margin-left:auto;padding:var(--ds-space-2) var(--ds-space-5)">Cancel</button>
+        <button type="button" id="continue-crawl" class="cur-pointer min-h-24" style="padding:var(--ds-space-2) var(--ds-space-5);font-size:var(--ds-text-base);font-weight:700;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:var(--ds-radius-3)">Continue</button>
+        <button type="button" id="scan-then-continue" class="cur-pointer min-h-24" style="padding:var(--ds-space-2) var(--ds-space-5);font-size:var(--ds-text-base);font-weight:700;color:var(--ds-zinc-700);background:#fff;border:1px solid var(--ds-zinc-300);border-radius:var(--ds-radius-3)">Scan page, then continue</button>
+        <button type="button" id="cancel-wait" class="cur-pointer min-h-24" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-red-600);background:none;border:1px solid var(--ds-red-200);border-radius:var(--ds-radius-3);margin-left:auto;padding:var(--ds-space-2) var(--ds-space-5)">Cancel</button>
       </div>
     </div>
   `;

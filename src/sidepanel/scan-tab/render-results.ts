@@ -41,8 +41,8 @@ export function renderResults(
       Multi-Viewport: ${mvResult.shared.length} shared &middot; ${mvResult.viewportSpecific.length} viewport-specific
     </div>
     <div style="display:flex;gap:var(--ds-space-2);flex-wrap:wrap;margin-bottom:var(--ds-space-4)">
-      <button class="mv-filter-chip cur-pointer min-h-24" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:var(--ds-text-base);font-weight:700;padding:3px var(--ds-space-4);border-radius:var(--ds-radius-3);border:1px solid ${mvFilter === null ? "var(--ds-amber-600)" : "var(--ds-zinc-300)"};background:${mvFilter === null ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === null ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">All</button>
-      ${mvResult.viewports.map((vp) => `<button class="mv-filter-chip font-mono cur-pointer min-h-24" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:var(--ds-text-base);font-weight:700;padding:3px var(--ds-space-4);border-radius:var(--ds-radius-3);border:1px solid ${mvFilter === vp ? "var(--ds-amber-600)" : "var(--ds-zinc-300)"};background:${mvFilter === vp ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === vp ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">${vp}px</button>`).join("")}
+      <button type="button" class="mv-filter-chip cur-pointer min-h-24" data-mvfilter="all" aria-pressed="${mvFilter === null}" aria-label="Show violations for all viewports" style="font-size:var(--ds-text-base);font-weight:700;padding:3px var(--ds-space-4);border-radius:var(--ds-radius-3);border:1px solid ${mvFilter === null ? "var(--ds-amber-600)" : "var(--ds-zinc-300)"};background:${mvFilter === null ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === null ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">All</button>
+      ${mvResult.viewports.map((vp) => `<button type="button" class="mv-filter-chip font-mono cur-pointer min-h-24" data-mvfilter="${vp}" aria-pressed="${mvFilter === vp}" aria-label="Show violations only at ${vp} pixel viewport" style="font-size:var(--ds-text-base);font-weight:700;padding:3px var(--ds-space-4);border-radius:var(--ds-radius-3);border:1px solid ${mvFilter === vp ? "var(--ds-amber-600)" : "var(--ds-zinc-300)"};background:${mvFilter === vp ? "var(--ds-amber-100)" : "#fff"};color:${mvFilter === vp ? "var(--ds-amber-800)" : "var(--ds-zinc-600)"}">${vp}px</button>`).join("")}
     </div>
   ` : "";
 
@@ -117,10 +117,10 @@ export function renderViolation(v: iScanResult["violations"][0], viewportWidths:
           <div style="background:#fff;border:1px solid var(--ds-zinc-200);border-radius:var(--ds-radius-3);padding:var(--ds-space-3);margin-bottom:var(--ds-space-2);font-size:var(--ds-text-base)">
             <div style="display:flex;justify-content:space-between;gap:var(--ds-space-2)">
               <span class="truncate font-mono" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(n.selector)}</span>
-              <button class="highlight-btn fs-0 cur-pointer min-h-24" data-selector="${escHtml(n.selector)}" aria-label="Highlight ${escHtml(n.selector)} on the page" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-amber-700);background:none;border:none">Highlight</button>
+              <button type="button" class="highlight-btn fs-0 cur-pointer min-h-24" data-selector="${escHtml(n.selector)}" aria-label="Highlight ${escHtml(n.selector)} on the page" style="font-size:var(--ds-text-base);font-weight:700;color:var(--ds-amber-700);background:none;border:none">Highlight</button>
             </div>
             <div style="color:var(--ds-red-700);margin-top:var(--ds-space-1)">${escHtml(n.failureSummary)}</div>
-            <button class="explain-btn cur-pointer min-h-24" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:var(--ds-text-base);font-weight:700;color:var(--ds-indigo-700);background:none;border:none;margin-top:var(--ds-space-2)">Chat about it →</button>
+            <button type="button" class="explain-btn cur-pointer min-h-24" data-rule="${v.id}" data-description="${escHtml(v.description)}" style="display:none;font-size:var(--ds-text-base);font-weight:700;color:var(--ds-indigo-700);background:none;border:none;margin-top:var(--ds-space-2)">Chat about it →</button>
           </div>
         `).join("")}
       </div>
