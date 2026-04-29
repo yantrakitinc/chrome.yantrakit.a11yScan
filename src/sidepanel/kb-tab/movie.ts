@@ -43,6 +43,7 @@ export function onMovieComplete(): void {
  * Direct DOM manipulation — no re-render needed, won't fight inline styles.
  */
 const kbFlashTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+/** Flash a kb-gap/kb-fi/kb-trap item with .ds-flash-active for 3s on activation. Direct DOM (no re-render) so it doesn't fight inline styles. */
 export function flashKbItem(item: HTMLElement): void {
   const existing = kbFlashTimers.get(item);
   if (existing) clearTimeout(existing);

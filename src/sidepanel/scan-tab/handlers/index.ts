@@ -17,6 +17,7 @@ import { attachObserverListeners } from "./observer";
 
 export { bindScanTabCallbacks } from "./callbacks";
 
+/** Composite — calls every handler module's attach function in turn so a single rerender wires up the entire scan-tab UI. */
 export function attachScanTabListeners(): void {
   attachHeaderListeners();
   attachScanButtonListeners();

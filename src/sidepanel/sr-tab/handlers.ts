@@ -11,6 +11,7 @@ import { srState } from "./state";
 import { stopPlayback, speakWithVoices, playNext, getSpeakTextForElement } from "./playback";
 import { rerender } from "./callbacks";
 
+/** Wire the SR tab — Analyze, Clear, Inspect, scope controls, row click, sr-speak buttons, Play All / Pause / Resume / Stop. */
 export function attachSrTabListeners(): void {
   // Analyze — fetch reading order (with current scope if set)
   document.getElementById("sr-analyze")?.addEventListener("click", async () => {

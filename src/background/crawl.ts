@@ -169,6 +169,7 @@ async function resumeCrawl(): Promise<void> {
   await processCrawlQueue();
 }
 
+/** True when a URL matches any pattern in the gatedUrls config — used to tag scan results as auth-required. */
 export function isUrlGated(url: string, gatedUrls?: { mode: string; patterns: string[] }): boolean {
   if (!gatedUrls || gatedUrls.mode === "none" || !gatedUrls.patterns?.length) return false;
   switch (gatedUrls.mode) {

@@ -9,6 +9,7 @@ import { rerender } from "./callbacks";
 
 let attached = false;
 
+/** Attach a global Escape handler ONCE — stops movie mode if running. */
 export function ensureKbEscapeHandler(): void {
   if (attached) return;
   attached = true;

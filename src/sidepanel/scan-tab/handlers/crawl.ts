@@ -14,6 +14,7 @@ import {
 } from "../url-list";
 import { rerender } from "./callbacks";
 
+/** Wire the Crawl sub-tab — crawl-mode dropdown, URL-list panel + add/remove, view toggle (page/wcag), pause/resume/cancel, page-rule wait controls. */
 export function attachCrawlListeners(): void {
   // Crawl mode select (F03-AC2)
   document.getElementById("crawl-mode")?.addEventListener("change", (e) => {

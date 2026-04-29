@@ -267,6 +267,7 @@ function initTabs(): void {
    panel close/reopen so users land back where they were (R-PANEL). */
 const TOP_TAB_STORAGE_KEY = "a11yscan_top_tab";
 
+/** Activate the requested top-level tab (scan/sr/kb/ai) — sets aria-selected, hidden, classList, and rerenders the tab. */
 export function switchTab(tabId: iTopTab): void {
   // Guard against switching to a disabled tab (currently AI Chat is
   // permanently disabled). Without this, the disabled tab gets

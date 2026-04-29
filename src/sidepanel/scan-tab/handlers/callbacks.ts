@@ -9,6 +9,7 @@ let _rerender: () => void = () => {};
 let _loadManualReviewFor: (url: string) => void = () => {};
 let _saveManualReviewFor: (url: string) => void = () => {};
 
+/** Late-binding for cross-module callbacks (rerender + loadManualReviewFor) so handler modules don't import scan-tab.ts and create a cycle. */
 export function bindScanTabCallbacks(opts: {
   rerender: () => void;
   loadManualReview: (url: string) => void;

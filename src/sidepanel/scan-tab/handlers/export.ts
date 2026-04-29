@@ -41,6 +41,7 @@ function buildHtmlReport(): string {
 const hasExportableData = (): boolean =>
   !!state.lastScanResult || !!(state.crawlResults && Object.keys(state.crawlResults).length > 0);
 
+/** Wire the Export action bar buttons — JSON / HTML / PDF / Copy. Each gates on hasExportableData() and pulls live state into the pure builders. */
 export function attachExportListeners(): void {
   document.getElementById("export-json")?.addEventListener("click", () => {
     if (!hasExportableData()) return;
