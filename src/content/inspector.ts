@@ -29,6 +29,7 @@ const TOOLTIP_STYLES = `
   pointer-events: none;
 `;
 
+/** Enter the accessibility-inspector hover mode — wires mousemove/click/keydown listeners. */
 export function enterInspectMode(): void {
   if (active) return;
   active = true;
@@ -37,6 +38,7 @@ export function enterInspectMode(): void {
   document.addEventListener("keydown", onKeyDown);
 }
 
+/** Leave inspect mode — remove listeners, hide tooltip, drop highlight, drop pin. */
 export function exitInspectMode(): void {
   active = false;
   pinned = false;
