@@ -302,6 +302,135 @@ describe("scan-tab — Export buttons", () => {
     await new Promise((r) => setTimeout(r, 5));
     expect(document.getElementById("export-copy")?.textContent).toMatch(/Copy failed/);
   });
+
+  it("clicking #export-json when results exist downloads a JSON blob", async () => {
+    const createSpy = vi.fn(() => "blob:fake-json");
+    const revokeSpy = vi.fn();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis.URL as any).createObjectURL = createSpy;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis.URL as any).revokeObjectURL = revokeSpy;
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+
+    document.getElementById("export-json")?.click();
+    expect(createSpy).toHaveBeenCalled();
+  });
+
+  it("clicking #export-pdf with a working window.open writes html to the popup and schedules print", async () => {
+    const writeMock = vi.fn();
+    const closeMock = vi.fn();
+    const printMock = vi.fn();
+    const fakeWin = {
+      document: { write: writeMock, close: closeMock },
+      print: printMock,
+    } as unknown as Window;
+    const origOpen = window.open;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    window.open = vi.fn(() => fakeWin) as any;
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+
+    document.getElementById("export-pdf")?.click();
+    expect(writeMock).toHaveBeenCalled();
+    expect(closeMock).toHaveBeenCalled();
+    // print is called via setTimeout(500) — wait for it
+    await new Promise((r) => setTimeout(r, 550));
+    expect(printMock).toHaveBeenCalled();
+
+    window.open = origOpen;
+  });
+
+  it("export-json is a no-op when there's no scan result and no crawl results (hasExportableData=false)", async () => {
+    const createSpy = vi.fn(() => "blob:nope");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis.URL as any).createObjectURL = createSpy;
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+    // Now wipe the data so hasExportableData() returns false on next click
+    state.lastScanResult = null;
+    state.crawlResults = {};
+
+    createSpy.mockClear();
+    document.getElementById("export-json")?.click();
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it("export-html is a no-op when no single-page scan result exists", async () => {
+    const createSpy = vi.fn(() => "blob:nope");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis.URL as any).createObjectURL = createSpy;
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+    state.lastScanResult = null;
+
+    createSpy.mockClear();
+    document.getElementById("export-html")?.click();
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it("export-pdf is a no-op when no single-page scan result exists", async () => {
+    const openSpy = vi.fn(() => null);
+    const origOpen = window.open;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    window.open = openSpy as any;
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+    state.lastScanResult = null;
+
+    openSpy.mockClear();
+    document.getElementById("export-pdf")?.click();
+    expect(openSpy).not.toHaveBeenCalled();
+
+    window.open = origOpen;
+  });
+
+  it("export-copy is a no-op when there's neither scan result nor crawl results", async () => {
+    const writeText = vi.fn(async () => undefined);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      value: { writeText }, configurable: true,
+    });
+
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScan();
+    state.scanSubTab = "results";
+    renderScanTab();
+    state.lastScanResult = null;
+    state.crawlResults = {};
+
+    writeText.mockClear();
+    document.getElementById("export-copy")?.click();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(writeText).not.toHaveBeenCalled();
+  });
 });
 
 describe("scan-tab — scan-btn click dispatches the right path", () => {
