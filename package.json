@@ -12,11 +12,9 @@
     "test:e2e": "pnpm build && npx tsx e2e/extension.e2e.ts"
   },
   "dependencies": {
-    "axe-core": "^4.11",
-    "jspdf": "^4.2.1"
+    "axe-core": "^4.11"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.2.2",
     "@types/chrome": "^0.1.38",
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.2",
@@ -24,12 +22,8 @@
     "css-loader": "^7",
     "jsdom": "^29.0.1",
     "mini-css-extract-plugin": "^2",
-    "postcss": "^8.5.8",
-    "postcss-loader": "^8.2.1",
     "puppeteer": "^24.42.0",
-    "tailwindcss": "^4.2.2",
     "ts-loader": "^9",
-    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.1.2",
