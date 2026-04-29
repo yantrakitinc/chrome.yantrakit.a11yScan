@@ -377,23 +377,6 @@ export interface iRemoteConfig {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   AI Chat (F17)
-   ═══════════════════════════════════════════════════════════════════ */
-
-export interface iChatMessage {
-  role: "user" | "ai";
-  content: string;
-  timestamp: string;
-}
-
-export interface iChatConversation {
-  id: string;
-  title: string;
-  createdAt: string;
-  messages: iChatMessage[];
-}
-
-/* ═══════════════════════════════════════════════════════════════════
    Manual Review (F09)
    ═══════════════════════════════════════════════════════════════════ */
 
