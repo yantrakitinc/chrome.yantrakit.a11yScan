@@ -4,7 +4,7 @@
 
 export function renderEmptyState(): string {
   return `
-    <div style="padding:16px">
+    <div style="padding:var(--ds-space-8)">
       <h2 style="font-size:14px;font-weight:800;color:var(--ds-zinc-900);margin-bottom:4px">Get started</h2>
       <p style="font-size:12px;color:var(--ds-zinc-600);line-height:1.5">Click the button above to check this page for accessibility issues.</p>
       <div style="margin-top:16px">

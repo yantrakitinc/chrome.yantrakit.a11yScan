@@ -52,8 +52,8 @@ let historyPanelOpen = false;
  */
 export function renderMarkdown(text: string): string {
   return escHtml(text)
-    .replace(/```([\s\S]*?)```/g, '<pre style="background:#18181b;color:#e4e4e7;border-radius:4px;padding:8px;font-size:11px;font-family:monospace;overflow-x:auto;white-space:pre-wrap;margin:4px 0">$1</pre>')
-    .replace(/`([^`]+)`/g, '<code style="background:#e4e4e7;color:#18181b;border-radius:3px;padding:1px 4px;font-size:11px;font-family:monospace">$1</code>')
+    .replace(/```([\s\S]*?)```/g, '<pre style="background:#18181b;color:#e4e4e7;border-radius:var(--ds-radius-3);padding:var(--ds-space-4);font-size:11px;font-family:monospace;overflow-x:auto;white-space:pre-wrap;margin:var(--ds-space-2) 0">$1</pre>')
+    .replace(/`([^`]+)`/g, '<code style="background:#e4e4e7;color:#18181b;border-radius:var(--ds-radius-2);padding:1px var(--ds-space-2);font-size:11px;font-family:monospace">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/\n/g, "<br>");
@@ -144,28 +144,28 @@ export function renderAiChatTab(): void {
   historyPanelOpen = false;
 
   panel.innerHTML = `
-    <div style="padding:8px 12px;border-bottom:1px solid #e4e4e7;display:flex;gap:8px;background:#fafafa;flex-shrink:0">
-      <button id="new-chat" style="flex:1;padding:6px;font-size:12px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:4px;background:none;cursor:pointer;min-height:24px">+ New chat</button>
-      <button id="chat-history-btn" aria-label="Chat history" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid #d4d4d8;border-radius:4px;background:none;cursor:pointer;color:#71717a">
+    <div style="padding:var(--ds-space-4) var(--ds-space-6);border-bottom:1px solid #e4e4e7;display:flex;gap:var(--ds-space-4);background:#fafafa;flex-shrink:0">
+      <button id="new-chat" style="flex:1;padding:var(--ds-space-3);font-size:12px;font-weight:700;color:#b45309;border:1px solid #fcd34d;border-radius:var(--ds-radius-3);background:none;cursor:pointer;min-height:24px">+ New chat</button>
+      <button id="chat-history-btn" aria-label="Chat history" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid #d4d4d8;border-radius:var(--ds-radius-3);background:none;cursor:pointer;color:#71717a">
         <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3h10M2 7h10M2 11h10"/></svg>
       </button>
     </div>
     <div id="chat-area" style="flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative">
-      <div id="chat-messages" role="log" aria-live="polite" aria-label="Chat conversation" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px">
+      <div id="chat-messages" role="log" aria-live="polite" aria-label="Chat conversation" style="flex:1;overflow-y:auto;padding:var(--ds-space-6);display:flex;flex-direction:column;gap:var(--ds-space-6)">
         <div style="font-size:11px;color:#71717a;text-align:center;font-weight:600">Powered by Chrome AI \u00b7 runs locally \u00b7 private</div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:var(--ds-space-4)">
           <img src="icons/icon16.png" alt="" width="16" height="16" style="flex-shrink:0;margin-top:2px">
-          <div style="background:#f4f4f5;border-radius:8px;padding:10px;font-size:12px;color:#27272a;line-height:1.5;flex:1">
+          <div style="background:#f4f4f5;border-radius:var(--ds-radius-4);padding:var(--ds-space-5);font-size:12px;color:#27272a;line-height:1.5;flex:1">
             Hi! I can help you understand accessibility issues and suggest fixes. Ask me anything, or click "Explain Further" on any violation in the Scan tab.
           </div>
         </div>
       </div>
       <div id="history-panel" style="position:absolute;top:0;right:0;bottom:0;width:100%;background:#fff;border-left:1px solid #e4e4e7;overflow-y:auto;z-index:10;transform:translateX(100%);transition:transform 0.25s ease;pointer-events:none"></div>
     </div>
-    <div id="chat-input-area" style="padding:8px 12px;border-top:1px solid #e4e4e7;background:#fff;flex-shrink:0">
-      <div style="display:flex;gap:6px">
-        <input id="chat-input" type="text" aria-label="Ask about accessibility" placeholder="Ask about accessibility\u2026" style="flex:1;font-size:12px;padding:8px 12px;border:1px solid #d4d4d8;border-radius:4px;min-width:0">
-        <button id="chat-send" aria-label="Send message" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#f59e0b;color:#1a1000;border:none;border-radius:4px;cursor:pointer">
+    <div id="chat-input-area" style="padding:var(--ds-space-4) var(--ds-space-6);border-top:1px solid #e4e4e7;background:#fff;flex-shrink:0">
+      <div style="display:flex;gap:var(--ds-space-3)">
+        <input id="chat-input" type="text" aria-label="Ask about accessibility" placeholder="Ask about accessibility\u2026" style="flex:1;font-size:12px;padding:var(--ds-space-4) var(--ds-space-6);border:1px solid #d4d4d8;border-radius:var(--ds-radius-3);min-width:0">
+        <button id="chat-send" aria-label="Send message" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#f59e0b;color:#1a1000;border:none;border-radius:var(--ds-radius-3);cursor:pointer">
           <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 7h9M7.5 3.5L11 7l-3.5 3.5"/></svg>
         </button>
       </div>
@@ -192,7 +192,7 @@ async function checkAiAvailabilityAndShowFallback(): Promise<void> {
     if (sendBtn) sendBtn.disabled = true;
 
     appendAiMessage(
-      'Chrome AI is not available in this browser. To enable it, paste this into your address bar:<br><input type="text" readonly value="chrome://flags/#prompt-api-for-gemini-nano" style="width:100%;font-size:11px;font-family:monospace;padding:4px 6px;border:1px solid #d4d4d8;border-radius:4px;margin-top:4px;background:#fff;color:#27272a;cursor:text" onclick="this.select()">',
+      'Chrome AI is not available in this browser. To enable it, paste this into your address bar:<br><input type="text" readonly value="chrome://flags/#prompt-api-for-gemini-nano" style="width:100%;font-size:11px;font-family:monospace;padding:var(--ds-space-2) var(--ds-space-3);border:1px solid #d4d4d8;border-radius:var(--ds-radius-3);margin-top:4px;background:#fff;color:#27272a;cursor:text" onclick="this.select()">',
       true
     );
   }
@@ -208,7 +208,7 @@ function appendUserMessage(content: string): void {
 
   container.insertAdjacentHTML("beforeend", `
     <div style="display:flex;justify-content:flex-end">
-      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;font-size:12px;color:#27272a;line-height:1.5;max-width:85%">${escapeHtml(content)}</div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--ds-radius-4);padding:var(--ds-space-5);font-size:12px;color:#27272a;line-height:1.5;max-width:85%">${escapeHtml(content)}</div>
     </div>
   `);
   container.scrollTop = container.scrollHeight;
@@ -224,9 +224,9 @@ function appendAiMessage(content: string, rawHtml = false): void {
 
   const body = rawHtml ? content : renderMarkdown(content);
   container.insertAdjacentHTML("beforeend", `
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:var(--ds-space-4)">
       <img src="icons/icon16.png" alt="" width="16" height="16" style="flex-shrink:0;margin-top:2px">
-      <div style="background:#f4f4f5;border-radius:8px;padding:10px;font-size:12px;color:#27272a;line-height:1.5;flex:1">${body}</div>
+      <div style="background:#f4f4f5;border-radius:var(--ds-radius-4);padding:var(--ds-space-5);font-size:12px;color:#27272a;line-height:1.5;flex:1">${body}</div>
     </div>
   `);
   container.scrollTop = container.scrollHeight;
@@ -239,7 +239,7 @@ function showTypingIndicator(): HTMLElement {
   el.style.cssText = "display:flex;gap:8px";
   el.innerHTML = `
     <img src="icons/icon16.png" alt="" width="16" height="16" style="flex-shrink:0;margin-top:2px">
-    <div style="background:#f4f4f5;border-radius:8px;padding:10px;font-size:12px;color:#71717a;line-height:1.5;flex:1">Thinking\u2026</div>
+    <div style="background:#f4f4f5;border-radius:var(--ds-radius-4);padding:var(--ds-space-5);font-size:12px;color:#71717a;line-height:1.5;flex:1">Thinking\u2026</div>
   `;
   container?.appendChild(el);
   container && (container.scrollTop = container.scrollHeight);
@@ -258,29 +258,29 @@ async function renderHistoryPanel(): Promise<void> {
 
   if (history.length === 0) {
     panel.innerHTML = `
-      <div style="padding:12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;justify-content:space-between">
+      <div style="padding:var(--ds-space-6);border-bottom:1px solid #e4e4e7;display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:12px;font-weight:700;color:#27272a">Chat History</span>
         <button id="close-history" aria-label="Close history" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:#71717a">
           <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
         </button>
       </div>
-      <div style="padding:16px;font-size:11px;color:#71717a;text-align:center">No saved conversations yet.</div>
+      <div style="padding:var(--ds-space-8);font-size:11px;color:#71717a;text-align:center">No saved conversations yet.</div>
     `;
   } else {
     const items = history.map((conv) => `
-      <div style="padding:10px 12px;border-bottom:1px solid #f4f4f5;display:flex;align-items:flex-start;gap:8px">
+      <div style="padding:var(--ds-space-5) var(--ds-space-6);border-bottom:1px solid #f4f4f5;display:flex;align-items:flex-start;gap:var(--ds-space-4)">
         <div role="button" tabindex="0" aria-label="Load conversation: ${escapeHtml(conv.title)}" style="flex:1;min-width:0;cursor:pointer" class="history-load" data-id="${conv.id}">
           <div style="font-size:12px;font-weight:600;color:#27272a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(conv.title)}</div>
           <div style="font-size:10px;color:#71717a;margin-top:2px">${new Date(conv.createdAt).toLocaleString()}</div>
         </div>
-        <button class="history-delete" data-id="${conv.id}" aria-label="Delete conversation" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:4px;background:none;cursor:pointer;color:#dc2626;flex-shrink:0">
+        <button class="history-delete" data-id="${conv.id}" aria-label="Delete conversation" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #fecaca;border-radius:var(--ds-radius-3);background:none;cursor:pointer;color:#dc2626;flex-shrink:0">
           <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>
         </button>
       </div>
     `).join("");
 
     panel.innerHTML = `
-      <div style="padding:10px 12px;border-bottom:1px solid #e4e4e7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="padding:var(--ds-space-5) var(--ds-space-6);border-bottom:1px solid #e4e4e7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
         <span style="font-size:12px;font-weight:700;color:#27272a">Chat History</span>
         <button id="close-history" aria-label="Close history" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:#71717a">
           <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l8 8M9 1L1 9"/></svg>

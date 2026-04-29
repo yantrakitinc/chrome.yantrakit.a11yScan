@@ -36,13 +36,13 @@ export function renderManualReviewHtml(s: {
       ${filtered.map((c) => {
         const status = s.manualReview[c.id] || null;
         return `
-          <div style="padding:8px;border:1px solid var(--ds-zinc-200);border-radius:4px;background:#fff;margin-bottom:6px" data-criterion="${c.id}">
-            <div style="display:flex;align-items:center;gap:8px">
+          <div style="padding:var(--ds-space-4);border:1px solid var(--ds-zinc-200);border-radius:var(--ds-radius-3);background:#fff;margin-bottom:6px" data-criterion="${c.id}">
+            <div style="display:flex;align-items:center;gap:var(--ds-space-4)">
               <span class="f-1" style="font-size:11px;font-weight:700;color:var(--ds-zinc-800);min-width:0">${c.id} ${c.name}</span>
-              <div class="fs-0" style="display:flex;gap:2px">
-                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="pass" aria-pressed="${status === "pass"}" aria-label="Mark ${c.id} ${c.name} as Pass" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "pass" ? "background:var(--ds-green-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">Pass</button>
-                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="fail" aria-pressed="${status === "fail"}" aria-label="Mark ${c.id} ${c.name} as Fail" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "fail" ? "background:var(--ds-red-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">Fail</button>
-                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="na" aria-pressed="${status === "na"}" aria-label="Mark ${c.id} ${c.name} as Not Applicable" style="padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px;min-width:24px;border:none;${status === "na" ? "background:var(--ds-zinc-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">N/A</button>
+              <div class="fs-0" style="display:flex;gap:var(--ds-space-1)">
+                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="pass" aria-pressed="${status === "pass"}" aria-label="Mark ${c.id} ${c.name} as Pass" style="padding:var(--ds-space-2) var(--ds-space-4);font-size:11px;font-weight:700;border-radius:var(--ds-radius-3);min-width:24px;border:none;${status === "pass" ? "background:var(--ds-green-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">Pass</button>
+                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="fail" aria-pressed="${status === "fail"}" aria-label="Mark ${c.id} ${c.name} as Fail" style="padding:var(--ds-space-2) var(--ds-space-4);font-size:11px;font-weight:700;border-radius:var(--ds-radius-3);min-width:24px;border:none;${status === "fail" ? "background:var(--ds-red-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">Fail</button>
+                <button class="manual-btn cur-pointer min-h-24" data-id="${c.id}" data-status="na" aria-pressed="${status === "na"}" aria-label="Mark ${c.id} ${c.name} as Not Applicable" style="padding:var(--ds-space-2) var(--ds-space-4);font-size:11px;font-weight:700;border-radius:var(--ds-radius-3);min-width:24px;border:none;${status === "na" ? "background:var(--ds-zinc-700);color:#fff" : "background:var(--ds-zinc-100);color:var(--ds-zinc-600)"}">N/A</button>
               </div>
             </div>
             <div style="font-size:11px;color:var(--ds-zinc-600);line-height:1.5;margin-top:4px">${c.manualCheck}</div>

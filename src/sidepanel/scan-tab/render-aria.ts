@@ -13,9 +13,9 @@ import { escHtml } from "@shared/utils";
 export function renderAriaResultsHtml(widgets: iAriaWidget[]): string {
   if (widgets.length === 0) {
     return `
-      <div style="padding:16px;text-align:center">
+      <div style="padding:var(--ds-space-8);text-align:center">
         <div style="font-size:12px;color:var(--ds-zinc-500)">No ARIA widgets scanned yet.</div>
-        <button id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:8px;padding:8px;font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:4px">Scan ARIA Patterns</button>
+        <button id="run-aria-scan" class="cur-pointer min-h-24" style="margin-top:8px;padding:var(--ds-space-4);font-size:12px;font-weight:800;color:var(--ds-amber-cta-fg);background:var(--ds-amber-500);border:none;border-radius:var(--ds-radius-3)">Scan ARIA Patterns</button>
       </div>
     `;
   }
@@ -31,7 +31,7 @@ export function renderAriaResultsHtml(widgets: iAriaWidget[]): string {
       </div>
       ${issues.length > 0 ? `<div style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Issues</div>` : ""}
       ${issues.map((w) => renderAriaWidget(w, false)).join("")}
-      ${compliant.length > 0 ? `<div style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin:8px 0 4px">Compliant</div>` : ""}
+      ${compliant.length > 0 ? `<div style="font-size:11px;font-weight:800;color:var(--ds-zinc-500);text-transform:uppercase;letter-spacing:0.05em;margin:var(--ds-space-4) 0 var(--ds-space-2)">Compliant</div>` : ""}
       ${compliant.map((w) => renderAriaWidget(w, true)).join("")}
     </div>
   `;
@@ -44,18 +44,18 @@ export function renderAriaResultsHtml(widgets: iAriaWidget[]): string {
 export function renderAriaWidget(w: iAriaWidget, pass: boolean): string {
   return `
     <details${pass ? "" : " open"} style="border:1px solid ${pass ? "var(--ds-green-200)" : "var(--ds-red-200)"};border-radius:4px;background:${pass ? "var(--ds-green-50)" : "var(--ds-red-50)"};margin-bottom:4px">
-      <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:8px;padding:8px;font-size:11px">
+      <summary class="cur-pointer" style="list-style:none;display:flex;align-items:center;gap:var(--ds-space-4);padding:var(--ds-space-4);font-size:11px">
         <svg class="chevron" aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 3 3-3"/></svg>
-        <span style="font-weight:700;padding:2px 6px;border-radius:3px;min-width:50px;text-align:center;${pass ? "background:var(--ds-green-200);color:var(--ds-green-900)" : "background:var(--ds-red-200);color:var(--ds-red-900)"}">${escHtml(w.role)}</span>
+        <span style="font-weight:700;padding:var(--ds-space-1) var(--ds-space-3);border-radius:var(--ds-radius-2);min-width:50px;text-align:center;${pass ? "background:var(--ds-green-200);color:var(--ds-green-900)" : "background:var(--ds-red-200);color:var(--ds-red-900)"}">${escHtml(w.role)}</span>
         <span class="truncate f-1" style="font-weight:600;color:var(--ds-zinc-800)">${escHtml(w.label)}</span>
         <span style="font-weight:700;${pass ? "color:var(--ds-green-700)" : "color:var(--ds-red-700)"}">${pass ? "✓" : w.failCount + " issues"}</span>
       </summary>
       <div class="scan-detail-body">
         ${w.checks.filter((c) => !c.pass).map((c) => `
-          <div style="font-size:11px;color:var(--ds-red-700);padding:2px 0 2px 8px;border-left:2px solid var(--ds-red-200)">${escHtml(c.message)}</div>
+          <div style="font-size:11px;color:var(--ds-red-700);padding:var(--ds-space-1) 0 var(--ds-space-1) var(--ds-space-4);border-left:2px solid var(--ds-red-200)">${escHtml(c.message)}</div>
         `).join("")}
         ${w.checks.filter((c) => c.pass).map((c) => `
-          <div style="font-size:11px;color:var(--ds-green-700);padding:2px 0 2px 8px;border-left:2px solid var(--ds-green-200)">${escHtml(c.message)}</div>
+          <div style="font-size:11px;color:var(--ds-green-700);padding:var(--ds-space-1) 0 var(--ds-space-1) var(--ds-space-4);border-left:2px solid var(--ds-green-200)">${escHtml(c.message)}</div>
         `).join("")}
         <button class="aria-highlight cur-pointer min-h-24" data-selector="${escHtml(w.selector)}" aria-label="Highlight ${escHtml(w.role)} ${escHtml(w.label)} on the page" style="font-size:11px;font-weight:700;color:var(--ds-amber-700);background:none;border:none;margin-top:4px">Highlight on page</button>
       </div>
