@@ -228,3 +228,69 @@ describe("processCrawlQueue — RUN_SCAN failure path", () => {
     expect(Object.keys(failed).length).toBeGreaterThan(0);
   });
 });
+
+describe("processCrawlQueue — testConfig.mocks ACTIVATE_MOCKS branch", () => {
+  it("when testConfig.mocks is non-empty, sends ACTIVATE_MOCKS before RUN_SCAN", async () => {
+    // Delayed onUpdated fire — listener must be added before the fake "complete" event
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome.tabs.update = vi.fn(async (tabId: number) => {
+      setTimeout(() => { for (const l of onUpdatedListeners) l(tabId, { status: "complete" }); }, 5);
+      return undefined;
+    });
+    const sentTabMessages: { type: string }[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome.tabs.sendMessage = vi.fn(async (_id: number, msg: { type: string }) => {
+      sentTabMessages.push(msg);
+      if (msg.type === "RUN_SCAN") {
+        return { type: "SCAN_RESULT", payload: { url: "https://x.com/seed", timestamp: "x", violations: [], passes: [], incomplete: [], summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 }, pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false }, scanDurationMs: 0 } };
+      }
+      return undefined;
+    });
+    const responses: unknown[] = [];
+    await handleCrawlMessage({
+      type: "START_CRAWL",
+      payload: {
+        mode: "urllist",
+        timeout: 2000,
+        delay: 0,
+        scope: "",
+        urlList: ["https://x.com/seed"],
+        pageRules: [],
+        testConfig: { mocks: [{ urlPattern: "/api", status: 200, body: { ok: true } }] },
+      },
+    } as iMessage, (r) => responses.push(r));
+    await new Promise((r) => setTimeout(r, 2500));
+    expect(sentTabMessages.some((m) => m.type === "ACTIVATE_MOCKS")).toBe(true);
+  });
+
+  it("when ACTIVATE_MOCKS throws, the warning is logged but the scan still proceeds", async () => {
+    // Delayed onUpdated fire — same workaround as the prior test
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome.tabs.update = vi.fn(async (tabId: number) => {
+      setTimeout(() => { for (const l of onUpdatedListeners) l(tabId, { status: "complete" }); }, 5);
+      return undefined;
+    });
+    let runScanReached = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).chrome.tabs.sendMessage = vi.fn(async (_id: number, msg: { type: string }) => {
+      if (msg.type === "ACTIVATE_MOCKS") throw new Error("content script not ready");
+      if (msg.type === "RUN_SCAN") {
+        runScanReached = true;
+        return { type: "SCAN_RESULT", payload: { url: "https://x.com/seed", timestamp: "x", violations: [], passes: [], incomplete: [], summary: { critical: 0, serious: 0, moderate: 0, minor: 0, passes: 0, incomplete: 0 }, pageElements: { hasVideo: false, hasAudio: false, hasForms: false, hasImages: false, hasLinks: false, hasHeadings: false, hasIframes: false, hasTables: false, hasAnimation: false, hasAutoplay: false, hasDragDrop: false, hasTimeLimited: false }, scanDurationMs: 0 } };
+      }
+      return undefined;
+    });
+    const responses: unknown[] = [];
+    await handleCrawlMessage({
+      type: "START_CRAWL",
+      payload: {
+        mode: "urllist", timeout: 2000, delay: 0, scope: "",
+        urlList: ["https://x.com/seed"], pageRules: [],
+        testConfig: { mocks: [{ urlPattern: "/api", status: 200, body: {} }] },
+      },
+    } as iMessage, (r) => responses.push(r));
+    await new Promise((r) => setTimeout(r, 2500));
+    expect(runScanReached).toBe(true);
+  });
+});
+
