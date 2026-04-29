@@ -19,7 +19,7 @@ describe("devtools/panel — render", () => {
     });
     const content = document.getElementById("content")!;
     expect(content.innerHTML).toMatch(/Could not inspect element/);
-    expect(content.innerHTML).toMatch(/color:#b91c1c/);
+    expect(content.innerHTML).toMatch(/color:(?:#b91c1c|var\(--ds-red-700\))/);
   });
 
   it("renders selector / role / accessibleName / tabindex / focusable", () => {
