@@ -183,3 +183,52 @@ describe("results-actions — run-aria-scan button", () => {
     expect(state.ariaWidgets.length).toBeGreaterThan(0);
   });
 });
+
+describe("results-actions — toggle-violations off path", () => {
+  it("toggling violations OFF posts HIDE_VIOLATION_OVERLAY", async () => {
+    await setupResultsTab();
+    const { state } = await import("../sidepanel");
+    // Turn ON first
+    document.getElementById("toggle-violations")?.click();
+    expect(state.violationsOverlayOn).toBe(true);
+    sentMessages.length = 0;
+    // Turn OFF — exercises the else branch (line 45)
+    document.getElementById("toggle-violations")?.click();
+    expect(state.violationsOverlayOn).toBe(false);
+    expect(sentMessages.some((m) => m.type === "HIDE_VIOLATION_OVERLAY")).toBe(true);
+  });
+});
+
+describe("results-actions — aria-highlight buttons", () => {
+  async function ariaListSetup() {
+    const { renderScanTab } = await import("../scan-tab");
+    const { state } = await import("../sidepanel");
+    state.scanPhase = "results";
+    state.lastScanResult = pageScanWithViolation();
+    state.scanSubTab = "aria";
+    state.ariaWidgets = [
+      {
+        role: "tablist",
+        selector: "#tl",
+        label: "Settings tabs",
+        html: "<div role='tablist' id='tl'></div>",
+        passCount: 2,
+        failCount: 0,
+        checks: [
+          { name: "has-tab-children", pass: true, message: "Found 2 tabs" },
+          { name: "tabs-have-selected", pass: true, message: "1 selected" },
+        ],
+      },
+    ];
+    renderScanTab();
+  }
+
+  it("clicking .aria-highlight on a widget posts HIGHLIGHT_ELEMENT with the selector", async () => {
+    await ariaListSetup();
+    sentMessages.length = 0;
+    const btn = document.querySelector<HTMLButtonElement>(".aria-highlight");
+    expect(btn).toBeTruthy();
+    btn?.click();
+    expect(sentMessages.some((m) => m.type === "HIGHLIGHT_ELEMENT")).toBe(true);
+  });
+});
