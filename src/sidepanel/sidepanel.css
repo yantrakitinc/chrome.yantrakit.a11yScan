@@ -194,24 +194,6 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   transition: outline-color var(--ds-motion-fast);
 }
 
-/* Card-style row variant for KB gap/trap/fi entries */
-.ds-row--card {
-  display: block;
-  font-size: var(--ds-text-base);
-  padding: var(--ds-space-4);
-  margin-bottom: var(--ds-space-3);
-  border-radius: var(--ds-radius-3);
-}
-.ds-row--card.ds-row--card-error {
-  border: 1px solid var(--ds-red-200);
-  background: var(--ds-red-50);
-}
-.ds-row--card.ds-row--card-warn {
-  border: 1px solid var(--ds-amber-200);
-  background: var(--ds-amber-50);
-}
-.ds-row--card:hover { filter: brightness(0.98); }
-
 /* Index circle for tab order rows */
 .ds-row__index-circle {
   font-size: var(--ds-text-base);
@@ -289,23 +271,6 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   color: var(--ds-zinc-600);
 }
 
-/* SOON / Coming Soon */
-.ds-badge--soon {
-  font-size: var(--ds-text-sm);
-  background: var(--ds-amber-100);
-  color: var(--ds-amber-700);
-  border: 1px solid var(--ds-amber-300);
-  padding: 0 var(--ds-space-1);
-}
-
-/* Config loaded info */
-.ds-badge--info {
-  background: var(--ds-amber-100);
-  color: var(--ds-amber-700);
-  border: 1px solid var(--ds-amber-300);
-  padding: 1px 5px;
-}
-
 /* ═══════════════════════════════════════════════════════════════════
    Shared button component
    ═══════════════════════════════════════════════════════════════════ */
@@ -326,15 +291,7 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   white-space: nowrap;
 }
 .ds-btn--sm { padding: var(--ds-space-2) var(--ds-space-5); font-size: var(--ds-text-base); }
-.ds-btn--md { padding: var(--ds-space-4); font-size: var(--ds-text-md); font-weight: 800; }
 .ds-btn--icon { width: var(--ds-space-12); height: var(--ds-space-12); padding: 0; }
-
-.ds-btn--primary {
-  background: var(--ds-amber-500);
-  color: var(--ds-amber-cta-fg);
-  font-weight: 800;
-}
-.ds-btn--primary:hover { background: var(--ds-amber-700); color: #fff; }
 
 .ds-btn--secondary {
   background: #fff;
@@ -342,18 +299,6 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   border: 1px solid var(--ds-zinc-300);
 }
 .ds-btn--secondary:hover { background: var(--ds-zinc-100); }
-
-.ds-btn--accent {
-  color: var(--ds-amber-700);
-  border: 1px solid var(--ds-amber-300);
-}
-.ds-btn--accent:hover { background: var(--ds-amber-50); }
-
-.ds-btn--danger {
-  color: var(--ds-red-600);
-  border: 1px solid var(--ds-red-200);
-}
-.ds-btn--danger:hover { background: var(--ds-red-50); }
 
 .ds-btn--danger-fill {
   background: var(--ds-red-600);
@@ -374,76 +319,6 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   border-color: var(--ds-amber-300);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   Status bar (SR + KB shared playback bar pattern)
-   ═══════════════════════════════════════════════════════════════════ */
-
-.ds-status-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--ds-space-4);
-  padding: var(--ds-space-4) var(--ds-space-6);
-  border-bottom: 1px solid var(--ds-zinc-200);
-  flex-shrink: 0;
-  transition: background var(--ds-motion-base);
-}
-.ds-status-bar--active { background: var(--ds-amber-50); }
-.ds-status-bar--complete { background: var(--ds-green-100); }
-.ds-status-bar__text {
-  font-size: var(--ds-text-base);
-  font-weight: 600;
-  color: var(--ds-zinc-600);
-  font-family: "SFMono-Regular", Consolas, monospace;
-  flex: 1;
-}
-.ds-status-bar--active .ds-status-bar__text {
-  color: var(--ds-amber-800);
-  font-weight: 700;
-}
-.ds-status-bar--complete .ds-status-bar__text {
-  color: var(--ds-green-700);
-  font-weight: 700;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   Disclosure (details/summary) shared chevron + a11y
-   ═══════════════════════════════════════════════════════════════════ */
-
-.ds-disclosure { border-radius: var(--ds-radius-3); }
-.ds-disclosure__summary {
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: var(--ds-space-3);
-  padding: var(--ds-space-4) var(--ds-space-6);
-  cursor: pointer;
-  font-size: var(--ds-text-md);
-  font-weight: 800;
-  color: var(--ds-zinc-900);
-  transition: background var(--ds-motion-fast);
-}
-.ds-disclosure__summary::-webkit-details-marker { display: none; }
-.ds-disclosure__summary:hover { background: rgba(0, 0, 0, 0.04); }
-.ds-disclosure__chevron {
-  flex-shrink: 0;
-  color: var(--ds-zinc-500);
-  transition: transform var(--ds-motion-base);
-}
-.ds-disclosure[open] > .ds-disclosure__summary > .ds-disclosure__chevron { transform: rotate(180deg); }
-
-/* Visually hidden helper */
-.ds-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 /* Empty state */
 .ds-empty {
   padding: var(--ds-space-8);
@@ -451,7 +326,6 @@ select:focus-visible, input:focus-visible, textarea:focus-visible {
   color: var(--ds-zinc-500);
   text-align: center;
 }
-.ds-empty--success { color: var(--ds-green-700); }
 
 /* ═══════════════════════════════════════════════════════════════════
    Header (F18)
