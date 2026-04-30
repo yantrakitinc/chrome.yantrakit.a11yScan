@@ -44,19 +44,93 @@ async function run(): Promise<void> {
       // Non-fatal — continue with smoke check below
     }
 
-    // Click a chip if available
     if (initial.chipCount > 0) {
+      // Step 4 — click first non-"all" chip → it becomes pressed
       await ctx.sidepanel.evaluate(() => {
-        const chip = document.querySelector(".mv-filter-chip, [data-mvfilter]") as HTMLButtonElement | null;
-        chip?.click();
+        const chips = Array.from(document.querySelectorAll<HTMLButtonElement>(".mv-filter-chip, [data-mvfilter]"));
+        const target = chips.find((c) => (c.getAttribute("data-mvfilter") ?? "").toLowerCase() !== "all") || chips[0];
+        target?.click();
       });
       await sleep(300);
-      const afterClick = await ctx.sidepanel.evaluate(() => {
-        const chip = document.querySelector(".mv-filter-chip, [data-mvfilter]") as HTMLButtonElement | null;
-        return { aria: chip?.getAttribute("aria-pressed") ?? null };
+      const firstClick = await ctx.sidepanel.evaluate(() => {
+        const chips = Array.from(document.querySelectorAll<HTMLButtonElement>(".mv-filter-chip, [data-mvfilter]"));
+        return chips.map((c) => ({
+          filter: c.getAttribute("data-mvfilter") ?? c.textContent?.trim() ?? "",
+          pressed: c.getAttribute("aria-pressed"),
+        }));
       });
-      if (afterClick.aria !== "true") {
-        ctx.fail({ step: "chip click", expected: "aria-pressed=true after first chip click", actual: String(afterClick.aria) });
+      const pressedAfterFirst = firstClick.filter((c) => c.pressed === "true");
+      if (pressedAfterFirst.length !== 1) {
+        ctx.fail({ step: "first chip click (step 4)", expected: "exactly 1 chip aria-pressed=true", actual: `${pressedAfterFirst.length} pressed` });
+      }
+      const firstPressed = pressedAfterFirst[0]?.filter ?? "";
+
+      // Step 5 — click a DIFFERENT non-"all" chip → press flips
+      const otherChip = firstClick.find((c) =>
+        c.filter.toLowerCase() !== firstPressed.toLowerCase() &&
+        c.filter.toLowerCase() !== "all" &&
+        c.filter !== ""
+      );
+      if (otherChip) {
+        await ctx.sidepanel.evaluate((target) => {
+          const chips = Array.from(document.querySelectorAll<HTMLButtonElement>(".mv-filter-chip, [data-mvfilter]"));
+          const t = chips.find((c) => (c.getAttribute("data-mvfilter") ?? c.textContent?.trim() ?? "") === target);
+          t?.click();
+        }, otherChip.filter);
+        await sleep(300);
+        const secondClick = await ctx.sidepanel.evaluate(() => {
+          const chips = Array.from(document.querySelectorAll<HTMLButtonElement>(".mv-filter-chip, [data-mvfilter]"));
+          return chips.find((c) => c.getAttribute("aria-pressed") === "true");
+        }) as { filter?: string } | null;
+        const newPressedFilter =
+          (secondClick && (secondClick as unknown as { textContent?: string }).textContent) ||
+          (await ctx.sidepanel.evaluate(() => {
+            const chips = Array.from(document.querySelectorAll<HTMLButtonElement>(".mv-filter-chip, [data-mvfilter]"));
+            const p = chips.find((c) => c.getAttribute("aria-pressed") === "true");
+            return p?.getAttribute("data-mvfilter") ?? p?.textContent?.trim() ?? "";
+          }));
+        if (typeof newPressedFilter === "string" && newPressedFilter.toLowerCase() === firstPressed.toLowerCase()) {
+          ctx.fail({ step: "second chip click (step 5)", expected: "press transferred to the second chip", actual: "still on first" });
+        }
+      }
+
+      // Step 6 — click the "all" chip → "all" pressed, others not
+      const hasAll = firstClick.some((c) => c.filter.toLowerCase() === "all");
+      if (hasAll) {
+        await ctx.sidepanel.evaluate(() => {
+          const chips = Array.from(document.querySelectorAll<HTMLButtonElement>(".mv-filter-chip, [data-mvfilter]"));
+          const allChip = chips.find((c) => (c.getAttribute("data-mvfilter") ?? c.textContent?.trim() ?? "").toLowerCase() === "all");
+          allChip?.click();
+        });
+        await sleep(300);
+        const allState = await ctx.sidepanel.evaluate(() => {
+          const chips = Array.from(document.querySelectorAll<HTMLButtonElement>(".mv-filter-chip, [data-mvfilter]"));
+          return chips.map((c) => ({
+            filter: c.getAttribute("data-mvfilter") ?? c.textContent?.trim() ?? "",
+            pressed: c.getAttribute("aria-pressed"),
+          }));
+        });
+        const allPressed = allState.find((c) => c.filter.toLowerCase() === "all" && c.pressed === "true");
+        if (!allPressed) {
+          ctx.fail({ step: "all chip click (step 6)", expected: "All chip aria-pressed=true", actual: "not pressed" });
+        }
+      }
+
+      // Step 7 — click Clear → mvViewportFilter resets, chips disappear
+      const hasClear = await ctx.sidepanel.evaluate(() => !!document.getElementById("clear-btn"));
+      if (hasClear) {
+        await ctx.sidepanel.evaluate(() => (document.getElementById("clear-btn") as HTMLButtonElement).click());
+        await sleep(500);
+        const afterClear = await ctx.sidepanel.evaluate(() => ({
+          chipCount: document.querySelectorAll(".mv-filter-chip, [data-mvfilter]").length,
+          hasResults: !!document.querySelector("#scan-content details"),
+        }));
+        if (afterClear.hasResults) {
+          ctx.fail({ step: "clear after MV (step 7)", expected: "results wiped", actual: "still rendered" });
+        }
+        if (afterClear.chipCount !== 0) {
+          ctx.fail({ step: "clear after MV (step 7)", expected: "chips removed", actual: String(afterClear.chipCount) });
+        }
       }
     }
   } finally {

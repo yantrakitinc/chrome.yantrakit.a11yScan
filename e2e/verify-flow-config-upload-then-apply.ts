@@ -11,6 +11,9 @@
  */
 
 import { setup, sleep, reportAndExit } from "./verify-helpers";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 const FIXTURE_HTML = `<!doctype html><html><body><h1>Config-flow fixture</h1></body></html>`;
 
@@ -18,6 +21,12 @@ const VALID_CONFIG = JSON.stringify({
   wcagVersion: "2.1",
   wcagLevel: "AA",
   viewports: [320, 800],
+});
+
+const VALID_CONFIG_FILE = JSON.stringify({
+  wcagVersion: "2.0",
+  wcagLevel: "A",
+  viewports: [360, 1024],
 });
 
 async function run(): Promise<void> {
@@ -81,6 +90,50 @@ async function run(): Promise<void> {
       await sleep(300);
       const cleared = await ctx.sidepanel.evaluate(() => !!document.getElementById("config-clear-btn"));
       if (cleared) ctx.fail({ step: "clear config", expected: "#config-clear-btn hidden after clear", actual: "still rendered" });
+    }
+
+    // Step 2-3 — actual file upload via #config-file-input. Write a temp .json
+    // file and use Puppeteer's ElementHandle.uploadFile (the only way to
+    // populate <input type=file> in headless Chrome — native picker is not
+    // driveable).
+    const tmpFile = path.join(os.tmpdir(), `a11y-scan-config-${Date.now()}.json`);
+    fs.writeFileSync(tmpFile, VALID_CONFIG_FILE);
+    try {
+      // Re-open dialog
+      await ctx.sidepanel.evaluate(() => (document.getElementById("settings-btn") as HTMLButtonElement | null)?.click());
+      await sleep(300);
+
+      const fileInput = await ctx.sidepanel.$("#config-file-input");
+      if (!fileInput) {
+        ctx.fail({ step: "file upload", expected: "#config-file-input present", actual: "missing" });
+      } else {
+        await fileInput.uploadFile(tmpFile);
+        await sleep(400); // FileReader is async
+        const taValue = await ctx.sidepanel.evaluate(() =>
+          (document.getElementById("config-textarea") as HTMLTextAreaElement | null)?.value ?? ""
+        );
+        if (!taValue.includes("2.0")) {
+          ctx.fail({ step: "file upload populates textarea", expected: "uploaded file contents in #config-textarea", actual: taValue.slice(0, 200) });
+        }
+
+        // Apply the uploaded config
+        await ctx.sidepanel.evaluate(() => (document.getElementById("config-apply-btn") as HTMLButtonElement).click());
+        await sleep(500);
+
+        // Verify viewports synced to [360, 1024]
+        await ctx.sidepanel.evaluate(() => (document.getElementById("vp-edit") as HTMLButtonElement | null)?.click());
+        await sleep(200);
+        const vps2 = await ctx.sidepanel.evaluate(() =>
+          Array.from(document.querySelectorAll<HTMLInputElement>(".vp-input")).map((i) => Number(i.value))
+        );
+        if (!vps2.includes(360) || !vps2.includes(1024)) {
+          ctx.fail({ step: "file upload viewport sync", expected: "[360, 1024] after applied", actual: JSON.stringify(vps2) });
+        }
+        await ctx.sidepanel.evaluate(() => (document.getElementById("vp-done") as HTMLButtonElement | null)?.click());
+        await sleep(150);
+      }
+    } finally {
+      try { fs.unlinkSync(tmpFile); } catch { /* swallow cleanup errors */ }
     }
   } finally {
     await cleanup();

@@ -77,6 +77,30 @@ async function run(): Promise<void> {
       }
     }
 
+    // Step 2 — wait for MOVIE_TICK to advance the index. The "Playing X of N"
+    // counter updates after each tick. Resume play first if paused.
+    const stillPaused = await ctx.sidepanel.evaluate(() => !!document.getElementById("movie-resume"));
+    if (stillPaused) {
+      await ctx.sidepanel.evaluate(() => (document.getElementById("movie-resume") as HTMLButtonElement).click());
+      await sleep(400);
+    }
+    // Snapshot the current "Playing X of N" text, sleep ≥ 1.2s (default tick
+    // is ~1s), then snapshot again — they should differ.
+    function readPlayingCounter(panel: typeof ctx.sidepanel): Promise<string> {
+      return panel.evaluate(() => {
+        const candidates = ["kb-tab", "panel-kb"].map((id) => document.getElementById(id));
+        const text = candidates.map((c) => c?.textContent ?? "").join(" ");
+        const m = text.match(/Playing\s+(\d+)\s+of\s+(\d+)/i);
+        return m ? `${m[1]}/${m[2]}` : "";
+      });
+    }
+    const tickStart = await readPlayingCounter(ctx.sidepanel);
+    await sleep(2500);
+    const tickAfter = await readPlayingCounter(ctx.sidepanel);
+    if (tickStart !== "" && tickAfter !== "" && tickStart === tickAfter) {
+      ctx.fail({ step: "movie tick (step 2)", expected: "'Playing X of N' counter advances after ≥2 ticks", actual: `still ${tickAfter}` });
+    }
+
     // Stop
     if (playing.hasStop) {
       await ctx.sidepanel.evaluate(() => (document.getElementById("movie-stop") as HTMLButtonElement).click());
@@ -85,8 +109,53 @@ async function run(): Promise<void> {
         hasPlay: !!document.getElementById("movie-play-all"),
         hasPause: !!document.getElementById("movie-pause"),
       }));
-      if (!stopped.hasPlay) ctx.fail({ step: "stop", expected: "#movie-play-all after stop", actual: "missing" });
-      if (stopped.hasPause) ctx.fail({ step: "stop", expected: "#movie-pause hidden after stop", actual: "still rendered" });
+      if (!stopped.hasPlay) ctx.fail({ step: "stop (step 6)", expected: "#movie-play-all after stop", actual: "missing" });
+      if (stopped.hasPause) ctx.fail({ step: "stop (step 6)", expected: "#movie-pause hidden after stop", actual: "still rendered" });
+    }
+
+    // Step 7 — Escape key during movie stops it. Re-start movie, sleep, press
+    // Escape, verify state transitions back to idle (Play All visible again).
+    await ctx.sidepanel.evaluate(() => (document.getElementById("movie-play-all") as HTMLButtonElement).click());
+    await sleep(500);
+    const playingForEscape = await ctx.sidepanel.evaluate(() => !!document.getElementById("movie-pause"));
+    if (playingForEscape) {
+      // Focus the panel-kb so the document keydown listener catches Escape
+      await ctx.sidepanel.evaluate(() => (document.getElementById("panel-kb") as HTMLElement | null)?.focus());
+      await ctx.sidepanel.keyboard.press("Escape");
+      await sleep(500);
+      const afterEscape = await ctx.sidepanel.evaluate(() => ({
+        hasPlay: !!document.getElementById("movie-play-all"),
+        hasPause: !!document.getElementById("movie-pause"),
+      }));
+      if (!afterEscape.hasPlay) ctx.fail({ step: "Escape stops movie (step 7)", expected: "#movie-play-all after Escape", actual: "missing" });
+      if (afterEscape.hasPause) ctx.fail({ step: "Escape stops movie (step 7)", expected: "#movie-pause hidden after Escape", actual: "still rendered" });
+    }
+
+    // Step 5 — MOVIE_COMPLETE natural finish. With 5 elements at ~1s each,
+    // movie finishes in ~5s. Then a 2s "Complete" pill, then idle reset.
+    // Restart the movie and let it complete naturally.
+    await ctx.sidepanel.evaluate(() => (document.getElementById("movie-play-all") as HTMLButtonElement).click());
+    await sleep(500);
+    // Wait long enough for 5 ticks + complete pill + idle reset (~9s total
+    // worst case). We don't assert on the "Complete" pill text directly (it's
+    // transient and fast); we assert that the movie returns to idle (Play All
+    // visible again).
+    const completeDeadline = Date.now() + 12000;
+    let backToIdle = false;
+    while (Date.now() < completeDeadline) {
+      const s = await ctx.sidepanel.evaluate(() => ({
+        hasPlay: !!document.getElementById("movie-play-all"),
+        hasPause: !!document.getElementById("movie-pause"),
+      }));
+      if (s.hasPlay && !s.hasPause) { backToIdle = true; break; }
+      await sleep(300);
+    }
+    if (!backToIdle) {
+      ctx.fail({
+        step: "movie complete (step 5)",
+        expected: "MOVIE_COMPLETE → 'Complete' pill (2s) → idle (#movie-play-all visible) within 12s",
+        actual: "movie did not return to idle in time",
+      });
     }
   } finally {
     await cleanup();
