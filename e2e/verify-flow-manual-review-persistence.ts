@@ -95,7 +95,7 @@ async function run(): Promise<void> {
       }
     }
 
-    // Toggle Pass on row 0 again → should null
+    // Step 8 — Toggle Pass on row 0 again → state should toggle off (null)
     const sel0 = rowSelectors[0];
     await ctx.sidepanel.evaluate((sel) => {
       const row = document.querySelector(`[data-criterion="${sel}"]`);
@@ -108,7 +108,69 @@ async function run(): Promise<void> {
       return passed;
     }, sel0);
     if (toggled !== "false") {
-      ctx.fail({ step: "toggle Pass off", expected: "aria-pressed=false after second click", actual: String(toggled) });
+      ctx.fail({ step: "toggle Pass off (step 8)", expected: "aria-pressed=false after second click", actual: String(toggled) });
+    }
+
+    // Step 9 — Click Pass on row 1 (which is currently Fail) → flips to Pass
+    const sel1 = rowSelectors[1];
+    await ctx.sidepanel.evaluate((sel) => {
+      const row = document.querySelector(`[data-criterion="${sel}"]`);
+      (row?.querySelector('.manual-btn[data-status="pass"]') as HTMLButtonElement | null)?.click();
+    }, sel1);
+    await sleep(150);
+    const flipped = await ctx.sidepanel.evaluate((sel) => {
+      const row = document.querySelector(`[data-criterion="${sel}"]`);
+      const passed = row?.querySelector('.manual-btn[data-status="pass"]')?.getAttribute("aria-pressed");
+      const failed = row?.querySelector('.manual-btn[data-status="fail"]')?.getAttribute("aria-pressed");
+      return { passed, failed };
+    }, sel1);
+    if (flipped.passed !== "true") {
+      ctx.fail({ step: "flip Fail→Pass (step 9)", expected: "Pass aria-pressed=true on row 1", actual: String(flipped.passed) });
+    }
+    if (flipped.failed === "true") {
+      ctx.fail({ step: "flip Fail→Pass (step 9)", expected: "Fail aria-pressed=false (mutually exclusive)", actual: "still pressed" });
+    }
+
+    // Step 7 — Sidepanel reload → state restored from chrome.storage.local
+    // (re-navigate the same chrome-extension://.../sidepanel.html URL).
+    const sidepanelUrl = ctx.sidepanel.url();
+    await ctx.sidepanel.goto(sidepanelUrl, { waitUntil: "domcontentloaded" });
+    await sleep(500);
+    // Re-trigger a scan on the same URL (state.lastScanResult is wiped on
+    // reload; loadManualReviewFor restores from storage).
+    await ctx.sidepanel.evaluate(() => (document.getElementById("scan-btn") as HTMLButtonElement).click());
+    await ctx.sidepanel.waitForSelector('[data-subtab="manual"]', { timeout: 30000 });
+    await sleep(500);
+    await ctx.sidepanel.evaluate(() => (document.querySelector('[data-subtab="manual"]') as HTMLButtonElement).click());
+    await sleep(400);
+
+    // Expected post-reload state, mirroring steps 8-9 we just performed:
+    //   row 0 → null (toggled Pass off)
+    //   row 1 → "pass" (flipped from Fail to Pass)
+    //   row 2 → "na" (unchanged)
+    const reloaded = await ctx.sidepanel.evaluate((rs) => {
+      const result: Record<string, string | null> = {};
+      for (const sel of rs) {
+        const row = document.querySelector(`[data-criterion="${sel}"]`);
+        const passed = row?.querySelector('.manual-btn[data-status="pass"]')?.getAttribute("aria-pressed");
+        const failed = row?.querySelector('.manual-btn[data-status="fail"]')?.getAttribute("aria-pressed");
+        const na = row?.querySelector('.manual-btn[data-status="na"]')?.getAttribute("aria-pressed");
+        if (passed === "true") result[sel] = "pass";
+        else if (failed === "true") result[sel] = "fail";
+        else if (na === "true") result[sel] = "na";
+        else result[sel] = null;
+      }
+      return result;
+    }, rowSelectors);
+
+    if (reloaded[rowSelectors[0]] !== null) {
+      ctx.fail({ step: "step 7 reload — row 0", expected: "null (toggled off in step 8)", actual: String(reloaded[rowSelectors[0]]) });
+    }
+    if (reloaded[rowSelectors[1]] !== "pass") {
+      ctx.fail({ step: "step 7 reload — row 1", expected: "pass (flipped in step 9)", actual: String(reloaded[rowSelectors[1]]) });
+    }
+    if (reloaded[rowSelectors[2]] !== "na") {
+      ctx.fail({ step: "step 7 reload — row 2", expected: "na (unchanged across reload)", actual: String(reloaded[rowSelectors[2]]) });
     }
   } finally {
     await cleanup();
