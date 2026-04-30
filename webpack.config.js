@@ -6,6 +6,7 @@ module.exports = {
   entry: {
     background: './src/background/index.ts',
     content: './src/content/index.ts',
+    'mock-interceptor-page': './src/content/mock-interceptor-page.ts',
     sidepanel: './src/sidepanel/sidepanel.ts',
     options: './src/options/options.ts',
     devtools: './src/devtools/devtools.ts',
