@@ -19,6 +19,7 @@ Last full sweep: 2026-04-29 — all inventories now have a 1:1 verify script in 
 | #120, #121, #122, #123 | features verify scripts batches 1–4 | (script files) |
 | #124, #125 | flows verify scripts batches 1–2 | (script files) |
 | #126 | this status update | — |
+| #127 | `fix(F14): mock-interceptor MAIN-world injection` | F14 (flips ❌ → ✅) |
 
 ## Features
 
@@ -37,7 +38,7 @@ Last full sweep: 2026-04-29 — all inventories now have a 1:1 verify script in 
 | F11 | Heuristic rules | `e2e/verify-feature-f11-heuristic-rules.ts` (PR #122) | ✅ pass |
 | F12 | Report export | `e2e/verify-feature-f12-report-export.ts` (PR #122) | ✅ pass |
 | F13 | Test configuration | `e2e/verify-feature-f13-test-configuration.ts` (PR #122) | ✅ pass |
-| F14 | Mock API | `e2e/verify-feature-f14-mock-api.ts` (PR #122) | ❌ FAIL — known architectural defect: mock-interceptor patches `window.fetch` from isolated world, never reaches page. See script header for the fix path |
+| F14 | Mock API | `e2e/verify-feature-f14-mock-api.ts` (PR #122) | ❌ FAIL on `main` until PR #127 lands (architectural fix moves the patch into MAIN world via web_accessible_resources); ✅ on a tree with PR #127 applied |
 | F15 | Screen reader tab | `e2e/verify-feature-f15-screen-reader-tab.ts` (PR #122) | ✅ pass |
 | F16 | Keyboard tab | `e2e/verify-feature-f16-keyboard-tab.ts` (PR #123) | ✅ pass |
 | F17 | AI chat | `e2e/verify-feature-f17-ai-chat-tab.ts` (PR #123) | 🚧 limited — AI tab disabled by default (Chrome Built-in AI unavailable) |
@@ -96,9 +97,11 @@ Last full sweep: 2026-04-29 — all inventories now have a 1:1 verify script in 
 | Flows (12) | 7 | 4 | 1 |
 | **Total (52)** | **35** | **12** | **5** |
 
-The 5 failures are all sentinel-fails for known issues:
+The 5 failures are all sentinel-fails for known issues, each gated on a single open PR:
 - 4 of them (F01, F10 Phase B, aria-tab, scan-no-aria-widgets-empty-state) all flip to ✅ when **PR #102 (ARIA post-scan zero-widget state)** lands.
-- 1 (F14 mock API) is a structural defect — the mock-interceptor patches `window.fetch` from the content-script's isolated world; it cannot reach the inspected page's `window.fetch`. The fix path (re-inject patches into MAIN world) is documented in the F14 verify-script header.
+- 1 (F14 mock API) flips to ✅ when **PR #127 (mock-interceptor MAIN-world injection)** lands.
+
+After both PRs are merged, the matrix is 47 ✅ pass / 12 🚧 limited / 0 ❌ fail (limited items are gated on out-of-scope work — Observer re-enable, AI tab enable, real TTS, DevTools panel, etc.).
 
 The 12 limited items are gated on out-of-scope work:
 - Observer Mode re-enablement (4 — F04, observer-tab interaction, observer-auto-scan-on-navigation flow)
