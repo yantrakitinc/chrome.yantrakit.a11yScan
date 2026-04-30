@@ -109,6 +109,33 @@ The 12 limited items are gated on out-of-scope work:
 - Inspector pin-click round-trip (1 — F20)
 - Context-menu UI (1 — clear-all-confirmation-flow)
 
+## Combined harness run (2026-04-29)
+
+`pnpm verify` ran all 63 verify scripts on a combined branch (off `main`):
+- Total: 63 scripts in 7m 21s
+- Pass: 57
+- Fail: 6 — exactly matches the matrix above (5 sentinels) plus one flake found and fixed: `verify-interaction-export-action-bar.ts` was passing through to a real `window.open` whose `win.print()` blocked CDP. Fix pushed to PR #115. Same preventive fix applied to `verify-feature-f12-report-export.ts` on PR #122.
+
+After the two flake fixes, the next combined run will show 5 fails — the documented sentinels above.
+
+## Unit-test coverage (Vitest + jsdom)
+
+| Bucket | Statements | Branches | Functions | Lines |
+|---|---|---|---|---|
+| All files | 94.02% | 86.45% | 95.78% | 96.48% |
+| `background/` | 86.13% | 80.23% | 89.74% | 88.95% |
+| `content/` | 95.21% | 83.54% | 98.63% | 99.03% |
+| `devtools/` | 92.59% | 90.00% | 100% | 91.66% |
+| `shared/` | 99.05% | 96.12% | 100% | 98.98% |
+| `sidepanel/` | 93.17% | 83.83% | 96.84% | 96.62% |
+
+The remaining 4–6% uncovered lines are:
+- `chrome.scripting.executeScript({ func })` bodies (`background/crawl.ts` lines 432–445, link-collection function injected into the inspected page) — Gap 1 in `structural-gaps.md`.
+- A handful of `setTimeout` callbacks that fire after multi-second delays (movie-complete reset, flash cleanup) — testable with fake timers; not structurally blocked, just diminishing returns.
+- A small number of catch-only error logging branches.
+
+The first bucket is the structural maximum; the latter two are addressable but excluded as low-value follow-ups.
+
 ## How to re-run
 
 ```sh
