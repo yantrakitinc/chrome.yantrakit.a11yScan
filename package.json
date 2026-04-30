@@ -9,7 +9,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "pnpm build && npx tsx e2e/extension.e2e.ts"
+    "test:e2e": "pnpm build && npx tsx e2e/extension.e2e.ts",
+    "verify": "pnpm build && npx tsx e2e/run-verify.ts"
   },
   "dependencies": {
     "axe-core": "^4.11.4"

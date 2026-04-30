@@ -3,3 +3,5 @@ dist/
 coverage/
 *.tsbuildinfo
 .DS_Store
+verify-report.json
+verify-*.png
