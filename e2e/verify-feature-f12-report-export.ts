@@ -33,8 +33,10 @@ async function run(): Promise<void> {
       window.__verifyClipboards = 0;
       var origCreate = URL.createObjectURL;
       URL.createObjectURL = function(){ window.__verifyCreates++; return origCreate.apply(URL, arguments); };
-      var origOpen = window.open;
-      window.open = function(){ window.__verifyOpens++; return origOpen.apply(window, arguments); };
+      // Stub window.open completely so the export-pdf handler's win.print()
+      // can't pop a print dialog (which blocks CDP). The handler treats null
+      // as "popup blocked", which is also a documented F12 behavior.
+      window.open = function(){ window.__verifyOpens++; return null; };
       Object.defineProperty(navigator, 'clipboard', {
         configurable: true,
         value: { writeText: function(){ window.__verifyClipboards++; return Promise.resolve(); } },
