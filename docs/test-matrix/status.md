@@ -20,6 +20,7 @@ Last full sweep: 2026-04-29 — all inventories now have a 1:1 verify script in 
 | #124, #125 | flows verify scripts batches 1–2 | (script files) |
 | #126 | this status update | — |
 | #127 | `fix(F14): mock-interceptor MAIN-world injection` | F14 (flips ❌ → ✅) |
+| #128 | 4 missing flow inventories + verify scripts | adds crawl-cancel-mid-page, inspector-pin-then-re-pin, movie-auto-play-after-scan, multi-highlight-flash-timer-reset |
 
 ## Features
 
@@ -77,16 +78,20 @@ Last full sweep: 2026-04-29 — all inventories now have a 1:1 verify script in 
 |---|---|---|
 | scan-then-aria-tab-populates | `e2e/verify-flow-scan-then-aria-tab-populates.ts` (PR #124) | ✅ pass |
 | scan-no-aria-widgets-empty-state | `e2e/verify-flow-scan-no-aria-widgets-empty-state.ts` (PR #124) | ❌ FAIL on main (PR #102 sentinel) |
-| scan-then-badge-click-jump | `e2e/verify-flow-scan-then-badge-click-jump.ts` (PR #124) | ✅ pass — proves PR #41 closure fix in real Chrome end-to-end |
-| clear-all-confirmation-flow | `e2e/verify-flow-clear-all-confirmation-flow.ts` (PR #124) | 🚧 limited — context-menu UI is Chrome-internal |
-| manual-review-persistence | `e2e/verify-flow-manual-review-persistence.ts` (PR #124) | ✅ pass |
-| mv-filter-by-viewport | `e2e/verify-flow-mv-filter-by-viewport.ts` (PR #125) | ✅ pass |
-| sr-scope-set-from-inspect | `e2e/verify-flow-sr-scope-set-from-inspect.ts` (PR #125) | ✅ pass — pin-click excluded (racy) |
-| kb-movie-pause-resume-stop | `e2e/verify-flow-kb-movie-pause-resume-stop.ts` (PR #125) | ✅ pass |
-| config-upload-then-apply | `e2e/verify-flow-config-upload-then-apply.ts` (PR #125) | ✅ pass — paste path used; file picker non-deterministic in headless |
+| scan-then-badge-click-jump | `e2e/verify-flow-scan-then-badge-click-jump.ts` (PR #124) | ✅ pass — proves PR #41 closure fix end-to-end |
+| clear-all-confirmation-flow | `e2e/verify-flow-clear-all-confirmation-flow.ts` (PR #124) | ✅ pass — covers cancel / yes / re-show / Escape / direct-Clear (right-click context menu UI itself remains Chrome-internal) |
+| manual-review-persistence | `e2e/verify-flow-manual-review-persistence.ts` (PR #124) | ✅ pass — covers all 9 inventory steps including sidepanel reload restoration |
+| mv-filter-by-viewport | `e2e/verify-flow-mv-filter-by-viewport.ts` (PR #125) | ✅ pass — covers steps 4-7 (chip switching, All chip, Clear reset) |
+| sr-scope-set-from-inspect | `e2e/verify-flow-sr-scope-set-from-inspect.ts` (PR #125) | 🚧 partial — hover/Escape covered; pin-click + scope set + clear-scope racy in Puppeteer (deterministic in inspector unit tests) |
+| kb-movie-pause-resume-stop | `e2e/verify-flow-kb-movie-pause-resume-stop.ts` (PR #125) | ✅ pass — covers all 7 steps including MOVIE_TICK advance, MOVIE_COMPLETE → idle, Escape stops |
+| config-upload-then-apply | `e2e/verify-flow-config-upload-then-apply.ts` (PR #125) | ✅ pass — paste-path + actual file picker upload via ElementHandle.uploadFile |
 | observer-auto-scan-on-navigation | `e2e/verify-flow-observer-auto-scan-on-navigation.ts` (PR #125) | 🚧 limited — Observer disabled |
 | crawl-login-page-rule-flow | `e2e/verify-flow-crawl-login-page-rule-flow.ts` (PR #125) | 🚧 limited — wait-state UI round-trip needs real crawl engine + multi-route fixture; covered by unit tests |
 | ai-chat-context-prefill | `e2e/verify-flow-ai-chat-context-prefill.ts` (PR #125) | 🚧 limited — AI tab disabled |
+| crawl-cancel-mid-page | `e2e/verify-flow-crawl-cancel-mid-page.ts` (PR #128) | ✅ pass |
+| inspector-pin-then-re-pin | `e2e/verify-flow-inspector-pin-then-re-pin.ts` (PR #128) | ✅ pass |
+| movie-auto-play-after-scan | `e2e/verify-flow-movie-auto-play-after-scan.ts` (PR #128) | ✅ pass |
+| multi-highlight-flash-timer-reset | `e2e/verify-flow-multi-highlight-flash-timer-reset.ts` (PR #128) | ✅ pass |
 
 ## Roll-up
 
@@ -94,14 +99,14 @@ Last full sweep: 2026-04-29 — all inventories now have a 1:1 verify script in 
 |---|---|---|---|
 | Features (21) | 14 | 4 | 3 |
 | Interactions (19) | 14 | 4 | 1 |
-| Flows (12) | 7 | 4 | 1 |
-| **Total (52)** | **35** | **12** | **5** |
+| Flows (16) | 11 | 4 | 1 |
+| **Total (56)** | **39** | **12** | **5** |
 
 The 5 failures are all sentinel-fails for known issues, each gated on a single open PR:
 - 4 of them (F01, F10 Phase B, aria-tab, scan-no-aria-widgets-empty-state) all flip to ✅ when **PR #102 (ARIA post-scan zero-widget state)** lands.
 - 1 (F14 mock API) flips to ✅ when **PR #127 (mock-interceptor MAIN-world injection)** lands.
 
-After both PRs are merged, the matrix is 47 ✅ pass / 12 🚧 limited / 0 ❌ fail (limited items are gated on out-of-scope work — Observer re-enable, AI tab enable, real TTS, DevTools panel, etc.).
+After both PRs are merged, the matrix is 51 ✅ pass / 12 🚧 limited / 0 ❌ fail (limited items are gated on out-of-scope work — Observer re-enable, AI tab enable, real TTS, DevTools panel, etc.).
 
 The 12 limited items are gated on out-of-scope work:
 - Observer Mode re-enablement (4 — F04, observer-tab interaction, observer-auto-scan-on-navigation flow)
