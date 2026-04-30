@@ -2,19 +2,14 @@
  * Verify: F14 mock API.
  * Inventory: docs/test-matrix/features/f14-mock-api.md
  *
- * KNOWN STRUCTURAL DEFECT — DOCUMENTED REGRESSION:
- * The current mock-interceptor (src/content/mock-interceptor.ts) patches
- * `window.fetch` and `XMLHttpRequest.prototype.open` from the content script's
- * isolated world. In real Chrome, content scripts do NOT share `window` with
- * the inspected page (they run in an isolated JavaScript context), so the
- * patch never affects the page's fetch. This makes F14 a unit-test-only
- * feature: the unit tests in `src/content/__tests__/mock-interceptor.test.ts`
- * pass under jsdom (single shared window), but in real Chrome the page's
- * fetch is never intercepted.
+ * Verifies the full round-trip: ACTIVATE_MOCKS message → content script
+ * isolated-world bridge → page-side IIFE patches the page's `window.fetch`
+ * → page fetch returns the mocked body. DEACTIVATE_MOCKS restores the
+ * original fetch.
  *
- * This script verifies the round-trip end-to-end and SENTINEL-FAILS until F14
- * is reworked to inject the patch into the MAIN world via either
- * `chrome.scripting.executeScript({ world: "MAIN" })` or a script tag.
+ * Sentinel-fails on `main` until PR #127 lands (the architectural fix that
+ * moves the patch into MAIN world via web_accessible_resources). On a tree
+ * with PR #127 applied, this passes.
  */
 
 import { setup, sleep, reportAndExit } from "./verify-helpers";
@@ -43,7 +38,7 @@ async function run(): Promise<void> {
       try {
         await chrome.tabs.sendMessage(tab.id, {
           type: 'ACTIVATE_MOCKS',
-          payload: { mocks: [{ url: '/api/users', body: { mocked: true, count: 7 } }] },
+          payload: { mocks: [{ urlPattern: '/api/users', status: 200, body: { mocked: true, count: 7 } }] },
         });
         return { ok: true, tabId: tab.id };
       } catch (e) {
