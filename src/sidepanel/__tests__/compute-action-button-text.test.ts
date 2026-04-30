@@ -311,19 +311,40 @@ describe("renderAriaResultsHtml", () => {
     };
   }
 
-  it("shows the Scan ARIA Patterns CTA when no widgets", () => {
+  it("shows the Scan ARIA Patterns CTA when no widgets and scanned=false (pre-scan empty state)", () => {
+    const out = renderAriaResultsHtml([], false);
+    expect(out).toMatch(/Scan ARIA Patterns/);
+    expect(out).toMatch(/id="run-aria-scan"/);
+    expect(out).toMatch(/No ARIA widgets scanned yet/);
+  });
+
+  it("defaults scanned=false when omitted (backward-compatible pre-scan empty state)", () => {
     const out = renderAriaResultsHtml([]);
     expect(out).toMatch(/Scan ARIA Patterns/);
     expect(out).toMatch(/id="run-aria-scan"/);
   });
 
-  it("shows compliant + issues sections when widgets exist", () => {
-    const out = renderAriaResultsHtml([
+  it("shows post-scan zero-result message when no widgets and scanned=true (NO manual button — bug fix for issue #99)", () => {
+    const out = renderAriaResultsHtml([], true);
+    expect(out).toMatch(/No ARIA widgets detected on this page/);
+    expect(out).not.toMatch(/Scan ARIA Patterns/);
+    expect(out).not.toMatch(/id="run-aria-scan"/);
+    expect(out).not.toMatch(/scanned yet/);
+  });
+
+  it("shows compliant + issues sections when widgets exist (regardless of scanned flag)", () => {
+    const out1 = renderAriaResultsHtml([
       w({ failCount: 0 }),
       w({ failCount: 1, role: "dialog" }),
-    ]);
-    expect(out).toMatch(/tablist/);
-    expect(out).toMatch(/dialog/);
+    ], true);
+    expect(out1).toMatch(/tablist/);
+    expect(out1).toMatch(/dialog/);
+    const out2 = renderAriaResultsHtml([
+      w({ failCount: 0 }),
+      w({ failCount: 1, role: "dialog" }),
+    ], false);
+    expect(out2).toMatch(/tablist/);
+    expect(out2).toMatch(/dialog/);
   });
 });
 
@@ -938,6 +959,7 @@ describe("clearScanResultsSlice", () => {
       accordionExpanded: false,
       scanSubTab: "manual" as const,
       ariaWidgets: [{ role: "x" } as never],
+      ariaScanned: true,
       manualReview: { "1.4.3": "pass" as const },
       violationsOverlayOn: true,
       tabOrderOverlayOn: true,

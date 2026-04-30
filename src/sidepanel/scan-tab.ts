@@ -304,7 +304,7 @@ function renderManualReview(): string {
 }
 
 function renderAriaResults(): string {
-  return renderAriaResultsHtml(state.ariaWidgets);
+  return renderAriaResultsHtml(state.ariaWidgets, state.ariaScanned);
 }
 
 /** Reset observer cache so next render re-fetches from storage */

@@ -28,6 +28,7 @@ export function clearScanResultsSlice(prev: {
   accordionExpanded: boolean;
   scanSubTab: "results" | "manual" | "aria" | "observe";
   ariaWidgets: iAriaWidget[];
+  ariaScanned: boolean;
   manualReview: Record<string, "pass" | "fail" | "na" | null>;
   violationsOverlayOn: boolean;
   tabOrderOverlayOn: boolean;
@@ -47,6 +48,7 @@ export function clearScanResultsSlice(prev: {
     accordionExpanded: true,
     scanSubTab: "results",
     ariaWidgets: [],
+    ariaScanned: false,
     manualReview: {},
     violationsOverlayOn: false,
     tabOrderOverlayOn: false,

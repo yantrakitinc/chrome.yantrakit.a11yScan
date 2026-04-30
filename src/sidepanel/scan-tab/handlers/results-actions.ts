@@ -63,6 +63,7 @@ export function attachResultsActionListeners(): void {
     const result = await sendMessage({ type: "RUN_ARIA_SCAN" });
     if (result && (result as { type: string }).type === "ARIA_SCAN_RESULT") {
       state.ariaWidgets = (result as { payload: iAriaWidget[] }).payload;
+      state.ariaScanned = true;
       rerender();
     }
   });

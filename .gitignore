@@ -3,3 +3,5 @@ dist/
 coverage/
 *.tsbuildinfo
 .DS_Store
+verify-aria-after-scan-screenshot.png
+verify-aria-empty-page-screenshot.png

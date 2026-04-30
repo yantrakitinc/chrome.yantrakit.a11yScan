@@ -7,11 +7,30 @@ import type { iAriaWidget } from "@shared/types";
 import { escHtml } from "@shared/utils";
 
 /**
- * Render the ARIA tab body. Empty state shows a 'Scan ARIA Patterns' button.
- * Otherwise splits widgets into compliant + issues sections.
+ * Render the ARIA tab body.
+ *
+ * Three states:
+ * - widgets.length > 0: render widgets (compliant + issues sections).
+ * - widgets.length === 0 && scanned === false: pre-scan empty state with
+ *   manual 'Scan ARIA Patterns' button.
+ * - widgets.length === 0 && scanned === true: post-scan zero-result state
+ *   ("No ARIA widgets detected on this page") with NO manual button — the
+ *   scan already ran and the page genuinely has no ARIA patterns.
+ *
+ * The third state is the fix for the bug where users on a no-ARIA-widgets
+ * page saw the same UI before and after Scan Page, making them think the
+ * scan didn't run.
  */
-export function renderAriaResultsHtml(widgets: iAriaWidget[]): string {
+export function renderAriaResultsHtml(widgets: iAriaWidget[], scanned = false): string {
   if (widgets.length === 0) {
+    if (scanned) {
+      return `
+        <div style="padding:var(--ds-space-8);text-align:center">
+          <div style="font-size:var(--ds-text-md);color:var(--ds-green-700);font-weight:600">No ARIA widgets detected on this page.</div>
+          <div style="margin-top:var(--ds-space-2);font-size:var(--ds-text-base);color:var(--ds-zinc-500)">The page contains no <code>role="tablist"</code>, <code>role="dialog"</code>, or other ARIA widget patterns the scanner detects.</div>
+        </div>
+      `;
+    }
     return `
       <div style="padding:var(--ds-space-8);text-align:center">
         <div style="font-size:var(--ds-text-md);color:var(--ds-zinc-500)">No ARIA widgets scanned yet.</div>
