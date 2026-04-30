@@ -55,6 +55,11 @@ export function attachScanButtonListeners(): void {
     state.violationsOverlayOn = false;
     state.tabOrderOverlayOn = false;
     state.focusGapsOverlayOn = false;
+    // Reset ARIA scan state so the empty state on the new scan correctly
+    // shows "scanning..." behaviour (or pre-scan empty state) until the
+    // background ARIA scan completes and flips ariaScanned back to true.
+    state.ariaWidgets = [];
+    state.ariaScanned = false;
     updateTabDisabledStates();
     rerender();
     try {
@@ -111,6 +116,9 @@ export function attachScanButtonListeners(): void {
         sendMessage({ type: "RUN_ARIA_SCAN" }).then((ariaResult) => {
           if (ariaResult && (ariaResult as { type: string }).type === "ARIA_SCAN_RESULT") {
             state.ariaWidgets = (ariaResult as { payload: iAriaWidget[] }).payload;
+            // Mark scan as completed so the empty state can distinguish
+            // "no scan yet" from "scan ran, page has no ARIA widgets".
+            state.ariaScanned = true;
             rerender();
           }
         }).catch((err) => {

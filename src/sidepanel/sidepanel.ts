@@ -163,6 +163,12 @@ export const state = {
   accordionExpanded: true,
   scanSubTab: "results" as "results" | "manual" | "aria" | "observe",
   ariaWidgets: [] as import("@shared/types").iAriaWidget[],
+  /** Whether an ARIA scan has completed at least once for the current scan
+   *  result. Distinguishes "no scan yet" (empty + show 'Scan ARIA Patterns'
+   *  button) from "scan ran, found zero widgets" (show 'No ARIA widgets
+   *  detected on this page' without the manual-scan button). Reset to false
+   *  on Clear and on the start of every new Scan Page. */
+  ariaScanned: false,
   manualReview: {} as Record<string, import("@shared/types").iManualReviewStatus>,
   testConfig: null as iTestConfig | null,
   lastMvResult: null as iMultiViewportResult | null,
