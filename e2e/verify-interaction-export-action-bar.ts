@@ -33,11 +33,13 @@ async function run(): Promise<void> {
       window.__verifyClipboards = 0;
       var origCreate = URL.createObjectURL;
       URL.createObjectURL = function(){ window.__verifyCreates++; return origCreate.apply(URL, arguments); };
-      var origOpen = window.open;
-      window.open = function(){ window.__verifyOpens++; return origOpen.apply(window, arguments); };
-      // Replace navigator.clipboard wholesale with a stub that just records calls.
-      // Calling the real clipboard isn't needed for verification — we're testing
-      // that the export-copy click reaches navigator.clipboard.writeText.
+      // Stub window.open completely — DON'T pass through to the real
+      // implementation. Real window.open + win.document.write + win.print()
+      // pops a system print dialog that blocks subsequent puppeteer evaluates
+      // (CDP timeout). Returning null is harmless for this test — we only
+      // count the call. (The handler treats null as "popup blocked" and shows
+      // a transient label change, which we do not assert here.)
+      window.open = function(){ window.__verifyOpens++; return null; };
       Object.defineProperty(navigator, 'clipboard', {
         configurable: true,
         value: { writeText: function(s){ window.__verifyClipboards++; return Promise.resolve(); } },
